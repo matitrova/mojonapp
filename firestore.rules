@@ -36,6 +36,16 @@ service cloud.firestore {
       allow write: if esRoot();
     }
 
+    // Catálogo de nombres de sector/zona que alimenta el combo al
+    // cargar o editar un lote. Cualquier logueado puede LEERLO (lo
+    // necesita para completar ese combo), pero administrarlo (crear/
+    // editar/borrar sectores) es lo mismo que administrar usuarios —
+    // ambos son "cómo se configura el sistema para todos".
+    match /sectores/{sectorId} {
+      allow read: if request.auth != null;
+      allow write: if esRoot() || tienePermiso('administrar_usuarios');
+    }
+
     // El catálogo de lotes sigue siendo público en lectura — ese es el
     // propósito comercial de la app, no depende de perfiles. Lo que se
     // restringe por perfil es quién puede cargar/editar/borrar, y si un

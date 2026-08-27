@@ -81,8 +81,46 @@ let corredorLogueado = false; // se actualiza en onAuthStateChanged; true con cu
 // tienePermiso() sin necesidad de tildar cada permiso a mano.
 let miPerfilActual = null;
 let lotesActuales = []; // último resultado de cargarLotesDesdeFirestore, lo reusa la vista en lista
+let sectoresActuales = []; // catálogo de sectores/zonas (colección "sectores"), alimenta los combos
 let watchId = null; // id de navigator.geolocation.watchPosition, para poder cancelarlo
 let listenerOrientacion = null; // referencia al handler de deviceorientation, para poder sacarlo
+
+// ---------------------------------------------------------------------------
+// Catálogo de sectores/zonas: antes "Sector" era texto libre en cada
+// lote, y cada corredor terminaba escribiendo su propia variante del
+// mismo nombre ("Zona Norte", "zona norte", "Norte"...). Ahora es un
+// combo que sale de la colección "sectores" (administrada desde el
+// panel "Sectores" del menú), y el lote sigue guardando el nombre como
+// texto plano — no hay una relación por id, así que borrar un sector
+// del catálogo no le mueve el dato a los lotes que ya lo tenían.
+// ---------------------------------------------------------------------------
+
+async function cargarSectores() {
+  try {
+    const snapshot = await getDocs(collection(db, "sectores"));
+    sectoresActuales = snapshot.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  } catch {
+    // Si falla (reglas viejas sin esta colección, sin conexión, etc.) el
+    // combo queda con "Sin sector" nomás — no puede tirar abajo el login
+    // ni el resto de la carga de lotes.
+    sectoresActuales = [];
+  }
+}
+
+// valorActual: el sector que ya tiene el lote (si lo tiene), para
+// preseleccionarlo — y para no perderlo si ya no está en el catálogo
+// (se borró después de asignárselo a este lote, o se cargó a mano antes
+// de que existiera esta lista).
+function poblarSelectSector(elSelect, valorActual) {
+  const opciones = sectoresActuales.map((s) => `<option value="${s.nombre}">${s.nombre}</option>`);
+  if (valorActual && !sectoresActuales.some((s) => s.nombre === valorActual)) {
+    opciones.push(`<option value="${valorActual}">${valorActual} (fuera del catálogo)</option>`);
+  }
+  elSelect.innerHTML = '<option value="">Sin sector</option>' + opciones.join("");
+  elSelect.value = valorActual || "";
+}
 
 // ---------------------------------------------------------------------------
 // Permisos: quién puede qué. Todo lo que decide acá es solo para mostrar
@@ -568,7 +606,7 @@ function cerrarEditorSector() {
 }
 
 elBtnEditarSector.addEventListener("click", () => {
-  elEditarSectorValor.value = lotePolyLayerSeleccionado?.properties?.sector || "";
+  poblarSelectSector(elEditarSectorValor, lotePolyLayerSeleccionado?.properties?.sector);
   elSector.classList.add("oculto");
   elBtnEditarSector.classList.add("oculto");
   elEditorSector.classList.remove("oculto");
@@ -770,7 +808,7 @@ function mostrarEditarLoteDesdeGrilla(feature) {
   elLoteEditarTitulo.textContent = `Editar ${tituloLote(p)}`;
   elEditarLoteEstado.value = p.estado || "disponible";
   elEditarLotePrecio.value = p.precio_usd ?? "";
-  elEditarLoteSector.value = p.sector || "";
+  poblarSelectSector(elEditarLoteSector, p.sector);
   const s = p.servicios || {};
   elEditarLoteServicioLuz.checked = !!s.luz;
   elEditarLoteServicioAgua.checked = !!s.agua;
@@ -823,7 +861,8 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
 
 elBtnVerLista.addEventListener("click", () => {
   const mostrar = elVistaLista.classList.contains("oculto");
-  document.getElementById("panel-admin").classList.add("oculto"); // no superponer con "Administrar"
+  document.getElementById("panel-admin").classList.add("oculto"); // no superponer con "Seguridad"
+  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Sectores"
   if (mostrar) mostrarListaLotesGrilla(); // siempre arranca en la lista, no en edición
   elVistaLista.classList.toggle("oculto", !mostrar);
   elBtnVerLista.classList.toggle("activo", mostrar);
@@ -1040,6 +1079,7 @@ function actualizarUIPorPermisos() {
   elBtnAbrirParcela.classList.toggle("oculto", !tienePermiso("cargar_lote"));
   elBtnCargarLote.classList.toggle("oculto", !tienePermiso("cargar_lote"));
   document.getElementById("drawer-grupo-seguridad").classList.toggle("oculto", !tienePermiso("administrar_usuarios"));
+  document.getElementById("drawer-grupo-sectores").classList.toggle("oculto", !tienePermiso("administrar_usuarios"));
 }
 
 onAuthStateChanged(auth, async (usuario) => {
@@ -1052,10 +1092,15 @@ onAuthStateChanged(auth, async (usuario) => {
     document.getElementById("drawer-sesion-activa").classList.remove("oculto");
     elSesionEmail.textContent = usuario.email;
     actualizarUIPorPermisos();
+    // El catálogo de sectores necesita sesión para leerse (ver
+    // firestore.rules), así que se carga acá y no al arrancar la app.
+    await cargarSectores();
+    poblarSelectSector(elLoteSector, elLoteSector.value);
   } else {
     elBtnAbrirLogin.classList.remove("oculto");
     elSesionActiva.classList.add("oculto");
     document.getElementById("drawer-sesion-activa").classList.add("oculto");
+    sectoresActuales = [];
     // Cerrar sesión apaga todas las herramientas de corredor, no solo
     // "+ Lote": sin esto, si alguien cerraba sesión con "Ver catastro
     // cercano" prendido (o cualquier otro panel abierto), el botón para
@@ -1116,6 +1161,7 @@ function limpiarFormLote() {
 
 elBtnCargarLote.addEventListener("click", () => {
   limpiarFormLote();
+  poblarSelectSector(elLoteSector, null);
   abrirHoja(elFormLote);
 });
 document.getElementById("cerrar-form-lote").addEventListener("click", () => {
@@ -1505,6 +1551,7 @@ function cargarParcelaEnFormLote(feature) {
   elLoteManzana.value = manzanaDesdeNomenclaturaDeParcela(nomenclatura) || "";
   elLoteNumero.value = feature.properties.ETIQUETA || "";
   elLoteNomenclatura.value = nomenclatura;
+  poblarSelectSector(elLoteSector, null);
   elLoteSuperficie.value = superficieDesdeNombreCatastro(feature.properties.NOMBRE) ?? "";
   elLoteEstado.value = "disponible";
   elLotePrecio.value = "";
@@ -2241,6 +2288,7 @@ formularioUsuario.addEventListener("submit", async (evento) => {
 async function abrirPanelSeguridad(tab) {
   elVistaLista.classList.add("oculto"); // no superponer con "Ver como lista"
   elBtnVerLista.classList.remove("activo");
+  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Sectores"
   mostrarListaUsuarios();
   mostrarListaPerfiles();
   if (tab === "perfiles") mostrarTabPerfiles();
@@ -2255,4 +2303,132 @@ elMenuSeguridadPerfiles.addEventListener("click", () => abrirPanelSeguridad("per
 
 document.getElementById("cerrar-panel-admin").addEventListener("click", () => {
   elPanelAdmin.classList.add("oculto");
+});
+
+// ---------------------------------------------------------------------------
+// Panel "Sectores" (root / permiso administrar_usuarios): catálogo de
+// nombres que ofrece el combo de Sector/zona en los lotes. Mismo patrón
+// de lista+form que Perfiles, pero sin pestañas (una sola entidad).
+// ---------------------------------------------------------------------------
+
+const elPanelSectores = document.getElementById("panel-sectores");
+const elBtnAbrirSectores = document.getElementById("btn-abrir-sectores");
+const elSectoresVistaLista = document.getElementById("sectores-vista-lista");
+const elSectoresVistaForm = document.getElementById("sectores-vista-form");
+const elTablaSectoresCuerpo = document.getElementById("tabla-sectores-cuerpo");
+const elBtnAgregarSector = document.getElementById("btn-agregar-sector");
+const elSectorVolver = document.getElementById("sector-volver");
+const elSectorFormTitulo = document.getElementById("sector-form-titulo");
+const formularioSector = document.getElementById("formulario-sector");
+const elSectorIdEditando = document.getElementById("sector-id-editando");
+const elSectorNombre = document.getElementById("sector-nombre");
+const elSectorError = document.getElementById("sector-error");
+
+async function cargarPanelSectores() {
+  await cargarSectores();
+
+  elTablaSectoresCuerpo.innerHTML = "";
+  sectoresActuales.forEach((sector) => {
+    const fila = document.createElement("tr");
+    const celdaNombre = document.createElement("td");
+    celdaNombre.textContent = sector.nombre;
+
+    const celdaAcciones = document.createElement("td");
+    const botonEditar = document.createElement("button");
+    botonEditar.type = "button";
+    botonEditar.className = "btn-editar-fila";
+    botonEditar.textContent = "Editar";
+    botonEditar.addEventListener("click", () => mostrarFormSector(sector));
+    celdaAcciones.appendChild(botonEditar);
+
+    const botonBorrar = document.createElement("button");
+    botonBorrar.type = "button";
+    botonBorrar.className = "btn-borrar-fila";
+    botonBorrar.textContent = "Borrar";
+    botonBorrar.addEventListener("click", () => borrarSector(sector, botonBorrar));
+    celdaAcciones.appendChild(botonBorrar);
+
+    fila.append(celdaNombre, celdaAcciones);
+    elTablaSectoresCuerpo.appendChild(fila);
+  });
+}
+
+function mostrarListaSectoresPanel() {
+  elSectoresVistaForm.classList.add("oculto");
+  elSectoresVistaLista.classList.remove("oculto");
+}
+
+// sector == null: alta de un sector nuevo. Con un sector, lo precarga
+// para editarlo (mismo formulario, en modo edición).
+function mostrarFormSector(sector) {
+  formularioSector.reset();
+  elSectorError.classList.add("oculto");
+  if (sector) {
+    elSectorIdEditando.value = sector.id;
+    elSectorFormTitulo.textContent = `Editar "${sector.nombre}"`;
+    elSectorNombre.value = sector.nombre;
+  } else {
+    elSectorIdEditando.value = "";
+    elSectorFormTitulo.textContent = "Nuevo sector";
+  }
+  elSectoresVistaLista.classList.add("oculto");
+  elSectoresVistaForm.classList.remove("oculto");
+}
+
+elBtnAgregarSector.addEventListener("click", () => mostrarFormSector(null));
+elSectorVolver.addEventListener("click", mostrarListaSectoresPanel);
+
+formularioSector.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  elSectorError.classList.add("oculto");
+  try {
+    const datos = { nombre: elSectorNombre.value.trim() };
+    const idEditando = elSectorIdEditando.value;
+    if (idEditando) {
+      await setDoc(doc(db, "sectores", idEditando), datos);
+    } else {
+      await addDoc(collection(db, "sectores"), datos);
+    }
+    await cargarPanelSectores();
+    mostrarListaSectoresPanel();
+  } catch (error) {
+    elSectorError.textContent =
+      error.code === "permission-denied"
+        ? "No tenés permiso para administrar sectores."
+        : "No se pudo guardar el sector.";
+    elSectorError.classList.remove("oculto");
+  }
+});
+
+// Borrar un sector del catálogo no le toca el dato a los lotes que ya lo
+// tenían asignado (ver comentario arriba de cargarSectores) — solo dejan
+// de poder elegirlo de nuevo para otro lote.
+async function borrarSector(sector, boton) {
+  if (!window.confirm(`¿Borrar el sector "${sector.nombre}"? Los lotes que ya lo tienen asignado no se ven afectados.`)) return;
+  boton.disabled = true;
+  try {
+    await deleteDoc(doc(db, "sectores", sector.id));
+    await cargarPanelSectores();
+  } catch (error) {
+    window.alert(
+      error.code === "permission-denied"
+        ? "No tenés permiso para borrar sectores."
+        : "No se pudo borrar el sector."
+    );
+  } finally {
+    boton.disabled = false;
+  }
+}
+
+elBtnAbrirSectores.addEventListener("click", async () => {
+  elVistaLista.classList.add("oculto"); // no superponer con "Ver como lista"
+  elBtnVerLista.classList.remove("activo");
+  elPanelAdmin.classList.add("oculto"); // ni con "Seguridad"
+  mostrarListaSectoresPanel();
+  elPanelSectores.classList.remove("oculto");
+  await cargarPanelSectores();
+});
+
+document.getElementById("cerrar-panel-sectores").addEventListener("click", () => {
+  elPanelSectores.classList.add("oculto");
 });

@@ -66,6 +66,16 @@
           <button type="button" class="drawer-item" id="menu-seguridad-perfiles" data-testid="menu-seguridad-perfiles">Perfiles de seguridad</button>
         </div>
       </div>
+
+      <div id="drawer-grupo-sectores" class="drawer-grupo oculto">
+        <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-sectores">
+          Sectores
+          <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
+        </button>
+        <div class="drawer-grupo-items oculto">
+          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores">Gestionar sectores</button>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -121,7 +131,9 @@
     </div>
     <div id="editor-sector" class="oculto" data-testid="editor-sector">
       <label>Sector / zona
-        <input type="text" id="editar-sector-valor" data-testid="editar-sector-valor" placeholder="Ej: Zona Norte, Cerro de Oro..." />
+        <select id="editar-sector-valor" data-testid="editar-sector-valor">
+          <option value="">Sin sector</option>
+        </select>
       </label>
       <div class="botones-alternativos">
         <button type="button" id="btn-guardar-sector" data-testid="btn-guardar-sector">Guardar</button>
@@ -167,7 +179,9 @@
         <input type="text" id="lote-nomenclatura" data-testid="lote-nomenclatura" />
       </label>
       <label>Sector / zona
-        <input type="text" id="lote-sector" data-testid="lote-sector" placeholder="Ej: Zona Norte, Cerro de Oro..." />
+        <select id="lote-sector" data-testid="lote-sector">
+          <option value="">Sin sector</option>
+        </select>
       </label>
       <label>Superficie (m²)
         <input type="number" id="lote-superficie" data-testid="lote-superficie" required min="1" step="0.01" />
@@ -361,6 +375,41 @@
     </section>
   </div>
 
+  <!-- Panel "Sectores": el catálogo de nombres que ofrece el combo de
+       Sector/zona al cargar o editar un lote — para que no cada
+       corredor invente su propia variante del mismo nombre a mano. -->
+  <div id="panel-sectores" class="oculto panel-pantalla-completa" data-testid="panel-sectores">
+    <div class="panel-header">
+      <h2>Sectores</h2>
+      <button id="cerrar-panel-sectores" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div id="sectores-vista-lista">
+      <div class="tabla-scroll">
+        <table class="tabla-panel" data-testid="tabla-sectores">
+          <thead>
+            <tr><th>Nombre</th><th></th></tr>
+          </thead>
+          <tbody id="tabla-sectores-cuerpo"></tbody>
+        </table>
+      </div>
+      <button type="button" id="btn-agregar-sector" data-testid="btn-agregar-sector">+ Nuevo sector</button>
+    </div>
+
+    <div id="sectores-vista-form" class="oculto">
+      <button type="button" id="sector-volver" class="btn-link" data-testid="sector-volver">&larr; Volver a sectores</button>
+      <h3 id="sector-form-titulo">Nuevo sector</h3>
+      <form id="formulario-sector">
+        <input type="hidden" id="sector-id-editando" value="" />
+        <label>Nombre
+          <input type="text" id="sector-nombre" data-testid="sector-nombre" required placeholder="Ej: Zona Norte, Cerro de Oro..." />
+        </label>
+        <button type="submit" id="sector-guardar-btn" data-testid="sector-guardar">Guardar sector</button>
+        <p id="sector-error" class="mensaje-error oculto" data-testid="sector-error"></p>
+      </form>
+    </div>
+  </div>
+
   <!-- Vista en lista/grilla de los lotes cargados, alternativa al mapa -->
   <div id="vista-lista" class="oculto panel-pantalla-completa" data-testid="vista-lista">
     <div id="vista-lista-header" class="panel-header">
@@ -419,7 +468,9 @@
           <input type="number" id="editar-lote-precio" data-testid="editar-lote-precio" min="0" step="1" />
         </label>
         <label>Sector / zona
-          <input type="text" id="editar-lote-sector" data-testid="editar-lote-sector" placeholder="Ej: Zona Norte, Cerro de Oro..." />
+          <select id="editar-lote-sector" data-testid="editar-lote-sector">
+            <option value="">Sin sector</option>
+          </select>
         </label>
         <fieldset class="fieldset-servicios">
           <legend>Servicios</legend>

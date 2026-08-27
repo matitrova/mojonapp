@@ -454,7 +454,8 @@ button:active {
 #formulario-lote,
 #formulario-perfil,
 #formulario-usuario,
-#formulario-editar-lote {
+#formulario-editar-lote,
+#formulario-sector {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -465,7 +466,8 @@ button:active {
 #formulario-lote label,
 #formulario-perfil label,
 #formulario-usuario label,
-#formulario-editar-lote label {
+#formulario-editar-lote label,
+#formulario-sector label {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -483,7 +485,8 @@ button:active {
 #formulario-usuario select,
 #formulario-editar-lote input,
 #formulario-editar-lote select,
-#formulario-editar-lote textarea {
+#formulario-editar-lote textarea,
+#formulario-sector input {
   font: inherit;
   font-weight: 400;
   color: var(--color-texto);
@@ -503,7 +506,8 @@ button:active {
 #formulario-usuario select:focus,
 #formulario-editar-lote input:focus,
 #formulario-editar-lote select:focus,
-#formulario-editar-lote textarea:focus {
+#formulario-editar-lote textarea:focus,
+#formulario-sector input:focus {
   outline: none;
   border-color: var(--color-primario);
   box-shadow: 0 0 0 3px rgba(51, 82, 58, 0.15);
@@ -625,7 +629,8 @@ button:active {
 #formulario-lote button[type="submit"],
 #formulario-perfil button[type="submit"],
 #formulario-usuario button[type="submit"],
-#formulario-editar-lote button[type="submit"] {
+#formulario-editar-lote button[type="submit"],
+#formulario-sector button[type="submit"] {
   background: var(--color-primario);
   color: #fff;
   border: none;
@@ -640,7 +645,8 @@ button:active {
 #formulario-lote button[type="submit"]:hover,
 #formulario-perfil button[type="submit"]:hover,
 #formulario-usuario button[type="submit"]:hover,
-#formulario-editar-lote button[type="submit"]:hover {
+#formulario-editar-lote button[type="submit"]:hover,
+#formulario-sector button[type="submit"]:hover {
   background: var(--color-primario-oscuro);
 }
 
@@ -988,7 +994,8 @@ button:active {
 }
 
 #btn-agregar-usuario,
-#btn-agregar-perfil {
+#btn-agregar-perfil,
+#btn-agregar-sector {
   width: 100%;
   background: none;
   border: 1px dashed var(--color-primario);
@@ -1002,6 +1009,7 @@ button:active {
 }
 
 #btn-agregar-usuario:hover,
-#btn-agregar-perfil:hover {
+#btn-agregar-perfil:hover,
+#btn-agregar-sector:hover {
   background: var(--color-fondo-alterno);
 }
