@@ -167,16 +167,25 @@ function puedeBorrarLote(feature) {
 // Mapa base
 // ---------------------------------------------------------------------------
 
-// maxZoom (24) es hasta dónde deja acercarse el mapa; maxNativeZoom (19) es
-// hasta dónde Esri realmente tiene fotos en la mayoría de las zonas rurales
-// (en el centro de una ciudad grande puede llegar a 20-21, pero en el campo
-// suele cortar antes). Sin maxNativeZoom, pasado ese punto Leaflet pide
-// tiles que no existen y el mapa queda en blanco ("Map data not yet
-// available"). Con maxNativeZoom, Leaflet sigue permitiendo acercarse:
-// agranda el último tile real en vez de pedir uno inexistente, así que la
-// imagen se ve más borrosa pero el mapa nunca desaparece — y el polígono
-// del lote, que es un dibujo vectorial y no una imagen, se sigue viendo
-// nítido en cualquier zoom.
+// maxZoom (24) es hasta dónde deja acercarse el mapa; maxNativeZoom es
+// hasta dónde Esri realmente tiene fotos en la zona rural que usa esta
+// app (en el centro de una ciudad grande puede llegar a 20-21, pero en
+// el campo suele cortar antes). Sin maxNativeZoom, pasado ese punto
+// Leaflet pide tiles que no existen y el mapa queda en blanco ("Map
+// data not yet available"). Con maxNativeZoom, Leaflet sigue
+// permitiendo acercarse: agranda el último tile real en vez de pedir
+// uno inexistente, así que la imagen se ve más borrosa pero el mapa
+// nunca desaparece — y el polígono del lote, que es un dibujo
+// vectorial y no una imagen, se sigue viendo nítido en cualquier zoom.
+//
+// El valor 18 se verificó bajando tiles reales del servicio para
+// Carpintería/Merlo (zona de los lotes cargados): en zoom 18 la imagen
+// es satelital real (~13-18 KB por tile); en zoom 19 y más, Esri
+// devuelve siempre el mismo tile de "Map data not yet available"
+// (2521 bytes exactos) — el corte real acá es 18, no 19. Si el corredor
+// carga lotes en otra zona con mejor cobertura, en el peor caso el mapa
+// se ve un poco más borroso ahí de lo estrictamente necesario, pero
+// nunca desaparece — eso es preferible a que desaparezca en ESTA zona.
 const mapa = L.map("mapa", { zoomControl: true, maxZoom: 24 }).setView([-32.34715, -65.01300], 18);
 
 // Capa satelital gratuita (Esri World Imagery, sin API key).
@@ -186,7 +195,7 @@ L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {
     maxZoom: 24,
-    maxNativeZoom: 19,
+    maxNativeZoom: 18,
     attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics"
   }
 ).addTo(mapa);
@@ -583,6 +592,7 @@ document.getElementById("btn-editar-lote-completo").addEventListener("click", ()
   document.getElementById("panel-sectores").classList.add("oculto");
   elVistaLista.classList.remove("oculto");
   elBtnVerLista.classList.add("activo");
+  loteEditadoDesdeFicha = true;
   mostrarEditarLoteDesdeGrilla(lotePolyLayerSeleccionado);
 });
 
@@ -754,6 +764,11 @@ const elEditarLoteServicioCloaca = document.getElementById("editar-lote-servicio
 const elEditarLoteObservaciones = document.getElementById("editar-lote-observaciones");
 const elEditarLoteError = document.getElementById("editar-lote-error");
 let loteEditandoDesdeGrilla = null; // feature actual del formulario de edición
+// true si se entró a este formulario desde "Editar lote" en la ficha del
+// mapa, false si se entró desde "Editar" en la grilla — al guardar,
+// determina si hay que volver al mapa (con la ficha actualizada) o a la
+// lista, para no sacar al corredor de donde ya estaba.
+let loteEditadoDesdeFicha = false;
 
 // El filtro se arma con lo que ya se cargó, no con el catálogo entero —
 // no tiene sentido ofrecer para filtrar un sector que ningún lote tiene
@@ -821,6 +836,7 @@ function actualizarVistaLista() {
       botonEditar.textContent = "Editar";
       botonEditar.addEventListener("click", (evento) => {
         evento.stopPropagation(); // no abrir la ficha al tocar "Editar"
+        loteEditadoDesdeFicha = false;
         mostrarEditarLoteDesdeGrilla(feature);
       });
       celdaAcciones.appendChild(botonEditar);
@@ -926,7 +942,23 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
 
     await updateDoc(doc(db, COLECCION_LOTES, loteEditandoDesdeGrilla.id), datos);
     Object.assign(loteEditandoDesdeGrilla.properties, datos);
-    mostrarListaLotesGrilla();
+
+    if (loteEditadoDesdeFicha) {
+      // Se entró desde "Editar lote" en el mapa: volver ahí (con la
+      // ficha ya actualizada), no a la lista — el mapa nunca se tocó
+      // durante la edición, así que sigue centrado en la misma zona de
+      // antes sin hacer nada especial acá.
+      const loteGuardado = loteEditandoDesdeGrilla;
+      loteEditandoDesdeGrilla = null;
+      elLoteVistaEditar.classList.add("oculto");
+      elLoteVistaLista.classList.remove("oculto"); // deja la vista interna lista para la próxima vez que se entre por la grilla
+      elVistaLista.classList.add("oculto");
+      elBtnVerLista.classList.remove("activo");
+      mostrarFicha(loteGuardado);
+    } else {
+      mostrarListaLotesGrilla();
+    }
+
     await cargarLotesDesdeFirestore();
   } catch (error) {
     elEditarLoteError.textContent =
