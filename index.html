@@ -474,6 +474,18 @@
       <button type="button" id="lote-editar-volver" class="btn-link" data-testid="lote-editar-volver">&larr; Volver a la lista</button>
       <h3 id="lote-editar-titulo">Editar lote</h3>
       <form id="formulario-editar-lote">
+        <label>Manzana
+          <input type="text" id="editar-lote-manzana" data-testid="editar-lote-manzana" />
+        </label>
+        <label>Lote
+          <input type="text" id="editar-lote-numero" data-testid="editar-lote-numero" />
+        </label>
+        <label>Nomenclatura catastral
+          <input type="text" id="editar-lote-nomenclatura" data-testid="editar-lote-nomenclatura" />
+        </label>
+        <label>Superficie (m²)
+          <input type="number" id="editar-lote-superficie" data-testid="editar-lote-superficie" min="1" step="0.01" />
+        </label>
         <label>Estado
           <select id="editar-lote-estado" data-testid="editar-lote-estado" required>
             <option value="disponible">Disponible</option>

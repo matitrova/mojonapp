@@ -306,24 +306,37 @@ button:active {
   display: none !important;
 }
 
+/* Antes era una "×" suelta sin fondo — poco visible, y hacía que
+   tentara más usar el botón "atrás" del navegador para salir de una
+   hoja/panel (que no cierra nada acá adentro: te saca de la app entera,
+   porque esto no es navegación real de páginas). Ahora es un botón con
+   forma y contraste propios, para que se note que hay algo para tocar
+   ahí y no haga falta recurrir al del navegador. */
 .btn-cerrar {
   position: absolute;
   top: 8px;
   right: 12px;
-  background: none;
-  border: none;
-  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--color-fondo-alterno);
+  border: 1px solid var(--color-borde);
+  border-radius: 50%;
+  font-size: 1.3rem;
   line-height: 1;
   color: var(--color-texto-secundario);
   cursor: pointer;
 }
 
 .btn-cerrar:hover {
+  background: var(--color-borde);
   color: var(--color-texto);
 }
 
 #ficha-titulo {
-  margin: 0 24px 10px 0;
+  margin: 0 46px 10px 0;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--color-primario-oscuro);

@@ -698,6 +698,10 @@ const elLoteVistaEditar = document.getElementById("lote-vista-editar");
 const elLoteEditarTitulo = document.getElementById("lote-editar-titulo");
 const elLoteEditarVolver = document.getElementById("lote-editar-volver");
 const formularioEditarLote = document.getElementById("formulario-editar-lote");
+const elEditarLoteManzana = document.getElementById("editar-lote-manzana");
+const elEditarLoteNumero = document.getElementById("editar-lote-numero");
+const elEditarLoteNomenclatura = document.getElementById("editar-lote-nomenclatura");
+const elEditarLoteSuperficie = document.getElementById("editar-lote-superficie");
 const elEditarLoteEstado = document.getElementById("editar-lote-estado");
 const elEditarLotePrecio = document.getElementById("editar-lote-precio");
 const elEditarLoteSector = document.getElementById("editar-lote-sector");
@@ -815,6 +819,10 @@ function mostrarEditarLoteDesdeGrilla(feature) {
   loteEditandoDesdeGrilla = feature;
   const p = feature.properties;
   elLoteEditarTitulo.textContent = `Editar ${tituloLote(p)}`;
+  elEditarLoteManzana.value = p.manzana || "";
+  elEditarLoteNumero.value = p.lote || "";
+  elEditarLoteNomenclatura.value = p.nomenclatura || "";
+  elEditarLoteSuperficie.value = p.superficie_m2 ?? "";
   elEditarLoteEstado.value = p.estado || "disponible";
   elEditarLotePrecio.value = p.precio_usd ?? "";
   poblarSelectSector(elEditarLoteSector, p.sector);
@@ -837,22 +845,43 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
   if (!loteEditandoDesdeGrilla) return;
   elEditarLoteError.classList.add("oculto");
 
-  const datos = {
-    estado: elEditarLoteEstado.value,
-    precio_usd: elEditarLotePrecio.value.trim() === "" ? null : Number(elEditarLotePrecio.value),
-    sector: elEditarLoteSector.value.trim() || null,
-    servicios: {
-      luz: elEditarLoteServicioLuz.checked,
-      agua: elEditarLoteServicioAgua.checked,
-      gas: elEditarLoteServicioGas.checked,
-      cloaca: elEditarLoteServicioCloaca.checked
-    },
-    observaciones: elEditarLoteObservaciones.value.trim() || null
-  };
-
   const boton = formularioEditarLote.querySelector('button[type="submit"]');
   boton.disabled = true;
   try {
+    const nomenclatura = elEditarLoteNomenclatura.value.trim() || null;
+
+    // Mismo chequeo que "Cargar a mano": si esta nomenclatura ya está en
+    // OTRO lote, avisar en vez de dejar dos lotes con la misma. Se
+    // excluye el propio lote de la búsqueda — si no cambió la
+    // nomenclatura (el caso más común), no tiene que chocar consigo
+    // mismo.
+    if (nomenclatura) {
+      const yaExiste = await getDocs(
+        query(collection(db, COLECCION_LOTES), where("nomenclatura", "==", nomenclatura))
+      );
+      const loEstaUsandoOtroLote = yaExiste.docs.some((d) => d.id !== loteEditandoDesdeGrilla.id);
+      if (loEstaUsandoOtroLote) {
+        throw new Error(`Ya hay otro lote cargado con la nomenclatura ${nomenclatura}.`);
+      }
+    }
+
+    const datos = {
+      manzana: elEditarLoteManzana.value.trim() || null,
+      lote: elEditarLoteNumero.value.trim() || null,
+      nomenclatura,
+      superficie_m2: elEditarLoteSuperficie.value.trim() === "" ? null : Number(elEditarLoteSuperficie.value),
+      estado: elEditarLoteEstado.value,
+      precio_usd: elEditarLotePrecio.value.trim() === "" ? null : Number(elEditarLotePrecio.value),
+      sector: elEditarLoteSector.value.trim() || null,
+      servicios: {
+        luz: elEditarLoteServicioLuz.checked,
+        agua: elEditarLoteServicioAgua.checked,
+        gas: elEditarLoteServicioGas.checked,
+        cloaca: elEditarLoteServicioCloaca.checked
+      },
+      observaciones: elEditarLoteObservaciones.value.trim() || null
+    };
+
     await updateDoc(doc(db, COLECCION_LOTES, loteEditandoDesdeGrilla.id), datos);
     Object.assign(loteEditandoDesdeGrilla.properties, datos);
     mostrarListaLotesGrilla();
@@ -861,7 +890,7 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
     elEditarLoteError.textContent =
       error.code === "permission-denied"
         ? "No tenés permiso para editar este lote."
-        : "No se pudieron guardar los cambios.";
+        : error.message || "No se pudieron guardar los cambios.";
     elEditarLoteError.classList.remove("oculto");
   } finally {
     boton.disabled = false;
