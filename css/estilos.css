@@ -578,6 +578,36 @@ button:active {
   margin-top: 10px;
 }
 
+#editor-sector {
+  margin: -8px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#editor-sector label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+#editor-sector input {
+  font: inherit;
+  font-weight: 400;
+  color: var(--color-texto);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 10px;
+}
+
+#editor-sector .botones-alternativos {
+  margin-top: 2px;
+}
+
 #formulario-login button[type="submit"],
 #formulario-lote button[type="submit"],
 #formulario-perfil button[type="submit"],
@@ -802,13 +832,56 @@ button:active {
   position: static;
 }
 
+/* Filtros de la vista en grilla: sector/estado, para encontrar un lote
+   puntual rápido cuando hay muchos cargados. */
+#vista-lista-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+}
+
+#vista-lista-filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+#vista-lista-filtros select {
+  font: inherit;
+  min-width: 160px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--color-texto);
+}
+
+#vista-lista-sin-resultados {
+  color: var(--color-texto-secundario);
+  font-size: 0.9rem;
+}
+
 #vista-lista-vacio {
   color: var(--color-texto-secundario);
   font-size: 0.9rem;
 }
 
+/* La tabla nunca debe desbordar la pantalla horizontalmente — con
+   varias columnas (Lote, Sector, Superficie, Estado...) no entra
+   cómoda en un celular, así que scrollea ella sola en vez de romper
+   el layout de toda la página. */
+.tabla-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .tabla-panel {
   width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
   font-size: 0.82rem;
   margin-bottom: 16px;

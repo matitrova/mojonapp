@@ -82,6 +82,11 @@
     <button id="cerrar-ficha" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     <h2 id="ficha-titulo" data-testid="ficha-titulo"></h2>
     <dl class="ficha-datos">
+      <dt>Sector</dt>
+      <dd>
+        <span id="ficha-sector" data-testid="ficha-sector"></span>
+        <button id="btn-editar-sector" class="oculto btn-link" type="button" data-testid="btn-editar-sector">Editar</button>
+      </dd>
       <dt>Superficie</dt><dd id="ficha-superficie" data-testid="ficha-superficie"></dd>
       <dt>Estado</dt><dd id="ficha-estado" data-testid="ficha-estado"></dd>
       <dt>Precio</dt><dd id="ficha-precio" data-testid="ficha-precio"></dd>
@@ -113,6 +118,16 @@
         <button type="button" id="btn-cancelar-servicios" data-testid="btn-cancelar-servicios">Cancelar</button>
       </div>
       <p id="editor-servicios-error" class="mensaje-error oculto" data-testid="editor-servicios-error"></p>
+    </div>
+    <div id="editor-sector" class="oculto" data-testid="editor-sector">
+      <label>Sector / zona
+        <input type="text" id="editar-sector-valor" data-testid="editar-sector-valor" placeholder="Ej: Zona Norte, Cerro de Oro..." />
+      </label>
+      <div class="botones-alternativos">
+        <button type="button" id="btn-guardar-sector" data-testid="btn-guardar-sector">Guardar</button>
+        <button type="button" id="btn-cancelar-sector" data-testid="btn-cancelar-sector">Cancelar</button>
+      </div>
+      <p id="editor-sector-error" class="mensaje-error oculto" data-testid="editor-sector-error"></p>
     </div>
     <div class="ficha-botones">
       <button id="btn-como-llegar" data-testid="btn-como-llegar">Ver en el mapa</button>
@@ -150,6 +165,9 @@
       </label>
       <label>Nomenclatura catastral
         <input type="text" id="lote-nomenclatura" data-testid="lote-nomenclatura" />
+      </label>
+      <label>Sector / zona
+        <input type="text" id="lote-sector" data-testid="lote-sector" placeholder="Ej: Zona Norte, Cerro de Oro..." />
       </label>
       <label>Superficie (m²)
         <input type="number" id="lote-superficie" data-testid="lote-superficie" required min="1" step="0.01" />
@@ -274,12 +292,14 @@
 
     <section id="seccion-usuarios" class="seccion-admin">
       <div id="usuarios-vista-lista">
-        <table class="tabla-panel" data-testid="tabla-usuarios">
-          <thead>
-            <tr><th>Email</th><th>Perfil</th><th></th></tr>
-          </thead>
-          <tbody id="tabla-usuarios-cuerpo"></tbody>
-        </table>
+        <div class="tabla-scroll">
+          <table class="tabla-panel" data-testid="tabla-usuarios">
+            <thead>
+              <tr><th>Email</th><th>Perfil</th><th></th></tr>
+            </thead>
+            <tbody id="tabla-usuarios-cuerpo"></tbody>
+          </table>
+        </div>
         <button type="button" id="btn-agregar-usuario" data-testid="btn-agregar-usuario">+ Agregar usuario</button>
       </div>
 
@@ -305,12 +325,14 @@
 
     <section id="seccion-perfiles" class="seccion-admin oculto">
       <div id="perfiles-vista-lista">
-        <table class="tabla-panel" data-testid="tabla-perfiles">
-          <thead>
-            <tr><th>Nombre</th><th>Permisos</th><th></th></tr>
-          </thead>
-          <tbody id="tabla-perfiles-cuerpo"></tbody>
-        </table>
+        <div class="tabla-scroll">
+          <table class="tabla-panel" data-testid="tabla-perfiles">
+            <thead>
+              <tr><th>Nombre</th><th>Permisos</th><th></th></tr>
+            </thead>
+            <tbody id="tabla-perfiles-cuerpo"></tbody>
+          </table>
+        </div>
         <button type="button" id="btn-agregar-perfil" data-testid="btn-agregar-perfil">+ Nuevo perfil</button>
       </div>
 
@@ -345,20 +367,39 @@
       <h2>Lotes cargados</h2>
       <button id="cerrar-vista-lista" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     </div>
+    <div id="vista-lista-filtros" data-testid="vista-lista-filtros">
+      <label>Sector
+        <select id="filtro-sector" data-testid="filtro-sector">
+          <option value="">Todos los sectores</option>
+        </select>
+      </label>
+      <label>Estado
+        <select id="filtro-estado" data-testid="filtro-estado">
+          <option value="">Todos los estados</option>
+          <option value="disponible">Disponible</option>
+          <option value="reservado">Reservado</option>
+          <option value="vendido">Vendido</option>
+        </select>
+      </label>
+    </div>
     <p id="vista-lista-vacio" class="oculto">Todavía no hay lotes cargados.</p>
-    <table id="tabla-lotes" class="tabla-panel" data-testid="tabla-lotes">
-      <thead>
-        <tr>
-          <th>Lote</th>
-          <th>Superficie</th>
-          <th>Estado</th>
-          <th>Precio</th>
-          <th>Servicios</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tabla-lotes-cuerpo"></tbody>
-    </table>
+    <p id="vista-lista-sin-resultados" class="oculto">Ningún lote coincide con el filtro.</p>
+    <div class="tabla-scroll">
+      <table id="tabla-lotes" class="tabla-panel" data-testid="tabla-lotes">
+        <thead>
+          <tr>
+            <th>Lote</th>
+            <th>Sector</th>
+            <th>Superficie</th>
+            <th>Estado</th>
+            <th>Precio</th>
+            <th>Servicios</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-lotes-cuerpo"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Panel de navegación a pie / brújula -->

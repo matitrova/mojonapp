@@ -453,6 +453,14 @@ const elBtnGuardarServicios = document.getElementById("btn-guardar-servicios");
 const elBtnCancelarServicios = document.getElementById("btn-cancelar-servicios");
 const elEditorServiciosError = document.getElementById("editor-servicios-error");
 
+const elSector = document.getElementById("ficha-sector");
+const elBtnEditarSector = document.getElementById("btn-editar-sector");
+const elEditorSector = document.getElementById("editor-sector");
+const elEditarSectorValor = document.getElementById("editar-sector-valor");
+const elBtnGuardarSector = document.getElementById("btn-guardar-sector");
+const elBtnCancelarSector = document.getElementById("btn-cancelar-sector");
+const elEditorSectorError = document.getElementById("editor-sector-error");
+
 // Varios lotes reales todavía no tienen nomenclatura catastral asignada ni
 // manzana/lote definidos (loteos nuevos, en trámite). Se arma el título con
 // el mejor identificador disponible, sin mostrar nunca "null".
@@ -467,6 +475,7 @@ function mostrarFicha(feature) {
   const p = feature.properties;
 
   elTitulo.textContent = tituloLote(p);
+  elSector.textContent = p.sector || "Sin datos";
   // superficie_m2 puede venir en null: el catastro no siempre la declara
   // para sub-parcelas (se vio con datos reales de "+ Manzana"), y a
   // diferencia del formulario manual, la importación en bloque no pasa
@@ -479,6 +488,7 @@ function mostrarFicha(feature) {
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
   cerrarEditorServicios(); // por si había quedado abierto en el lote anterior
+  cerrarEditorSector();
 
   abrirHoja(elFicha);
 }
@@ -543,6 +553,53 @@ elBtnGuardarServicios.addEventListener("click", async () => {
   }
 });
 
+// Editar sector/zona: es el corredor quien organiza su propia cartera
+// (el catastro no tiene idea de "sectores"), así que casi todo lote
+// importado necesita que alguien se lo asigne después. Mismo criterio
+// de permiso y mismo patrón que "Editar servicios".
+function cerrarEditorSector() {
+  elEditorSector.classList.add("oculto");
+  elSector.classList.remove("oculto");
+  elBtnEditarSector.classList.toggle(
+    "oculto",
+    !lotePolyLayerSeleccionado || !puedeEditarLote(lotePolyLayerSeleccionado)
+  );
+  elEditorSectorError.classList.add("oculto");
+}
+
+elBtnEditarSector.addEventListener("click", () => {
+  elEditarSectorValor.value = lotePolyLayerSeleccionado?.properties?.sector || "";
+  elSector.classList.add("oculto");
+  elBtnEditarSector.classList.add("oculto");
+  elEditorSector.classList.remove("oculto");
+  elEditarSectorValor.focus();
+});
+
+elBtnCancelarSector.addEventListener("click", cerrarEditorSector);
+
+elBtnGuardarSector.addEventListener("click", async () => {
+  if (!lotePolyLayerSeleccionado) return;
+  const sector = elEditarSectorValor.value.trim() || null;
+
+  elBtnGuardarSector.disabled = true;
+  elEditorSectorError.classList.add("oculto");
+  try {
+    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { sector });
+    lotePolyLayerSeleccionado.properties.sector = sector;
+    elSector.textContent = sector || "Sin datos";
+    cerrarEditorSector();
+    cargarLotesDesdeFirestore(); // refresca mapa y grilla; la ficha ya se actualizó sola arriba
+  } catch (error) {
+    elEditorSectorError.textContent =
+      error.code === "permission-denied"
+        ? "No tenés permiso para editar el sector. Iniciá sesión de nuevo."
+        : "No se pudo guardar el sector.";
+    elEditorSectorError.classList.remove("oculto");
+  } finally {
+    elBtnGuardarSector.disabled = false;
+  }
+});
+
 // "Borrar lote": solo visible para un corredor logueado (corredorLogueado
 // se actualiza en onAuthStateChanged, más abajo). Pide confirmación
 // porque borrar un documento de Firestore no se puede deshacer. La usan
@@ -583,21 +640,53 @@ elBtnBorrarLote.addEventListener("click", () => {
 const elBtnVerLista = document.getElementById("btn-ver-lista");
 const elVistaLista = document.getElementById("vista-lista");
 const elVistaListaVacio = document.getElementById("vista-lista-vacio");
+const elVistaListaSinResultados = document.getElementById("vista-lista-sin-resultados");
 const elTablaLotes = document.getElementById("tabla-lotes");
 const elTablaLotesCuerpo = document.getElementById("tabla-lotes-cuerpo");
+const elFiltroSector = document.getElementById("filtro-sector");
+const elFiltroEstado = document.getElementById("filtro-estado");
+
+// Sectores/zonas los inventa cada corredor a mano (ver "Sector" en
+// "Cargar a mano" y "Editar" en la ficha) — no hay una lista fija, así
+// que el filtro se arma solo con lo que ya se cargó.
+function actualizarOpcionesFiltroSector() {
+  const seleccionPrevia = elFiltroSector.value;
+  const sectores = [...new Set(lotesActuales.map((f) => f.properties.sector).filter(Boolean))].sort();
+  elFiltroSector.innerHTML =
+    '<option value="">Todos los sectores</option>' +
+    sectores.map((s) => `<option value="${s}">${s}</option>`).join("");
+  if (sectores.includes(seleccionPrevia)) elFiltroSector.value = seleccionPrevia;
+}
+
+function lotesFiltrados() {
+  return lotesActuales.filter((feature) => {
+    const p = feature.properties;
+    if (elFiltroSector.value && p.sector !== elFiltroSector.value) return false;
+    if (elFiltroEstado.value && p.estado !== elFiltroEstado.value) return false;
+    return true;
+  });
+}
 
 function actualizarVistaLista() {
+  actualizarOpcionesFiltroSector();
+  const lotes = lotesFiltrados();
+
   elTablaLotesCuerpo.innerHTML = "";
   elVistaListaVacio.classList.toggle("oculto", lotesActuales.length > 0);
-  elTablaLotes.classList.toggle("oculto", lotesActuales.length === 0);
+  // Distinto de "no hay lotes cargados": acá SÍ hay lotes, pero ninguno
+  // coincide con el sector/estado elegido — un mensaje genérico de
+  // "vacío" hubiera hecho pensar que se perdió todo lo cargado.
+  elVistaListaSinResultados.classList.toggle("oculto", lotesActuales.length === 0 || lotes.length > 0);
+  elTablaLotes.classList.toggle("oculto", lotes.length === 0);
 
-  lotesActuales.forEach((feature) => {
+  lotes.forEach((feature) => {
     const p = feature.properties;
     const fila = document.createElement("tr");
     fila.className = "fila-lote";
     fila.dataset.loteId = feature.id; // permite ubicar una fila puntual (tests, debug)
     fila.innerHTML = `
       <td>${tituloLote(p)}</td>
+      <td>${p.sector || "—"}</td>
       <td>${p.superficie_m2 == null ? "—" : `${p.superficie_m2} m²`}</td>
       <td>${ETIQUETA_ESTADO[p.estado] || p.estado}</td>
       <td>${p.precio_usd == null ? "—" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`}</td>
@@ -629,6 +718,9 @@ function actualizarVistaLista() {
     elTablaLotesCuerpo.appendChild(fila);
   });
 }
+
+elFiltroSector.addEventListener("change", actualizarVistaLista);
+elFiltroEstado.addEventListener("change", actualizarVistaLista);
 
 elBtnVerLista.addEventListener("click", () => {
   const mostrar = elVistaLista.classList.contains("oculto");
@@ -875,11 +967,12 @@ onAuthStateChanged(auth, async (usuario) => {
 
   // Si la ficha de un lote está abierta al cambiar de sesión (login,
   // logout, o root reasignando el perfil de alguien), "Borrar lote" y
-  // "Editar servicios" tienen que reflejar el permiso nuevo sin esperar
-  // a que se cierre y se vuelva a abrir.
+  // "Editar servicios"/"Editar sector" tienen que reflejar el permiso
+  // nuevo sin esperar a que se cierre y se vuelva a abrir.
   if (lotePolyLayerSeleccionado) {
     document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(lotePolyLayerSeleccionado));
     cerrarEditorServicios();
+    cerrarEditorSector();
   }
 
   // El alcance de la consulta a Firestore depende del permiso
@@ -898,6 +991,7 @@ const formularioLote = document.getElementById("formulario-lote");
 const elLoteManzana = document.getElementById("lote-manzana");
 const elLoteNumero = document.getElementById("lote-numero");
 const elLoteNomenclatura = document.getElementById("lote-nomenclatura");
+const elLoteSector = document.getElementById("lote-sector");
 const elLoteSuperficie = document.getElementById("lote-superficie");
 const elLoteEstado = document.getElementById("lote-estado");
 const elLotePrecio = document.getElementById("lote-precio");
@@ -1015,6 +1109,7 @@ formularioLote.addEventListener("submit", async (evento) => {
       manzana: elLoteManzana.value.trim() || null,
       lote: elLoteNumero.value.trim() || null,
       nomenclatura,
+      sector: elLoteSector.value.trim() || null,
       superficie_m2: Number(elLoteSuperficie.value),
       estado: elLoteEstado.value,
       precio_usd: elLotePrecio.value.trim() === "" ? null : Number(elLotePrecio.value),
