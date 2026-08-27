@@ -38,12 +38,13 @@ service cloud.firestore {
 
     // Catálogo de nombres de sector/zona que alimenta el combo al
     // cargar o editar un lote. Cualquier logueado puede LEERLO (lo
-    // necesita para completar ese combo), pero administrarlo (crear/
-    // editar/borrar sectores) es lo mismo que administrar usuarios —
-    // ambos son "cómo se configura el sistema para todos".
+    // necesita para completar ese combo). Administrarlo (crear/editar/
+    // borrar sectores) es un permiso propio, "administrar_sectores" —
+    // a propósito distinto de "administrar_usuarios": cualquier corredor
+    // organiza su propia cartera en zonas, no depende de root para eso.
     match /sectores/{sectorId} {
       allow read: if request.auth != null;
-      allow write: if esRoot() || tienePermiso('administrar_usuarios');
+      allow write: if esRoot() || tienePermiso('administrar_sectores');
     }
 
     // El catálogo de lotes sigue siendo público en lectura — ese es el

@@ -109,17 +109,41 @@ async function cargarSectores() {
   }
 }
 
-// valorActual: el sector que ya tiene el lote (si lo tiene), para
-// preseleccionarlo — y para no perderlo si ya no está en el catálogo
-// (se borró después de asignárselo a este lote, o se cargó a mano antes
-// de que existiera esta lista).
-function poblarSelectSector(elSelect, valorActual) {
-  const opciones = sectoresActuales.map((s) => `<option value="${s.nombre}">${s.nombre}</option>`);
-  if (valorActual && !sectoresActuales.some((s) => s.nombre === valorActual)) {
-    opciones.push(`<option value="${valorActual}">${valorActual} (fuera del catálogo)</option>`);
+// Un lote puede pertenecer a más de un sector/zona a la vez (pedido
+// explícito: "categorizar y sectorizar" no es excluyente), así que el
+// campo es una lista de checkboxes — mismo patrón visual que
+// "Servicios" — en vez de un combo de una sola opción.
+//
+// elFieldset: el <fieldset> contenedor (ya tiene su <legend> en el HTML,
+// se preserva). valoresActuales: array de nombres que el lote ya tiene
+// asignados, para tildarlos — y para no perder uno que ya no está en el
+// catálogo (se borró después de asignárselo, o se cargó antes de que
+// existiera esta lista), agregándolo como opción extra marcada.
+function poblarCheckboxesSector(elFieldset, valoresActuales) {
+  const actuales = valoresActuales || [];
+  const nombres = sectoresActuales.map((s) => s.nombre);
+  const fueraDelCatalogo = actuales.filter((v) => !nombres.includes(v));
+
+  const legend = elFieldset.querySelector("legend");
+  const filas = [...nombres, ...fueraDelCatalogo].map((nombre) => {
+    const etiqueta = fueraDelCatalogo.includes(nombre) ? `${nombre} (fuera del catálogo)` : nombre;
+    const marcado = actuales.includes(nombre) ? "checked" : "";
+    return `<label class="opcion-servicio"><input type="checkbox" value="${nombre}" ${marcado} /> ${etiqueta}</label>`;
+  });
+
+  elFieldset.innerHTML = "";
+  if (legend) elFieldset.appendChild(legend);
+  if (filas.length === 0) {
+    elFieldset.insertAdjacentHTML("beforeend", '<p class="texto-secundario-chico">No hay sectores creados todavía.</p>');
+  } else {
+    elFieldset.insertAdjacentHTML("beforeend", filas.join(""));
   }
-  elSelect.innerHTML = '<option value="">Sin sector</option>' + opciones.join("");
-  elSelect.value = valorActual || "";
+}
+
+// Lee qué checkboxes quedaron tildados en un contenedor armado por
+// poblarCheckboxesSector(), en el mismo orden en que se muestran.
+function leerCheckboxesSector(elFieldset) {
+  return Array.from(elFieldset.querySelectorAll('input[type="checkbox"]:checked')).map((c) => c.value);
 }
 
 // ---------------------------------------------------------------------------
@@ -494,7 +518,7 @@ const elEditorServiciosError = document.getElementById("editor-servicios-error")
 const elSector = document.getElementById("ficha-sector");
 const elBtnEditarSector = document.getElementById("btn-editar-sector");
 const elEditorSector = document.getElementById("editor-sector");
-const elEditarSectorValor = document.getElementById("editar-sector-valor");
+const elEditarSectorCheckboxes = document.getElementById("editar-sector-checkboxes");
 const elBtnGuardarSector = document.getElementById("btn-guardar-sector");
 const elBtnCancelarSector = document.getElementById("btn-cancelar-sector");
 const elEditorSectorError = document.getElementById("editor-sector-error");
@@ -513,7 +537,7 @@ function mostrarFicha(feature) {
   const p = feature.properties;
 
   elTitulo.textContent = tituloLote(p);
-  elSector.textContent = p.sector || "Sin datos";
+  elSector.textContent = p.sectores?.length ? p.sectores.join(", ") : "Sin datos";
   // superficie_m2 puede venir en null: el catastro no siempre la declara
   // para sub-parcelas (se vio con datos reales de "+ Manzana"), y a
   // diferencia del formulario manual, la importación en bloque no pasa
@@ -606,25 +630,24 @@ function cerrarEditorSector() {
 }
 
 elBtnEditarSector.addEventListener("click", () => {
-  poblarSelectSector(elEditarSectorValor, lotePolyLayerSeleccionado?.properties?.sector);
+  poblarCheckboxesSector(elEditarSectorCheckboxes, lotePolyLayerSeleccionado?.properties?.sectores);
   elSector.classList.add("oculto");
   elBtnEditarSector.classList.add("oculto");
   elEditorSector.classList.remove("oculto");
-  elEditarSectorValor.focus();
 });
 
 elBtnCancelarSector.addEventListener("click", cerrarEditorSector);
 
 elBtnGuardarSector.addEventListener("click", async () => {
   if (!lotePolyLayerSeleccionado) return;
-  const sector = elEditarSectorValor.value.trim() || null;
+  const sectores = leerCheckboxesSector(elEditarSectorCheckboxes);
 
   elBtnGuardarSector.disabled = true;
   elEditorSectorError.classList.add("oculto");
   try {
-    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { sector });
-    lotePolyLayerSeleccionado.properties.sector = sector;
-    elSector.textContent = sector || "Sin datos";
+    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { sectores });
+    lotePolyLayerSeleccionado.properties.sectores = sectores;
+    elSector.textContent = sectores.length ? sectores.join(", ") : "Sin datos";
     cerrarEditorSector();
     cargarLotesDesdeFirestore(); // refresca mapa y grilla; la ficha ya se actualizó sola arriba
   } catch (error) {
@@ -700,12 +723,12 @@ const elEditarLoteObservaciones = document.getElementById("editar-lote-observaci
 const elEditarLoteError = document.getElementById("editar-lote-error");
 let loteEditandoDesdeGrilla = null; // feature actual del formulario de edición
 
-// Sectores/zonas los inventa cada corredor a mano (ver "Sector" en
-// "Cargar a mano" y "Editar" en la ficha) — no hay una lista fija, así
-// que el filtro se arma solo con lo que ya se cargó.
+// El filtro se arma con lo que ya se cargó (un lote puede tener varios
+// sectores a la vez), no con el catálogo entero — no tiene sentido
+// ofrecer para filtrar un sector que ningún lote tiene puesto todavía.
 function actualizarOpcionesFiltroSector() {
   const seleccionPrevia = elFiltroSector.value;
-  const sectores = [...new Set(lotesActuales.map((f) => f.properties.sector).filter(Boolean))].sort();
+  const sectores = [...new Set(lotesActuales.flatMap((f) => f.properties.sectores || []))].sort();
   elFiltroSector.innerHTML =
     '<option value="">Todos los sectores</option>' +
     sectores.map((s) => `<option value="${s}">${s}</option>`).join("");
@@ -715,7 +738,7 @@ function actualizarOpcionesFiltroSector() {
 function lotesFiltrados() {
   return lotesActuales.filter((feature) => {
     const p = feature.properties;
-    if (elFiltroSector.value && p.sector !== elFiltroSector.value) return false;
+    if (elFiltroSector.value && !(p.sectores || []).includes(elFiltroSector.value)) return false;
     if (elFiltroEstado.value && p.estado !== elFiltroEstado.value) return false;
     return true;
   });
@@ -740,7 +763,7 @@ function actualizarVistaLista() {
     fila.dataset.loteId = feature.id; // permite ubicar una fila puntual (tests, debug)
     fila.innerHTML = `
       <td>${tituloLote(p)}</td>
-      <td>${p.sector || "—"}</td>
+      <td>${p.sectores?.length ? p.sectores.join(", ") : "—"}</td>
       <td>${p.superficie_m2 == null ? "—" : `${p.superficie_m2} m²`}</td>
       <td>${ETIQUETA_ESTADO[p.estado] || p.estado}</td>
       <td>${p.precio_usd == null ? "—" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`}</td>
@@ -808,7 +831,7 @@ function mostrarEditarLoteDesdeGrilla(feature) {
   elLoteEditarTitulo.textContent = `Editar ${tituloLote(p)}`;
   elEditarLoteEstado.value = p.estado || "disponible";
   elEditarLotePrecio.value = p.precio_usd ?? "";
-  poblarSelectSector(elEditarLoteSector, p.sector);
+  poblarCheckboxesSector(elEditarLoteSector, p.sectores);
   const s = p.servicios || {};
   elEditarLoteServicioLuz.checked = !!s.luz;
   elEditarLoteServicioAgua.checked = !!s.agua;
@@ -831,7 +854,7 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
   const datos = {
     estado: elEditarLoteEstado.value,
     precio_usd: elEditarLotePrecio.value.trim() === "" ? null : Number(elEditarLotePrecio.value),
-    sector: elEditarLoteSector.value.trim() || null,
+    sectores: leerCheckboxesSector(elEditarLoteSector),
     servicios: {
       luz: elEditarLoteServicioLuz.checked,
       agua: elEditarLoteServicioAgua.checked,
@@ -1079,7 +1102,11 @@ function actualizarUIPorPermisos() {
   elBtnAbrirParcela.classList.toggle("oculto", !tienePermiso("cargar_lote"));
   elBtnCargarLote.classList.toggle("oculto", !tienePermiso("cargar_lote"));
   document.getElementById("drawer-grupo-seguridad").classList.toggle("oculto", !tienePermiso("administrar_usuarios"));
-  document.getElementById("drawer-grupo-sectores").classList.toggle("oculto", !tienePermiso("administrar_usuarios"));
+  // Sectores es un permiso propio, distinto de "administrar_usuarios": un
+  // corredor puede organizar su propia cartera en zonas sin depender de
+  // root, y root puede sacarle ese permiso puntual sin tocarle el resto.
+  // Mismo criterio en firestore.rules.
+  document.getElementById("drawer-grupo-sectores").classList.toggle("oculto", !tienePermiso("administrar_sectores"));
 }
 
 onAuthStateChanged(auth, async (usuario) => {
@@ -1095,7 +1122,7 @@ onAuthStateChanged(auth, async (usuario) => {
     // El catálogo de sectores necesita sesión para leerse (ver
     // firestore.rules), así que se carga acá y no al arrancar la app.
     await cargarSectores();
-    poblarSelectSector(elLoteSector, elLoteSector.value);
+    poblarCheckboxesSector(elLoteSector, leerCheckboxesSector(elLoteSector));
   } else {
     elBtnAbrirLogin.classList.remove("oculto");
     elSesionActiva.classList.add("oculto");
@@ -1161,7 +1188,7 @@ function limpiarFormLote() {
 
 elBtnCargarLote.addEventListener("click", () => {
   limpiarFormLote();
-  poblarSelectSector(elLoteSector, null);
+  poblarCheckboxesSector(elLoteSector, null);
   abrirHoja(elFormLote);
 });
 document.getElementById("cerrar-form-lote").addEventListener("click", () => {
@@ -1255,7 +1282,7 @@ formularioLote.addEventListener("submit", async (evento) => {
       manzana: elLoteManzana.value.trim() || null,
       lote: elLoteNumero.value.trim() || null,
       nomenclatura,
-      sector: elLoteSector.value.trim() || null,
+      sectores: leerCheckboxesSector(elLoteSector),
       superficie_m2: Number(elLoteSuperficie.value),
       estado: elLoteEstado.value,
       precio_usd: elLotePrecio.value.trim() === "" ? null : Number(elLotePrecio.value),
@@ -1551,7 +1578,7 @@ function cargarParcelaEnFormLote(feature) {
   elLoteManzana.value = manzanaDesdeNomenclaturaDeParcela(nomenclatura) || "";
   elLoteNumero.value = feature.properties.ETIQUETA || "";
   elLoteNomenclatura.value = nomenclatura;
-  poblarSelectSector(elLoteSector, null);
+  poblarCheckboxesSector(elLoteSector, null);
   elLoteSuperficie.value = superficieDesdeNombreCatastro(feature.properties.NOMBRE) ?? "";
   elLoteEstado.value = "disponible";
   elLotePrecio.value = "";
@@ -1999,6 +2026,7 @@ const PERMISOS_INFO = [
   { clave: "borrar_lote_propio", etiqueta: "Borrar lotes propios" },
   { clave: "borrar_lote_ajeno", etiqueta: "Borrar lotes ajenos" },
   { clave: "ver_todos_los_lotes", etiqueta: "Ver todos los lotes" },
+  { clave: "administrar_sectores", etiqueta: "Administrar sectores/zonas" },
   { clave: "administrar_usuarios", etiqueta: "Administrar usuarios" }
 ];
 
@@ -2306,7 +2334,7 @@ document.getElementById("cerrar-panel-admin").addEventListener("click", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Panel "Sectores" (root / permiso administrar_usuarios): catálogo de
+// Panel "Sectores" (root / permiso administrar_sectores): catálogo de
 // nombres que ofrece el combo de Sector/zona en los lotes. Mismo patrón
 // de lista+form que Perfiles, pero sin pestañas (una sola entidad).
 // ---------------------------------------------------------------------------
