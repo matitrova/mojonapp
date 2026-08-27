@@ -38,7 +38,16 @@ const COLECCION_LOTES = "lotes";
 // se encontró mirando qué pide el navegador del visor. Puede cambiar o
 // dejar de andar sin aviso — si eso pasa, "Traer manzana del catastro"
 // deja de funcionar pero el resto de la app sigue igual.
-const CATASTRO_WFS_URL = "http://visualcatsl.dyndns.info/geoserver/SanLuis/ows";
+//
+// No se pide directo: ese GeoServer solo responde por HTTP (sin TLS
+// válido), y el navegador bloquea ese pedido como "mixed content" desde
+// una página HTTPS como mojonapp.com.ar. Se pasa por
+// netlify/functions/catastro-proxy.js, que sí puede hablarle por HTTP
+// (corre en el servidor, no en el navegador) y devuelve la respuesta
+// por HTTPS. En local (servidor de pruebas por HTTP) esta ruta no
+// existe — pedirWfs() cae al WFS real directo en ese caso, ver abajo.
+const CATASTRO_WFS_URL =
+  location.protocol === "https:" ? "/.netlify/functions/catastro-proxy" : "http://visualcatsl.dyndns.info/geoserver/SanLuis/ows";
 
 const COLOR_POR_ESTADO = {
   disponible: "#2e7d32",
