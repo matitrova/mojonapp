@@ -61,6 +61,22 @@ const ETIQUETA_ESTADO = {
   vendido: "Vendido"
 };
 
+// Texto de estado listo para mostrar, con la fecha de vencimiento de la
+// reserva si corresponde ("Reservado (hasta 15/09/2026)" o "Reservado
+// (vencida desde 10/09/2026)" en rojo) — para que un lote reservado
+// hace rato y nunca actualizado no pase desapercibido. HTML porque el
+// "vencida" va en rojo (.texto-vencido); si no hay fecha, se devuelve
+// como texto plano (sin riesgo: ETIQUETA_ESTADO no trae HTML).
+function textoEstadoConVencimiento(p) {
+  const base = ETIQUETA_ESTADO[p.estado] || p.estado;
+  if (p.estado !== "reservado" || !p.reservado_hasta) return base;
+  const hoy = new Date().toISOString().slice(0, 10);
+  const fecha = new Date(`${p.reservado_hasta}T00:00:00`).toLocaleDateString("es-AR");
+  return p.reservado_hasta < hoy
+    ? `${base} <span class="texto-vencido">(vencida desde ${fecha})</span>`
+    : `${base} (hasta ${fecha})`;
+}
+
 // Servicios que puede tener un lote (luz, agua, gas, cloaca). El catastro
 // no trae este dato — solo se carga a mano ("Cargar a mano"), así que la
 // mayoría de los lotes importados de "+ Manzana"/"+ Parcela" no van a
@@ -90,6 +106,7 @@ let corredorLogueado = false; // se actualiza en onAuthStateChanged; true con cu
 // tienePermiso() sin necesidad de tildar cada permiso a mano.
 let miPerfilActual = null;
 let lotesActuales = []; // último resultado de cargarLotesDesdeFirestore, lo reusa la vista en lista
+let deepLinkDeLoteAbierto = false; // el "?lote=" de la URL solo se abre una vez, en la primera carga
 let sectoresActuales = []; // catálogo de zonas (colección "sectores"), alimenta los combos
 let barriosActuales = []; // catálogo de barrios (colección "barrios") — misma idea, categoría independiente de zona
 let watchId = null; // id de navigator.geolocation.watchPosition, para poder cancelarlo
@@ -616,7 +633,7 @@ function contenidoTooltipLote(feature) {
     <div>Barrio: ${p.barrio || "Sin datos"}</div>
     <div>Superficie: ${superficie}</div>
     <div>Medidas: ${textoMedidasLados(feature.geometry.coordinates[0])}</div>
-    <div>Estado: ${ETIQUETA_ESTADO[p.estado] || p.estado}</div>
+    <div>Estado: ${textoEstadoConVencimiento(p)}</div>
     <div>Precio: ${precio}</div>
   `;
 }
@@ -634,7 +651,7 @@ function mostrarFicha(feature) {
   // por el "required" del campo — puede llegar null a Firestore.
   elSuperficie.textContent = p.superficie_m2 == null ? "Sin datos" : `${p.superficie_m2} m²`;
   elMedidas.textContent = textoMedidasLados(feature.geometry.coordinates[0]);
-  elEstado.textContent = ETIQUETA_ESTADO[p.estado] || p.estado;
+  elEstado.innerHTML = textoEstadoConVencimiento(p);
   elPrecio.textContent = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   elServicios.innerHTML = renderServiciosHTML(p.servicios);
   elObservaciones.textContent = p.observaciones || "Sin datos";
@@ -876,7 +893,16 @@ const elEditarLoteNumero = document.getElementById("editar-lote-numero");
 const elEditarLoteNomenclatura = document.getElementById("editar-lote-nomenclatura");
 const elEditarLoteSuperficie = document.getElementById("editar-lote-superficie");
 const elEditarLoteEstado = document.getElementById("editar-lote-estado");
+const elEditarLoteReservadoHastaLabel = document.getElementById("editar-lote-reservado-hasta-label");
+const elEditarLoteReservadoHasta = document.getElementById("editar-lote-reservado-hasta");
 const elEditarLotePrecio = document.getElementById("editar-lote-precio");
+
+// El campo "Reservado hasta" solo tiene sentido con estado "Reservado"
+// — se muestra/oculta solo al cambiar el estado en el formulario.
+function actualizarVisibilidadReservadoHasta() {
+  elEditarLoteReservadoHastaLabel.classList.toggle("oculto", elEditarLoteEstado.value !== "reservado");
+}
+elEditarLoteEstado.addEventListener("change", actualizarVisibilidadReservadoHasta);
 const elEditarLoteSector = document.getElementById("editar-lote-sector");
 const elEditarLoteBarrio = document.getElementById("editar-lote-barrio");
 const elEditarLoteServicioLuz = document.getElementById("editar-lote-servicio-luz");
@@ -946,7 +972,7 @@ function actualizarVistaLista() {
       <td>${p.sector || "—"}</td>
       <td>${p.barrio || "—"}</td>
       <td>${p.superficie_m2 == null ? "—" : `${p.superficie_m2} m²`}</td>
-      <td>${ETIQUETA_ESTADO[p.estado] || p.estado}</td>
+      <td>${textoEstadoConVencimiento(p)}</td>
       <td>${p.precio_usd == null ? "—" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`}</td>
       <td>${p.servicios == null ? "—" : renderServiciosHTML(p.servicios)}</td>
       <td></td>
@@ -1017,6 +1043,8 @@ function mostrarEditarLoteDesdeGrilla(feature) {
   elEditarLoteNomenclatura.value = p.nomenclatura || "";
   elEditarLoteSuperficie.value = p.superficie_m2 ?? "";
   elEditarLoteEstado.value = p.estado || "disponible";
+  elEditarLoteReservadoHasta.value = p.reservado_hasta || "";
+  actualizarVisibilidadReservadoHasta();
   elEditarLotePrecio.value = p.precio_usd ?? "";
   poblarSelectSector(elEditarLoteSector, p.sector);
   poblarSelectBarrio(elEditarLoteBarrio, p.barrio);
@@ -1065,6 +1093,11 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
       nomenclatura,
       superficie_m2: elEditarLoteSuperficie.value.trim() === "" ? null : Number(elEditarLoteSuperficie.value),
       estado: elEditarLoteEstado.value,
+      // Se limpia sola si el estado deja de ser "reservado" — no tiene
+      // sentido arrastrar una fecha de reserva vieja en un lote que ya
+      // se vendió o volvió a estar disponible.
+      reservado_hasta:
+        elEditarLoteEstado.value === "reservado" ? elEditarLoteReservadoHasta.value || null : null,
       precio_usd: elEditarLotePrecio.value.trim() === "" ? null : Number(elEditarLotePrecio.value),
       sector: elEditarLoteSector.value.trim() || null,
       barrio: elEditarLoteBarrio.value.trim() || null,
@@ -1145,6 +1178,44 @@ document.getElementById("btn-como-llegar").addEventListener("click", () => {
   if (!lotePolyLayerSeleccionado) return;
   const url = construirUrlComoLlegar(lotePolyLayerSeleccionado);
   window.open(url, "_blank", "noopener");
+});
+
+// "Compartir este lote": arma un link a esta misma app con "?lote=<id>"
+// (ver el chequeo de ese parámetro en cargarLotesDesdeFirestore, más
+// abajo) — mandado por WhatsApp a un cliente, abre la app directo en la
+// ficha de ESE lote, sin que tenga que buscarlo a mano en el mapa. En
+// el celular usa el selector nativo para compartir (WhatsApp, etc.) si
+// está disponible; si no, copia el link al portapapeles.
+const elCompartirLoteMensaje = document.getElementById("compartir-lote-mensaje");
+
+document.getElementById("btn-compartir-lote").addEventListener("click", async () => {
+  if (!lotePolyLayerSeleccionado) return;
+  const url = `${location.origin}${location.pathname}?lote=${lotePolyLayerSeleccionado.id}`;
+  const titulo = tituloLote(lotePolyLayerSeleccionado.properties);
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `MojonApp - ${titulo}`, url });
+    } catch {
+      // El usuario canceló el selector de compartir, o el navegador lo
+      // bloqueó — no es un error real, no hace falta avisar nada.
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(url);
+    elCompartirLoteMensaje.textContent = "Link copiado.";
+    elCompartirLoteMensaje.classList.remove("oculto");
+    setTimeout(() => elCompartirLoteMensaje.classList.add("oculto"), 2500);
+  } catch {
+    // Sin permiso de portapapeles (o sin soportarlo, como algunos
+    // navegadores embebidos): se deja el link a la vista, seleccionable
+    // a mano, en vez de depender de prompt() — no todos los entornos lo
+    // soportan (ver quirk de testing en la memoria del proyecto).
+    elCompartirLoteMensaje.textContent = url;
+    elCompartirLoteMensaje.classList.remove("oculto");
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -1383,8 +1454,25 @@ onAuthStateChanged(auth, async (usuario) => {
   // "ver_todos_los_lotes" (ver cargarLotesDesdeFirestore): tiene que
   // volver a pedirse cada vez que cambia quién está logueado, no solo al
   // arrancar la app.
-  cargarLotesDesdeFirestore();
+  cargarLotesDesdeFirestore().then(abrirLoteDesdeUrlSiCorresponde);
 });
+
+// Si la app se abrió con "?lote=<id>" (link armado por "Compartir este
+// lote"), abre esa ficha directo apenas hay datos para buscarla — una
+// sola vez, no cada vez que cambia la sesión (login/logout también
+// disparan cargarLotesDesdeFirestore, y no hay que reabrir el deep link
+// en medio de que alguien esté usando la app).
+function abrirLoteDesdeUrlSiCorresponde() {
+  if (deepLinkDeLoteAbierto) return;
+  deepLinkDeLoteAbierto = true;
+  const idDesdeUrl = new URLSearchParams(location.search).get("lote");
+  if (!idDesdeUrl) return;
+  const feature = lotesActuales.find((f) => f.id === idDesdeUrl);
+  if (!feature) return;
+  const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+  mapa.setView([lat, lon], 19);
+  mostrarFicha(feature);
+}
 
 // ---------------------------------------------------------------------------
 // Formulario "Cargar lote" (solo corredores logueados).

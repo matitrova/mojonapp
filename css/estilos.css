@@ -479,6 +479,16 @@ button:active {
   background: var(--color-fondo-alterno);
 }
 
+#compartir-lote-mensaje {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-primario);
+  font-weight: 600;
+  margin: 6px 0 0;
+  word-break: break-all;
+  user-select: text;
+}
+
 /* Panel de navegación a pie con brújula */
 #panel-navegacion {
   position: fixed;
@@ -782,6 +792,14 @@ button:active {
   color: var(--color-vendido);
   font-size: 0.85rem;
   margin: 0;
+}
+
+/* "(vencida desde ...)" junto al estado "Reservado" en la ficha, cuando
+   pasó la fecha de "Reservado hasta" sin que nadie actualizara el
+   lote — ver textoEstadoConVencimiento en app.js. */
+.texto-vencido {
+  color: var(--color-vendido);
+  font-weight: 600;
 }
 
 #lote-area-calculada {

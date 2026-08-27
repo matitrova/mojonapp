@@ -168,6 +168,8 @@
       <button id="btn-como-llegar" data-testid="btn-como-llegar">Ver en el mapa</button>
       <button id="btn-estoy-yendo" data-testid="btn-estoy-yendo">Estoy yendo</button>
     </div>
+    <button id="btn-compartir-lote" class="btn-editar-ficha" data-testid="btn-compartir-lote">Compartir este lote</button>
+    <p id="compartir-lote-mensaje" class="oculto" data-testid="compartir-lote-mensaje">Link copiado.</p>
     <button id="btn-editar-lote-completo" class="oculto btn-editar-ficha" data-testid="btn-editar-lote-completo">Editar lote</button>
     <button id="btn-borrar-lote" class="oculto btn-peligro" data-testid="btn-borrar-lote">Borrar lote</button>
   </div>
@@ -562,6 +564,9 @@
             <option value="reservado">Reservado</option>
             <option value="vendido">Vendido</option>
           </select>
+        </label>
+        <label id="editar-lote-reservado-hasta-label" class="oculto">Reservado hasta
+          <input type="date" id="editar-lote-reservado-hasta" data-testid="editar-lote-reservado-hasta" />
         </label>
         <label>Precio (USD)
           <input type="number" id="editar-lote-precio" data-testid="editar-lote-precio" min="0" step="1" />
