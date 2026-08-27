@@ -130,9 +130,11 @@
       <p id="editor-servicios-error" class="mensaje-error oculto" data-testid="editor-servicios-error"></p>
     </div>
     <div id="editor-sector" class="oculto" data-testid="editor-sector">
-      <fieldset class="fieldset-servicios" id="editar-sector-checkboxes" data-testid="editar-sector-checkboxes">
-        <legend>Sector / zona</legend>
-      </fieldset>
+      <label>Sector / zona
+        <select id="editar-sector-valor" data-testid="editar-sector-valor">
+          <option value="">Sin sector</option>
+        </select>
+      </label>
       <div class="botones-alternativos">
         <button type="button" id="btn-guardar-sector" data-testid="btn-guardar-sector">Guardar</button>
         <button type="button" id="btn-cancelar-sector" data-testid="btn-cancelar-sector">Cancelar</button>
@@ -176,9 +178,11 @@
       <label>Nomenclatura catastral
         <input type="text" id="lote-nomenclatura" data-testid="lote-nomenclatura" />
       </label>
-      <fieldset class="fieldset-servicios" id="lote-sector" data-testid="lote-sector">
-        <legend>Sector / zona</legend>
-      </fieldset>
+      <label>Sector / zona
+        <select id="lote-sector" data-testid="lote-sector">
+          <option value="">Sin sector</option>
+        </select>
+      </label>
       <label>Superficie (m²)
         <input type="number" id="lote-superficie" data-testid="lote-superficie" required min="1" step="0.01" />
       </label>
@@ -463,9 +467,11 @@
         <label>Precio (USD)
           <input type="number" id="editar-lote-precio" data-testid="editar-lote-precio" min="0" step="1" />
         </label>
-        <fieldset class="fieldset-servicios" id="editar-lote-sector" data-testid="editar-lote-sector">
-          <legend>Sector / zona</legend>
-        </fieldset>
+        <label>Sector / zona
+          <select id="editar-lote-sector" data-testid="editar-lote-sector">
+            <option value="">Sin sector</option>
+          </select>
+        </label>
         <fieldset class="fieldset-servicios">
           <legend>Servicios</legend>
           <label class="opcion-servicio">

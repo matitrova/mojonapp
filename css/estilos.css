@@ -555,15 +555,6 @@ button:active {
   padding: 0;
 }
 
-/* Mensaje dentro de un fieldset de sectores cuando el catálogo está
-   vacío (nadie creó ningún sector todavía) — ver poblarCheckboxesSector
-   en app.js. */
-.texto-secundario-chico {
-  font-size: 0.82rem;
-  color: var(--color-texto-secundario);
-  margin: 0;
-}
-
 /* Chips de servicios: reusados en la ficha del lote y en la vista en
    grilla. Sin dato cargado (lotes importados del catastro, que no trae
    este dato) se distingue de "no tiene el servicio": ahí no se muestra
