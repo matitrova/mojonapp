@@ -234,6 +234,50 @@ button:active {
   text-align: center;
 }
 
+#btn-flotante-catastro {
+  position: fixed;
+  right: 14px;
+  bottom: 46px;
+  z-index: 1100;
+  background: var(--color-primario);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: var(--sombra-calida-suave);
+  cursor: pointer;
+}
+
+#btn-flotante-catastro:hover {
+  background: var(--color-primario-oscuro);
+}
+
+/* Cartel al pasar el mouse sobre un lote cargado (ver bindTooltip en
+   cargarLotesDesdeFirestore) — Leaflet trae su propio estilo de
+   tooltip por default, blanco/genérico, no combina con el resto. */
+.tooltip-lote-mapa {
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  box-shadow: var(--sombra-calida-suave);
+  color: var(--color-texto);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  padding: 8px 10px;
+}
+
+.tooltip-lote-mapa::before {
+  border-top-color: var(--color-borde);
+}
+
+.tooltip-lote-titulo {
+  font-weight: 700;
+  color: var(--color-primario-oscuro);
+  margin-bottom: 2px;
+}
+
 /* Número de parcela sobre cada polígono de referencia del catastro
    ("Ver catastro cercano"), imitando el look del visor oficial. */
 .etiqueta-parcela-catastro {
@@ -404,6 +448,25 @@ button:active {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* "Editar lote" en la ficha: mismo lugar/tamaño que "Borrar lote", pero
+   con el color primario en vez de rojo — no es una acción destructiva. */
+.btn-editar-ficha {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--color-primario);
+  border-radius: var(--radio-mediano);
+  background: none;
+  color: var(--color-primario);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-editar-ficha:hover {
+  background: var(--color-fondo-alterno);
 }
 
 /* Panel de navegación a pie con brújula */

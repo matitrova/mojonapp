@@ -291,6 +291,15 @@ async function cargarLotesDesdeFirestore() {
           if (modoCaptura !== null) return;
           mostrarFicha(feature);
         });
+        // Pasar el mouse por encima adelanta un resumen sin tener que
+        // tocar el lote — pedido explícito. "sticky" para que el cartel
+        // siga al cursor en vez de quedar fijo en un punto del
+        // polígono (con lotes grandes, quedaba lejos del mouse).
+        layer.bindTooltip(contenidoTooltipLote(feature.properties), {
+          direction: "top",
+          sticky: true,
+          className: "tooltip-lote-mapa"
+        });
       }
     }
   ).addTo(mapa);
@@ -517,6 +526,21 @@ function tituloLote(p) {
   return "Lote sin nomenclatura catastral";
 }
 
+// Contenido del cartel que aparece al pasar el mouse por encima de un
+// lote cargado (ver bindTooltip en cargarLotesDesdeFirestore) — un
+// resumen rápido sin tener que tocarlo y abrir la ficha completa.
+function contenidoTooltipLote(p) {
+  const superficie = p.superficie_m2 == null ? "Sin datos" : `${p.superficie_m2} m²`;
+  const precio = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
+  return `
+    <div class="tooltip-lote-titulo">${tituloLote(p)}</div>
+    <div>Sector: ${p.sector || "Sin datos"}</div>
+    <div>Superficie: ${superficie}</div>
+    <div>Estado: ${ETIQUETA_ESTADO[p.estado] || p.estado}</div>
+    <div>Precio: ${precio}</div>
+  `;
+}
+
 function mostrarFicha(feature) {
   lotePolyLayerSeleccionado = feature;
   const p = feature.properties;
@@ -534,6 +558,7 @@ function mostrarFicha(feature) {
   elObservaciones.textContent = p.observaciones || "Sin datos";
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
+  document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
   cerrarEditorServicios(); // por si había quedado abierto en el lote anterior
   cerrarEditorSector();
 
@@ -542,6 +567,23 @@ function mostrarFicha(feature) {
 
 document.getElementById("cerrar-ficha").addEventListener("click", () => {
   elFicha.classList.add("oculto");
+});
+
+// "Editar lote" en la ficha abre el mismo formulario completo que
+// "Editar" desde la grilla (manzana/lote/nomenclatura/superficie/
+// estado/precio/sector/servicios/observaciones) — pedido explícito:
+// antes solo se podía corregir todo eso yendo a "Ver como lista", acá
+// arriba del mapa solo había editores sueltos para sector y servicios.
+// Reusa mostrarEditarLoteDesdeGrilla tal cual para no duplicar la
+// validación de nomenclatura ni el guardado.
+document.getElementById("btn-editar-lote-completo").addEventListener("click", () => {
+  if (!lotePolyLayerSeleccionado) return;
+  elFicha.classList.add("oculto");
+  document.getElementById("panel-admin").classList.add("oculto");
+  document.getElementById("panel-sectores").classList.add("oculto");
+  elVistaLista.classList.remove("oculto");
+  elBtnVerLista.classList.add("activo");
+  mostrarEditarLoteDesdeGrilla(lotePolyLayerSeleccionado);
 });
 
 // Editar servicios de un lote ya cargado: el catastro no trae este dato,
@@ -1158,6 +1200,7 @@ onAuthStateChanged(auth, async (usuario) => {
   // nuevo sin esperar a que se cierre y se vuelva a abrir.
   if (lotePolyLayerSeleccionado) {
     document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(lotePolyLayerSeleccionado));
+    document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
     cerrarEditorServicios();
     cerrarEditorSector();
   }
@@ -1720,6 +1763,7 @@ formularioParcela.addEventListener("submit", async (evento) => {
 
 const elBtnVerCatastroCercano = document.getElementById("btn-ver-catastro-cercano");
 const elCatastroCercanoMensaje = document.getElementById("catastro-cercano-mensaje");
+const elBtnFlotanteCatastro = document.getElementById("btn-flotante-catastro");
 const ZOOM_MINIMO_CATASTRO_CERCANO = 16; // por debajo de esto el WFS traería demasiadas parcelas
 
 let capaCatastroCercano = null;
@@ -1829,28 +1873,36 @@ async function actualizarCatastroCercano() {
   }
 }
 
-elBtnVerCatastroCercano.addEventListener("click", () => {
-  catastroCercanoActivo = !catastroCercanoActivo;
-  elBtnVerCatastroCercano.classList.toggle("activo", catastroCercanoActivo);
-  if (catastroCercanoActivo) {
-    actualizarCatastroCercano();
-  } else {
-    ocultarMensajeCatastroCercano();
-    if (capaCatastroCercano) {
-      mapa.removeLayer(capaCatastroCercano);
-      capaCatastroCercano = null;
-    }
-  }
-});
-window.addEventListener("mojonapp:sesion-cerrada", () => {
+// Apagar la capa de referencia: se llama desde el botón del drawer (al
+// destildarlo), desde el botón flotante sobre el mapa (mismo efecto,
+// sin tener que volver a abrir el menú — pedido explícito, entrar al
+// drawer cada vez que se quiere desactivar era un mal trago), y al
+// cerrar sesión.
+function desactivarCatastroCercano() {
   catastroCercanoActivo = false;
   elBtnVerCatastroCercano.classList.remove("activo");
+  elBtnFlotanteCatastro.classList.add("oculto");
   ocultarMensajeCatastroCercano();
   if (capaCatastroCercano) {
     mapa.removeLayer(capaCatastroCercano);
     capaCatastroCercano = null;
   }
+}
+
+elBtnVerCatastroCercano.addEventListener("click", () => {
+  catastroCercanoActivo = !catastroCercanoActivo;
+  elBtnVerCatastroCercano.classList.toggle("activo", catastroCercanoActivo);
+  if (catastroCercanoActivo) {
+    elBtnFlotanteCatastro.classList.remove("oculto");
+    actualizarCatastroCercano();
+  } else {
+    desactivarCatastroCercano();
+  }
 });
+
+elBtnFlotanteCatastro.addEventListener("click", desactivarCatastroCercano);
+
+window.addEventListener("mojonapp:sesion-cerrada", desactivarCatastroCercano);
 
 mapa.on("moveend", () => {
   if (catastroCercanoActivo) actualizarCatastroCercano();

@@ -83,6 +83,10 @@
 
   <div id="catastro-cercano-mensaje" class="oculto" data-testid="catastro-cercano-mensaje"></div>
 
+  <!-- Apagar "Ver catastro cercano" sin tener que abrir el menú de nuevo
+       (mismo lugar donde se prendió) — solo visible mientras está activo. -->
+  <button id="btn-flotante-catastro" class="oculto" data-testid="btn-flotante-catastro">✕ Ocultar catastro</button>
+
   <div id="leyenda-legal">
     Las ubicaciones son orientativas y no reemplazan una mensura profesional.
   </div>
@@ -145,6 +149,7 @@
       <button id="btn-como-llegar" data-testid="btn-como-llegar">Ver en el mapa</button>
       <button id="btn-estoy-yendo" data-testid="btn-estoy-yendo">Estoy yendo</button>
     </div>
+    <button id="btn-editar-lote-completo" class="oculto btn-editar-ficha" data-testid="btn-editar-lote-completo">Editar lote</button>
     <button id="btn-borrar-lote" class="oculto btn-peligro" data-testid="btn-borrar-lote">Borrar lote</button>
   </div>
 
