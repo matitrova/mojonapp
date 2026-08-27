@@ -367,38 +367,81 @@
       <h2>Lotes cargados</h2>
       <button id="cerrar-vista-lista" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     </div>
-    <div id="vista-lista-filtros" data-testid="vista-lista-filtros">
-      <label>Sector
-        <select id="filtro-sector" data-testid="filtro-sector">
-          <option value="">Todos los sectores</option>
-        </select>
-      </label>
-      <label>Estado
-        <select id="filtro-estado" data-testid="filtro-estado">
-          <option value="">Todos los estados</option>
-          <option value="disponible">Disponible</option>
-          <option value="reservado">Reservado</option>
-          <option value="vendido">Vendido</option>
-        </select>
-      </label>
+
+    <div id="lote-vista-lista">
+      <div id="vista-lista-filtros" data-testid="vista-lista-filtros">
+        <label>Sector
+          <select id="filtro-sector" data-testid="filtro-sector">
+            <option value="">Todos los sectores</option>
+          </select>
+        </label>
+        <label>Estado
+          <select id="filtro-estado" data-testid="filtro-estado">
+            <option value="">Todos los estados</option>
+            <option value="disponible">Disponible</option>
+            <option value="reservado">Reservado</option>
+            <option value="vendido">Vendido</option>
+          </select>
+        </label>
+      </div>
+      <p id="vista-lista-vacio" class="oculto">Todavía no hay lotes cargados.</p>
+      <p id="vista-lista-sin-resultados" class="oculto">Ningún lote coincide con el filtro.</p>
+      <div class="tabla-scroll">
+        <table id="tabla-lotes" class="tabla-panel" data-testid="tabla-lotes">
+          <thead>
+            <tr>
+              <th>Lote</th>
+              <th>Sector</th>
+              <th>Superficie</th>
+              <th>Estado</th>
+              <th>Precio</th>
+              <th>Servicios</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-lotes-cuerpo"></tbody>
+        </table>
+      </div>
     </div>
-    <p id="vista-lista-vacio" class="oculto">Todavía no hay lotes cargados.</p>
-    <p id="vista-lista-sin-resultados" class="oculto">Ningún lote coincide con el filtro.</p>
-    <div class="tabla-scroll">
-      <table id="tabla-lotes" class="tabla-panel" data-testid="tabla-lotes">
-        <thead>
-          <tr>
-            <th>Lote</th>
-            <th>Sector</th>
-            <th>Superficie</th>
-            <th>Estado</th>
-            <th>Precio</th>
-            <th>Servicios</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tabla-lotes-cuerpo"></tbody>
-      </table>
+
+    <div id="lote-vista-editar" class="oculto">
+      <button type="button" id="lote-editar-volver" class="btn-link" data-testid="lote-editar-volver">&larr; Volver a la lista</button>
+      <h3 id="lote-editar-titulo">Editar lote</h3>
+      <form id="formulario-editar-lote">
+        <label>Estado
+          <select id="editar-lote-estado" data-testid="editar-lote-estado" required>
+            <option value="disponible">Disponible</option>
+            <option value="reservado">Reservado</option>
+            <option value="vendido">Vendido</option>
+          </select>
+        </label>
+        <label>Precio (USD)
+          <input type="number" id="editar-lote-precio" data-testid="editar-lote-precio" min="0" step="1" />
+        </label>
+        <label>Sector / zona
+          <input type="text" id="editar-lote-sector" data-testid="editar-lote-sector" placeholder="Ej: Zona Norte, Cerro de Oro..." />
+        </label>
+        <fieldset class="fieldset-servicios">
+          <legend>Servicios</legend>
+          <label class="opcion-servicio">
+            <input type="checkbox" id="editar-lote-servicio-luz" data-testid="editar-lote-servicio-luz" /> ⚡ Luz
+          </label>
+          <label class="opcion-servicio">
+            <input type="checkbox" id="editar-lote-servicio-agua" data-testid="editar-lote-servicio-agua" /> 🚰 Agua
+          </label>
+          <label class="opcion-servicio">
+            <input type="checkbox" id="editar-lote-servicio-gas" data-testid="editar-lote-servicio-gas" /> 🔥 Gas
+          </label>
+          <label class="opcion-servicio">
+            <input type="checkbox" id="editar-lote-servicio-cloaca" data-testid="editar-lote-servicio-cloaca" /> 🚽 Cloaca
+          </label>
+        </fieldset>
+        <label>Observaciones
+          <textarea id="editar-lote-observaciones" data-testid="editar-lote-observaciones"></textarea>
+        </label>
+        <button type="submit" data-testid="editar-lote-guardar">Guardar cambios</button>
+        <p id="editar-lote-error" class="mensaje-error oculto" data-testid="editar-lote-error"></p>
+      </form>
     </div>
   </div>
 

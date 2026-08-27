@@ -646,6 +646,22 @@ const elTablaLotesCuerpo = document.getElementById("tabla-lotes-cuerpo");
 const elFiltroSector = document.getElementById("filtro-sector");
 const elFiltroEstado = document.getElementById("filtro-estado");
 
+const elLoteVistaLista = document.getElementById("lote-vista-lista");
+const elLoteVistaEditar = document.getElementById("lote-vista-editar");
+const elLoteEditarTitulo = document.getElementById("lote-editar-titulo");
+const elLoteEditarVolver = document.getElementById("lote-editar-volver");
+const formularioEditarLote = document.getElementById("formulario-editar-lote");
+const elEditarLoteEstado = document.getElementById("editar-lote-estado");
+const elEditarLotePrecio = document.getElementById("editar-lote-precio");
+const elEditarLoteSector = document.getElementById("editar-lote-sector");
+const elEditarLoteServicioLuz = document.getElementById("editar-lote-servicio-luz");
+const elEditarLoteServicioAgua = document.getElementById("editar-lote-servicio-agua");
+const elEditarLoteServicioGas = document.getElementById("editar-lote-servicio-gas");
+const elEditarLoteServicioCloaca = document.getElementById("editar-lote-servicio-cloaca");
+const elEditarLoteObservaciones = document.getElementById("editar-lote-observaciones");
+const elEditarLoteError = document.getElementById("editar-lote-error");
+let loteEditandoDesdeGrilla = null; // feature actual del formulario de edición
+
 // Sectores/zonas los inventa cada corredor a mano (ver "Sector" en
 // "Cargar a mano" y "Editar" en la ficha) — no hay una lista fija, así
 // que el filtro se arma solo con lo que ya se cargó.
@@ -703,6 +719,20 @@ function actualizarVistaLista() {
       mostrarFicha(feature);
     });
 
+    const celdaAcciones = fila.querySelector("td:last-child");
+
+    if (puedeEditarLote(feature)) {
+      const botonEditar = document.createElement("button");
+      botonEditar.type = "button";
+      botonEditar.className = "btn-editar-fila";
+      botonEditar.textContent = "Editar";
+      botonEditar.addEventListener("click", (evento) => {
+        evento.stopPropagation(); // no abrir la ficha al tocar "Editar"
+        mostrarEditarLoteDesdeGrilla(feature);
+      });
+      celdaAcciones.appendChild(botonEditar);
+    }
+
     if (puedeBorrarLote(feature)) {
       const botonBorrar = document.createElement("button");
       botonBorrar.type = "button";
@@ -712,7 +742,7 @@ function actualizarVistaLista() {
         evento.stopPropagation(); // no abrir la ficha al tocar "Borrar"
         borrarLote(feature, botonBorrar);
       });
-      fila.querySelector("td:last-child").appendChild(botonBorrar);
+      celdaAcciones.appendChild(botonBorrar);
     }
 
     elTablaLotesCuerpo.appendChild(fila);
@@ -722,9 +752,79 @@ function actualizarVistaLista() {
 elFiltroSector.addEventListener("change", actualizarVistaLista);
 elFiltroEstado.addEventListener("change", actualizarVistaLista);
 
+// Editar un lote directo desde la grilla (sin pasar por el mapa/ficha):
+// pedido explícito, ya que la grilla es la herramienta de trabajo del
+// corredor y no siempre tiene sentido ir hasta el mapa solo para
+// cambiar el estado o el sector de un lote. Mismos campos editables que
+// ya existían sueltos (servicios, sector) más estado/precio/
+// observaciones, que hasta ahora solo se cargaban una vez al crearlo.
+function mostrarListaLotesGrilla() {
+  elLoteVistaEditar.classList.add("oculto");
+  elLoteVistaLista.classList.remove("oculto");
+  loteEditandoDesdeGrilla = null;
+}
+
+function mostrarEditarLoteDesdeGrilla(feature) {
+  loteEditandoDesdeGrilla = feature;
+  const p = feature.properties;
+  elLoteEditarTitulo.textContent = `Editar ${tituloLote(p)}`;
+  elEditarLoteEstado.value = p.estado || "disponible";
+  elEditarLotePrecio.value = p.precio_usd ?? "";
+  elEditarLoteSector.value = p.sector || "";
+  const s = p.servicios || {};
+  elEditarLoteServicioLuz.checked = !!s.luz;
+  elEditarLoteServicioAgua.checked = !!s.agua;
+  elEditarLoteServicioGas.checked = !!s.gas;
+  elEditarLoteServicioCloaca.checked = !!s.cloaca;
+  elEditarLoteObservaciones.value = p.observaciones || "";
+  elEditarLoteError.classList.add("oculto");
+
+  elLoteVistaLista.classList.add("oculto");
+  elLoteVistaEditar.classList.remove("oculto");
+}
+
+elLoteEditarVolver.addEventListener("click", mostrarListaLotesGrilla);
+
+formularioEditarLote.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  if (!loteEditandoDesdeGrilla) return;
+  elEditarLoteError.classList.add("oculto");
+
+  const datos = {
+    estado: elEditarLoteEstado.value,
+    precio_usd: elEditarLotePrecio.value.trim() === "" ? null : Number(elEditarLotePrecio.value),
+    sector: elEditarLoteSector.value.trim() || null,
+    servicios: {
+      luz: elEditarLoteServicioLuz.checked,
+      agua: elEditarLoteServicioAgua.checked,
+      gas: elEditarLoteServicioGas.checked,
+      cloaca: elEditarLoteServicioCloaca.checked
+    },
+    observaciones: elEditarLoteObservaciones.value.trim() || null
+  };
+
+  const boton = formularioEditarLote.querySelector('button[type="submit"]');
+  boton.disabled = true;
+  try {
+    await updateDoc(doc(db, COLECCION_LOTES, loteEditandoDesdeGrilla.id), datos);
+    Object.assign(loteEditandoDesdeGrilla.properties, datos);
+    mostrarListaLotesGrilla();
+    await cargarLotesDesdeFirestore();
+  } catch (error) {
+    elEditarLoteError.textContent =
+      error.code === "permission-denied"
+        ? "No tenés permiso para editar este lote."
+        : "No se pudieron guardar los cambios.";
+    elEditarLoteError.classList.remove("oculto");
+  } finally {
+    boton.disabled = false;
+  }
+});
+
 elBtnVerLista.addEventListener("click", () => {
   const mostrar = elVistaLista.classList.contains("oculto");
   document.getElementById("panel-admin").classList.add("oculto"); // no superponer con "Administrar"
+  if (mostrar) mostrarListaLotesGrilla(); // siempre arranca en la lista, no en edición
   elVistaLista.classList.toggle("oculto", !mostrar);
   elBtnVerLista.classList.toggle("activo", mostrar);
 });
