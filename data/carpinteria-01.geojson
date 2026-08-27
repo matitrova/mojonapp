@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "name": "carpinteria-01",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "manzana": null,
+        "lote": null,
+        "nomenclatura": null,
+        "superficie_m2": 1469,
+        "frente_m": 27.7,
+        "fondo_m": 53.0,
+        "estado": "disponible",
+        "precio_usd": null,
+        "observaciones": "Lote de dificil ubicacion. Vertices tomados del visor de catastro San Luis (NATIVA/WGS84), 26-08-2026.",
+        "fuente": "Direccion Provincial de Catastro y Tierras Fiscales - San Luis",
+        "fecha_toma": "2026-08-26"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-65.02987262540407, -32.39959457033922],
+          [-65.02986764993055, -32.400074635933166],
+          [-65.02957187246300, -32.40006723936821],
+          [-65.02957940503283, -32.399591029062336],
+          [-65.02987262540407, -32.39959457033922]
+        ]]
+      }
+    }
+  ]
+}

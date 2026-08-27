@@ -1,0 +1,919 @@
+/* Paleta cálida/rural: verde oliva oscuro + terracota como acento, sobre
+   fondo crema en vez de blanco puro. Nada de tipografías externas — en
+   zona rural el dato móvil no siempre es bueno, así que se usa la fuente
+   del sistema en vez de sumar una dependencia de red solo por estética. */
+:root {
+  --color-primario: #33523a;
+  --color-primario-oscuro: #253c29;
+  --color-acento: #c1663f;
+  --color-acento-suave: #f3ded0;
+  --color-fondo: #fdfaf5;
+  --color-fondo-alterno: #f5eee1;
+  --color-texto: #382f26;
+  --color-texto-secundario: #7a6a58;
+  --color-borde: #e4d7c3;
+  --color-disponible: #5c7f3f;
+  --color-reservado: #d1912f;
+  --color-vendido: #b8452f;
+  --sombra-calida: 0 -4px 16px rgba(56, 38, 20, 0.22);
+  --sombra-calida-suave: 0 1px 4px rgba(56, 38, 20, 0.18);
+  --radio-chico: 8px;
+  --radio-mediano: 12px;
+  --radio-grande: 18px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--color-texto);
+  background: var(--color-fondo);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+#encabezado {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--color-primario);
+  color: #fff;
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(37, 60, 41, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#encabezado h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+#barra-sesion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+#sesion-activa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#sesion-email {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#barra-sesion button {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+  border: none;
+  border-radius: var(--radio-chico);
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+#barra-sesion button:hover {
+  background: rgba(255,255,255,.26);
+}
+
+#btn-menu {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+  border: none;
+  border-radius: var(--radio-chico);
+  padding: 6px 10px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#btn-menu:hover {
+  background: rgba(255,255,255,.26);
+}
+
+/* Menú lateral (drawer): todas las secciones/subsecciones de la app,
+   pensado para poder sumar más sin volver a amontonar botones en el
+   header — ver comentario en index.html. */
+#drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  background: rgba(37, 30, 20, 0.4);
+}
+
+#drawer-menu {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1900;
+  width: 260px;
+  max-width: 82vw;
+  background: var(--color-fondo);
+  box-shadow: 4px 0 16px rgba(56, 38, 20, 0.25);
+  padding: 16px 14px calc(34px + 16px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#drawer-menu .panel-header {
+  margin-bottom: 8px;
+}
+
+.drawer-grupo {
+  margin: 4px 0;
+  border-top: 1px solid var(--color-borde);
+}
+
+/* Título de cada subsección del menú: plegable, para que la lista no
+   se alargue sola a medida que se sumen más secciones/subsecciones. */
+.drawer-grupo-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 12px 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+}
+
+.drawer-grupo-titulo:hover {
+  color: var(--color-texto);
+}
+
+.drawer-grupo-flecha {
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.drawer-grupo-titulo.abierto .drawer-grupo-flecha {
+  transform: rotate(90deg);
+}
+
+.drawer-grupo-items {
+  padding-bottom: 6px;
+}
+
+.drawer-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radio-chico);
+  padding: 10px 8px;
+  margin: 2px 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.drawer-item:hover {
+  background: var(--color-fondo-alterno);
+}
+
+#btn-ver-catastro-cercano.activo,
+#btn-ver-lista.activo {
+  background: var(--color-acento);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* "Cargar a mano" (antes "+ Lote"): sigue existiendo para loteos que
+   todavía no están en el catastro, pero ya no es la forma principal de
+   cargar un lote — se lo baja de tono para no competir con "+ Manzana" /
+   "+ Parcela", que traen datos oficiales. */
+.btn-secundario {
+  opacity: 0.6;
+}
+
+#catastro-cercano-mensaje {
+  position: fixed;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(37, 30, 20, 0.92);
+  color: #fff;
+  font-size: 0.78rem;
+  padding: 8px 14px;
+  border-radius: var(--radio-chico);
+  max-width: 90vw;
+  text-align: center;
+}
+
+/* Número de parcela sobre cada polígono de referencia del catastro
+   ("Ver catastro cercano"), imitando el look del visor oficial. */
+.etiqueta-parcela-catastro {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-shadow: 0 0 3px #000, 0 0 3px #000;
+}
+
+.etiqueta-parcela-catastro::before {
+  display: none;
+}
+
+#mapa {
+  position: absolute;
+  top: 44px;
+  bottom: 34px;
+  left: 0;
+  right: 0;
+}
+
+#leyenda-legal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--color-acento-suave);
+  color: var(--color-primario-oscuro);
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 6px 8px;
+  border-top: 1px solid var(--color-borde);
+}
+
+/* Hoja inferior (bottom sheet): patrón compartido por la ficha del lote y
+   los formularios de login / carga de lote, para uso con una mano en celular */
+.hoja-inferior {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1500;
+  background: var(--color-fondo);
+  border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  box-shadow: var(--sombra-calida);
+  padding: 22px 18px calc(34px + 16px);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Barrita de agarre arriba de cada hoja, para que se sienta como un
+   panel que se desliza y no como un recuadro pegado a la pantalla. */
+.hoja-inferior::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-borde);
+}
+
+.oculto {
+  display: none !important;
+}
+
+.btn-cerrar {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+}
+
+.btn-cerrar:hover {
+  color: var(--color-texto);
+}
+
+#ficha-titulo {
+  margin: 0 24px 10px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-primario-oscuro);
+}
+
+.ficha-datos {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 10px;
+  margin: 0 0 16px;
+  font-size: 0.92rem;
+  align-items: center;
+}
+
+.ficha-datos dt {
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.ficha-datos dd {
+  margin: 0;
+}
+
+.ficha-botones {
+  display: flex;
+  gap: 10px;
+}
+
+.ficha-botones button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radio-mediano);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-como-llegar {
+  background: var(--color-primario);
+  color: #fff;
+}
+
+#btn-como-llegar:hover {
+  background: var(--color-primario-oscuro);
+}
+
+#btn-estoy-yendo {
+  background: var(--color-fondo-alterno);
+  color: var(--color-texto);
+}
+
+#btn-estoy-yendo:hover {
+  background: var(--color-borde);
+}
+
+.btn-peligro {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: none;
+  border-radius: var(--radio-mediano);
+  background: none;
+  color: var(--color-vendido);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Panel de navegación a pie con brújula */
+#panel-navegacion {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(37, 60, 41, 0.95);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  padding: 24px;
+}
+
+#brujula-flecha {
+  font-size: 5rem;
+  line-height: 1;
+  transition: transform 0.15s ease-out;
+  transform: rotate(0deg);
+}
+
+#nav-mensaje {
+  font-size: 1.1rem;
+  max-width: 320px;
+}
+
+/* Colores de los lotes según estado (usados desde app.js) */
+.leyenda-estados {
+  position: absolute;
+  top: 54px;
+  left: 8px;
+  z-index: 900;
+  background: rgba(253, 250, 245, .94);
+  border-radius: var(--radio-mediano);
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  box-shadow: var(--sombra-calida-suave);
+}
+
+.leyenda-estados div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+}
+
+.leyenda-estados span {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+/* Formularios: login, carga de lote, y los del panel de administración
+   (perfiles/usuarios) — todos comparten el mismo look. */
+#formulario-login,
+#formulario-lote,
+#formulario-perfil,
+#formulario-usuario {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+#formulario-login label,
+#formulario-lote label,
+#formulario-perfil label,
+#formulario-usuario label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+#formulario-login input,
+#formulario-lote input,
+#formulario-lote select,
+#formulario-lote textarea,
+#formulario-perfil input,
+#formulario-usuario input,
+#formulario-usuario select {
+  font: inherit;
+  font-weight: 400;
+  color: var(--color-texto);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#formulario-login input:focus,
+#formulario-lote input:focus,
+#formulario-lote select:focus,
+#formulario-lote textarea:focus,
+#formulario-perfil input:focus,
+#formulario-usuario input:focus,
+#formulario-usuario select:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(51, 82, 58, 0.15);
+}
+
+#formulario-lote textarea {
+  min-height: 90px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  resize: vertical;
+}
+
+.fieldset-servicios {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: var(--color-fondo-alterno);
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.fieldset-servicios legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+  padding: 0 4px;
+}
+
+.opcion-servicio {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px !important;
+  font-weight: 400 !important;
+  color: var(--color-texto) !important;
+}
+
+.opcion-servicio input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+}
+
+/* Chips de servicios: reusados en la ficha del lote y en la vista en
+   grilla. Sin dato cargado (lotes importados del catastro, que no trae
+   este dato) se distingue de "no tiene el servicio": ahí no se muestra
+   ningún chip, ver renderServicios() en app.js. */
+.chip-servicio {
+  display: inline-block;
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: var(--radio-chico);
+  margin: 0 4px 4px 0;
+  background: var(--color-acento-suave);
+  color: var(--color-primario-oscuro);
+  opacity: 1;
+}
+
+.chip-servicio.sin-servicio {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--color-primario);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+}
+
+#editor-servicios {
+  margin: -8px 0 16px;
+}
+
+#editor-servicios .botones-alternativos {
+  margin-top: 10px;
+}
+
+#formulario-login button[type="submit"],
+#formulario-lote button[type="submit"],
+#formulario-perfil button[type="submit"],
+#formulario-usuario button[type="submit"] {
+  background: var(--color-primario);
+  color: #fff;
+  border: none;
+  border-radius: var(--radio-mediano);
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#formulario-login button[type="submit"]:hover,
+#formulario-lote button[type="submit"]:hover,
+#formulario-perfil button[type="submit"]:hover,
+#formulario-usuario button[type="submit"]:hover {
+  background: var(--color-primario-oscuro);
+}
+
+.mensaje-error {
+  color: var(--color-vendido);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+#lote-area-calculada {
+  font-size: 0.82rem;
+  color: var(--color-texto-secundario);
+  margin: 0;
+}
+
+#lote-area-calculada.area-advertencia {
+  color: var(--color-vendido);
+  font-weight: 600;
+}
+
+.texto-ayuda {
+  font-size: 0.82rem;
+  color: var(--color-texto-secundario);
+  margin: 4px 0 12px;
+}
+
+#manzana-resultado {
+  font-size: 0.85rem;
+  margin: 12px 0;
+}
+
+#manzana-resultado ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+#manzana-confirmar {
+  width: 100%;
+  background: var(--color-primario);
+  color: #fff;
+  border: none;
+  border-radius: var(--radio-mediano);
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#manzana-confirmar:hover {
+  background: var(--color-primario-oscuro);
+}
+
+.botones-alternativos {
+  display: flex;
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.botones-alternativos button {
+  flex: 1;
+  background: var(--color-fondo-alterno);
+  color: var(--color-texto);
+  border: none;
+  border-radius: var(--radio-chico);
+  padding: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botones-alternativos button:hover {
+  background: var(--color-borde);
+}
+
+#parcela-resultado {
+  font-size: 0.85rem;
+  margin: 12px 0;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.parcela-candidata {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.parcela-candidata p {
+  margin: 0;
+  flex: 1;
+}
+
+.parcela-candidata button {
+  background: var(--color-primario);
+  color: #fff;
+  border: none;
+  border-radius: var(--radio-chico);
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.parcela-candidata button:hover {
+  background: var(--color-primario-oscuro);
+}
+
+/* Panel de captura de vértices (GPS o tocando el mapa): barra flotante
+   abajo, NO a pantalla completa — en el modo "dibujar en el mapa" el
+   corredor tiene que poder ver y tocar el mapa mientras está abierto. */
+#panel-captura-vertices {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 34px;
+  z-index: 1600;
+  background: rgba(37, 30, 20, 0.94);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--sombra-calida);
+}
+
+#captura-mensaje {
+  font-size: 0.9rem;
+  max-width: 400px;
+  margin: 0;
+}
+
+#captura-contador {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.botones-captura {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.botones-captura button {
+  flex: 1;
+  padding: 12px 6px;
+  border: none;
+  border-radius: var(--radio-mediano);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-captura-agregar {
+  background: var(--color-disponible);
+  color: #fff;
+}
+
+#btn-captura-deshacer,
+#btn-captura-terminar {
+  background: rgba(255,255,255,.15);
+  color: #fff;
+}
+
+/* Panel de pantalla completa: patrón compartido por "Ver como lista" y
+   "Administrar" — a diferencia de las hojas inferiores, son pantallas
+   con tablas que necesitan todo el alto disponible, no un panel que
+   flota sobre el mapa. */
+.panel-pantalla-completa {
+  position: fixed;
+  inset: 0;
+  z-index: 1700;
+  background: var(--color-fondo);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px calc(34px + 16px);
+  overflow-y: auto;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-primario-oscuro);
+}
+
+.panel-header .btn-cerrar {
+  position: static;
+}
+
+#vista-lista-vacio {
+  color: var(--color-texto-secundario);
+  font-size: 0.9rem;
+}
+
+.tabla-panel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-bottom: 16px;
+}
+
+.tabla-panel th {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 2px solid var(--color-borde);
+  color: var(--color-texto-secundario);
+}
+
+.tabla-panel td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--color-borde);
+  vertical-align: middle;
+}
+
+.tabla-panel tbody tr:nth-child(even) {
+  background: var(--color-fondo-alterno);
+}
+
+.tabla-panel tr.fila-lote {
+  cursor: pointer;
+}
+
+.tabla-panel tr.fila-lote:active {
+  background: var(--color-acento-suave);
+}
+
+.tabla-panel .btn-borrar-fila {
+  background: none;
+  border: none;
+  color: var(--color-vendido);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px;
+}
+
+.tabla-panel .btn-editar-fila {
+  background: none;
+  border: none;
+  color: var(--color-primario);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px;
+}
+
+.tabla-panel select {
+  font: inherit;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 4px 6px;
+  background: #fff;
+  color: var(--color-texto);
+}
+
+/* Panel de administración: pestañas Usuarios / Perfiles, para no apilar
+   todo en una sola pantalla larga (con varios usuarios cargados se
+   pierde de vista rápido cuál es cuál). */
+.tabs-admin {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.tab-admin {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 4px;
+  margin-bottom: -1px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+}
+
+.tab-admin.activo {
+  color: var(--color-primario);
+  border-bottom-color: var(--color-primario);
+}
+
+.seccion-admin {
+  margin-bottom: 28px;
+}
+
+#btn-agregar-usuario,
+#btn-agregar-perfil {
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--color-primario);
+  border-radius: var(--radio-mediano);
+  padding: 10px;
+  margin-bottom: 12px;
+  color: var(--color-primario);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-agregar-usuario:hover,
+#btn-agregar-perfil:hover {
+  background: var(--color-fondo-alterno);
+}

@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfil de seguridad del usuario logueado. Un usuario sin doc en
+    // "usuarios", o un perfil_id que no exista en "perfiles", termina
+    // devolviendo permisos vacíos ({}) — la app entera es "denegado por
+    // defecto" para cualquier acción no explícitamente permitida.
+    function miPerfil() {
+      let perfilId = get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.perfil_id;
+      return get(/databases/$(database)/documents/perfiles/$(perfilId)).data;
+    }
+
+    function esRoot() {
+      return request.auth != null && miPerfil().es_root == true;
+    }
+
+    function tienePermiso(permiso) {
+      return request.auth != null && miPerfil().permisos[permiso] == true;
+    }
+
+    function esDueno() {
+      return request.auth != null && resource.data.creado_por == request.auth.uid;
+    }
+
+    // Solo root da de alta corredores y arma perfiles (ver panel
+    // "Administrar" en la app) — cualquier logueado puede LEER estas dos
+    // colecciones porque necesita resolver su propio perfil.
+    match /usuarios/{uid} {
+      allow read: if request.auth != null;
+      allow write: if esRoot();
+    }
+
+    match /perfiles/{perfilId} {
+      allow read: if request.auth != null;
+      allow write: if esRoot();
+    }
+
+    // El catálogo de lotes sigue siendo público en lectura — ese es el
+    // propósito comercial de la app, no depende de perfiles. Lo que se
+    // restringe por perfil es quién puede cargar/editar/borrar, y si un
+    // corredor logueado ve todos los lotes o solo los propios (filtro que
+    // hace la propia app en la consulta, ver cargarLotesDesdeFirestore en
+    // js/app.js — esta regla solo cubre la escritura).
+    match /lotes/{loteId} {
+      allow read: if true;
+
+      allow create: if esRoot() || tienePermiso('cargar_lote');
+
+      // Un lote cargado antes de que existiera "creado_por" no tiene
+      // dueño: cae directo en la rama "ajeno", nunca en la de "propio".
+      allow update: if esRoot()
+        || (esDueno() && tienePermiso('editar_lote_propio'))
+        || (!esDueno() && tienePermiso('editar_lote_ajeno'));
+
+      allow delete: if esRoot()
+        || (esDueno() && tienePermiso('borrar_lote_propio'))
+        || (!esDueno() && tienePermiso('borrar_lote_ajeno'));
+    }
+  }
+}

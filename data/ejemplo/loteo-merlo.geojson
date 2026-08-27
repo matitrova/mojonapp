@@ -1,0 +1,66 @@
+{
+  "type": "FeatureCollection",
+  "name": "loteo-ejemplo-villa-de-merlo",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "manzana": "A", "lote": "1", "superficie_m2": 650, "estado": "disponible", "precio_usd": 9500, "observaciones": "Lote plano, buena vista a las sierras." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.013500, -32.346500], [-65.013270, -32.346500], [-65.013270, -32.346770], [-65.013500, -32.346770], [-65.013500, -32.346500]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "A", "lote": "2", "superficie_m2": 650, "estado": "disponible", "precio_usd": 9500, "observaciones": "Terreno al lado del lote 1, sin construcciones linderas." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.013210, -32.346500], [-65.012980, -32.346500], [-65.012980, -32.346770], [-65.013210, -32.346770], [-65.013210, -32.346500]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "A", "lote": "3", "superficie_m2": 650, "estado": "reservado", "precio_usd": 10200, "observaciones": "Lote de esquina, acceso por dos frentes." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.012920, -32.346500], [-65.012690, -32.346500], [-65.012690, -32.346770], [-65.012920, -32.346770], [-65.012920, -32.346500]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "A", "lote": "4", "superficie_m2": 650, "estado": "vendido", "precio_usd": 9800, "observaciones": "Vendido en marzo 2026, dato de referencia." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.013500, -32.346850], [-65.013270, -32.346850], [-65.013270, -32.347120], [-65.013500, -32.347120], [-65.013500, -32.346850]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "A", "lote": "5", "superficie_m2": 650, "estado": "disponible", "precio_usd": 9500, "observaciones": "Cercano a un arroyo estacional, consultar por mensura." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.013210, -32.346850], [-65.012980, -32.346850], [-65.012980, -32.347120], [-65.013210, -32.347120], [-65.013210, -32.346850]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "A", "lote": "6", "superficie_m2": 650, "estado": "disponible", "precio_usd": 9700, "observaciones": "Buena pendiente natural para desagote pluvial." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.012920, -32.346850], [-65.012690, -32.346850], [-65.012690, -32.347120], [-65.012920, -32.347120], [-65.012920, -32.346850]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "B", "lote": "1", "superficie_m2": 650, "estado": "reservado", "precio_usd": 9600, "observaciones": "Reservado, seña recibida el 10/08/2026." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.013500, -32.347270], [-65.013270, -32.347270], [-65.013270, -32.347540], [-65.013500, -32.347540], [-65.013500, -32.347270]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "B", "lote": "2", "superficie_m2": 650, "estado": "disponible", "precio_usd": 9400, "observaciones": "Acceso por calle de tierra en buen estado." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.013210, -32.347270], [-65.012980, -32.347270], [-65.012980, -32.347540], [-65.013210, -32.347540], [-65.013210, -32.347270]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "B", "lote": "3", "superficie_m2": 650, "estado": "disponible", "precio_usd": 9900, "observaciones": "Lote de esquina, doble frente." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.012920, -32.347270], [-65.012690, -32.347270], [-65.012690, -32.347540], [-65.012920, -32.347540], [-65.012920, -32.347270]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "B", "lote": "4", "superficie_m2": 650, "estado": "vendido", "precio_usd": 9500, "observaciones": "Vendido en enero 2026, dato de referencia." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.013500, -32.347620], [-65.013270, -32.347620], [-65.013270, -32.347890], [-65.013500, -32.347890], [-65.013500, -32.347620]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "B", "lote": "5", "superficie_m2": 650, "estado": "disponible", "precio_usd": 9300, "observaciones": "Fondo del loteo, mayor tranquilidad." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.013210, -32.347620], [-65.012980, -32.347620], [-65.012980, -32.347890], [-65.013210, -32.347890], [-65.013210, -32.347620]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "manzana": "B", "lote": "6", "superficie_m2": 650, "estado": "reservado", "precio_usd": 9750, "observaciones": "Lote de esquina sur, vista abierta al valle." },
+      "geometry": { "type": "Polygon", "coordinates": [[[-65.012920, -32.347620], [-65.012690, -32.347620], [-65.012690, -32.347890], [-65.012920, -32.347890], [-65.012920, -32.347620]]] }
+    }
+  ]
+}

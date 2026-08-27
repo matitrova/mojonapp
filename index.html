@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>MojonApp</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="css/estilos.css" />
+</head>
+<body>
+
+  <header id="encabezado">
+    <button id="btn-menu" aria-label="Abrir menú" data-testid="btn-menu">&#9776;</button>
+    <h1>MojonApp</h1>
+    <div id="barra-sesion">
+      <button id="btn-abrir-login" data-testid="btn-abrir-login">Ingresar</button>
+      <div id="sesion-activa" class="oculto" data-testid="sesion-activa">
+        <span id="sesion-email" data-testid="sesion-email"></span>
+        <button id="btn-salir" data-testid="btn-salir">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Menú lateral: todas las secciones/subsecciones de la app en un
+       solo lugar, pensado para poder sumar más sin volver a amontonar
+       botones en el header. -->
+  <div id="drawer-overlay" class="oculto" data-testid="drawer-overlay"></div>
+  <nav id="drawer-menu" class="oculto" data-testid="drawer-menu">
+    <div class="panel-header">
+      <h2>Menú</h2>
+      <button id="cerrar-drawer" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista">Ver como lista</button>
+
+    <div id="drawer-sesion-activa" class="oculto">
+      <div class="drawer-grupo">
+        <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-cargar-lotes">
+          Cargar lotes
+          <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
+        </button>
+        <div class="drawer-grupo-items oculto">
+          <button type="button" class="drawer-item btn-secundario" id="btn-cargar-lote" data-testid="btn-cargar-lote">Cargar a mano</button>
+          <button type="button" class="drawer-item" id="btn-abrir-manzana" data-testid="btn-abrir-manzana">+ Manzana</button>
+          <button type="button" class="drawer-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela">+ Parcela</button>
+        </div>
+      </div>
+
+      <div class="drawer-grupo">
+        <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-catastro">
+          Catastro
+          <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
+        </button>
+        <div class="drawer-grupo-items oculto">
+          <button type="button" class="drawer-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano">Ver catastro cercano</button>
+        </div>
+      </div>
+
+      <div id="drawer-grupo-seguridad" class="drawer-grupo oculto">
+        <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-seguridad">
+          Seguridad
+          <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
+        </button>
+        <div class="drawer-grupo-items oculto">
+          <button type="button" class="drawer-item" id="menu-seguridad-usuarios" data-testid="menu-seguridad-usuarios">Usuarios</button>
+          <button type="button" class="drawer-item" id="menu-seguridad-perfiles" data-testid="menu-seguridad-perfiles">Perfiles de seguridad</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div id="mapa"></div>
+
+  <div id="catastro-cercano-mensaje" class="oculto" data-testid="catastro-cercano-mensaje"></div>
+
+  <div id="leyenda-legal">
+    Las ubicaciones son orientativas y no reemplazan una mensura profesional.
+  </div>
+
+  <!-- Ficha del lote: se muestra al tocar un polígono -->
+  <div id="ficha-lote" class="oculto hoja-inferior" data-testid="ficha-lote">
+    <button id="cerrar-ficha" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    <h2 id="ficha-titulo" data-testid="ficha-titulo"></h2>
+    <dl class="ficha-datos">
+      <dt>Superficie</dt><dd id="ficha-superficie" data-testid="ficha-superficie"></dd>
+      <dt>Estado</dt><dd id="ficha-estado" data-testid="ficha-estado"></dd>
+      <dt>Precio</dt><dd id="ficha-precio" data-testid="ficha-precio"></dd>
+      <dt>Servicios</dt>
+      <dd>
+        <span id="ficha-servicios" data-testid="ficha-servicios"></span>
+        <button id="btn-editar-servicios" class="oculto btn-link" type="button" data-testid="btn-editar-servicios">Editar</button>
+      </dd>
+      <dt>Observaciones</dt><dd id="ficha-observaciones" data-testid="ficha-observaciones"></dd>
+    </dl>
+    <div id="editor-servicios" class="oculto" data-testid="editor-servicios">
+      <fieldset class="fieldset-servicios">
+        <legend>Editar servicios</legend>
+        <label class="opcion-servicio">
+          <input type="checkbox" id="editar-servicio-luz" data-testid="editar-servicio-luz" /> ⚡ Luz
+        </label>
+        <label class="opcion-servicio">
+          <input type="checkbox" id="editar-servicio-agua" data-testid="editar-servicio-agua" /> 🚰 Agua
+        </label>
+        <label class="opcion-servicio">
+          <input type="checkbox" id="editar-servicio-gas" data-testid="editar-servicio-gas" /> 🔥 Gas
+        </label>
+        <label class="opcion-servicio">
+          <input type="checkbox" id="editar-servicio-cloaca" data-testid="editar-servicio-cloaca" /> 🚽 Cloaca
+        </label>
+      </fieldset>
+      <div class="botones-alternativos">
+        <button type="button" id="btn-guardar-servicios" data-testid="btn-guardar-servicios">Guardar</button>
+        <button type="button" id="btn-cancelar-servicios" data-testid="btn-cancelar-servicios">Cancelar</button>
+      </div>
+      <p id="editor-servicios-error" class="mensaje-error oculto" data-testid="editor-servicios-error"></p>
+    </div>
+    <div class="ficha-botones">
+      <button id="btn-como-llegar" data-testid="btn-como-llegar">Ver en el mapa</button>
+      <button id="btn-estoy-yendo" data-testid="btn-estoy-yendo">Estoy yendo</button>
+    </div>
+    <button id="btn-borrar-lote" class="oculto btn-peligro" data-testid="btn-borrar-lote">Borrar lote</button>
+  </div>
+
+  <!-- Formulario de login (corredores) -->
+  <div id="form-login" class="oculto hoja-inferior" data-testid="form-login">
+    <button id="cerrar-login" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    <h2>Ingresar</h2>
+    <form id="formulario-login">
+      <label>Email
+        <input type="email" id="login-email" data-testid="login-email" required autocomplete="username" />
+      </label>
+      <label>Contraseña
+        <input type="password" id="login-password" data-testid="login-password" required autocomplete="current-password" />
+      </label>
+      <button type="submit" data-testid="login-submit">Ingresar</button>
+      <p id="login-error" class="mensaje-error oculto" data-testid="login-error"></p>
+    </form>
+  </div>
+
+  <!-- Formulario de carga de lote (solo corredores logueados) -->
+  <div id="form-lote" class="oculto hoja-inferior" data-testid="form-lote">
+    <button id="cerrar-form-lote" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    <h2>Cargar lote</h2>
+    <form id="formulario-lote">
+      <label>Manzana
+        <input type="text" id="lote-manzana" data-testid="lote-manzana" />
+      </label>
+      <label>Lote
+        <input type="text" id="lote-numero" data-testid="lote-numero" />
+      </label>
+      <label>Nomenclatura catastral
+        <input type="text" id="lote-nomenclatura" data-testid="lote-nomenclatura" />
+      </label>
+      <label>Superficie (m²)
+        <input type="number" id="lote-superficie" data-testid="lote-superficie" required min="1" step="0.01" />
+      </label>
+      <label>Estado
+        <select id="lote-estado" data-testid="lote-estado" required>
+          <option value="disponible">Disponible</option>
+          <option value="reservado">Reservado</option>
+          <option value="vendido">Vendido</option>
+        </select>
+      </label>
+      <label>Precio (USD)
+        <input type="number" id="lote-precio" data-testid="lote-precio" min="0" step="1" />
+      </label>
+      <fieldset class="fieldset-servicios">
+        <legend>Servicios</legend>
+        <label class="opcion-servicio">
+          <input type="checkbox" id="lote-servicio-luz" data-testid="lote-servicio-luz" /> ⚡ Luz
+        </label>
+        <label class="opcion-servicio">
+          <input type="checkbox" id="lote-servicio-agua" data-testid="lote-servicio-agua" /> 🚰 Agua
+        </label>
+        <label class="opcion-servicio">
+          <input type="checkbox" id="lote-servicio-gas" data-testid="lote-servicio-gas" /> 🔥 Gas
+        </label>
+        <label class="opcion-servicio">
+          <input type="checkbox" id="lote-servicio-cloaca" data-testid="lote-servicio-cloaca" /> 🚽 Cloaca
+        </label>
+      </fieldset>
+      <label>Observaciones
+        <textarea id="lote-observaciones" data-testid="lote-observaciones"></textarea>
+      </label>
+      <label>
+        Vértices del polígono (uno por línea, "latitud,longitud" tal cual los
+        copiás del visor de catastro)
+        <textarea
+          id="lote-vertices"
+          data-testid="lote-vertices"
+          required
+          placeholder="-32.399594,-65.029887&#10;-32.400075,-65.029868&#10;-32.400067,-65.029572&#10;-32.399591,-65.029579"
+        ></textarea>
+      </label>
+      <div class="botones-alternativos">
+        <button type="button" id="btn-vertices-gps" data-testid="btn-vertices-gps">📍 Marcar con GPS</button>
+        <button type="button" id="btn-vertices-mapa" data-testid="btn-vertices-mapa">🗺️ Dibujar en el mapa</button>
+      </div>
+      <p id="lote-area-calculada" data-testid="lote-area-calculada"></p>
+      <button type="submit" data-testid="lote-submit">Guardar lote</button>
+      <p id="lote-error" class="mensaje-error oculto" data-testid="lote-error"></p>
+    </form>
+  </div>
+
+  <!-- Traer una manzana entera desde el catastro oficial de San Luis -->
+  <div id="form-manzana" class="oculto hoja-inferior" data-testid="form-manzana">
+    <button id="cerrar-form-manzana" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    <h2>Traer manzana del catastro</h2>
+    <p class="texto-ayuda">
+      Busca dentro del área que estás viendo ahora en el mapa — acercate o
+      alejate hasta encuadrar la manzana antes de buscar.
+    </p>
+    <form id="formulario-manzana">
+      <label>Número de manzana
+        <input type="text" id="manzana-numero" data-testid="manzana-numero" required inputmode="numeric" />
+      </label>
+      <button type="submit" data-testid="manzana-buscar">Buscar</button>
+    </form>
+    <div id="manzana-resultado" data-testid="manzana-resultado"></div>
+    <button id="manzana-confirmar" class="oculto" data-testid="manzana-confirmar">Importar estos lotes</button>
+    <p id="manzana-error" class="mensaje-error oculto" data-testid="manzana-error"></p>
+  </div>
+
+  <!-- Traer una parcela individual del catastro: para zonas donde el
+       contorno de la manzana no está digitalizado y "+ Manzana" no
+       encuentra nada, pero la parcela sí existe. -->
+  <div id="form-parcela" class="oculto hoja-inferior" data-testid="form-parcela">
+    <button id="cerrar-form-parcela" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    <h2>Traer parcela del catastro</h2>
+    <p class="texto-ayuda">
+      Busca dentro del área que estás viendo ahora en el mapa. Usá esto
+      cuando "+ Manzana" no encuentra nada — pasa en zonas donde el
+      catastro tiene la parcela pero no el contorno de la manzana.
+    </p>
+    <form id="formulario-parcela">
+      <label>Número de parcela
+        <input type="text" id="parcela-numero" data-testid="parcela-numero" required inputmode="numeric" />
+      </label>
+      <button type="submit" data-testid="parcela-buscar">Buscar</button>
+    </form>
+    <div id="parcela-resultado" data-testid="parcela-resultado"></div>
+    <p id="parcela-error" class="mensaje-error oculto" data-testid="parcela-error"></p>
+  </div>
+
+  <!-- Captura de vértices tocando el mapa o con el GPS parado en cada esquina -->
+  <div id="panel-captura-vertices" class="oculto" data-testid="panel-captura-vertices">
+    <button id="cerrar-captura-vertices" class="btn-cerrar" aria-label="Cancelar">&times;</button>
+    <p id="captura-mensaje" data-testid="captura-mensaje"></p>
+    <p id="captura-contador" data-testid="captura-contador">0 puntos marcados</p>
+    <div class="botones-captura">
+      <button id="btn-captura-agregar" data-testid="btn-captura-agregar">Marcar acá</button>
+      <button id="btn-captura-deshacer" data-testid="btn-captura-deshacer">Deshacer último</button>
+      <button id="btn-captura-terminar" data-testid="btn-captura-terminar">Listo (mínimo 3 puntos)</button>
+    </div>
+    <p id="captura-error" class="mensaje-error oculto" data-testid="captura-error"></p>
+  </div>
+
+  <!-- Sección "Seguridad" (root / permiso administrar_usuarios): dar de
+       alta y editar corredores, y armar perfiles de seguridad. Usuarios y
+       Perfiles son dos pestañas separadas, y dentro de cada una, agregar
+       o editar reemplaza la grilla por una vista propia (no un formulario
+       que se despliega encima) — con varios usuarios cargados, todo junto
+       en una sola pantalla larga se pierde de vista rápido. -->
+  <div id="panel-admin" class="oculto panel-pantalla-completa" data-testid="panel-admin">
+    <div class="panel-header">
+      <h2>Seguridad</h2>
+      <button id="cerrar-panel-admin" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div class="tabs-admin">
+      <button type="button" id="tab-usuarios" class="tab-admin activo" data-testid="tab-usuarios">Usuarios</button>
+      <button type="button" id="tab-perfiles" class="tab-admin" data-testid="tab-perfiles">Perfiles de seguridad</button>
+    </div>
+
+    <section id="seccion-usuarios" class="seccion-admin">
+      <div id="usuarios-vista-lista">
+        <table class="tabla-panel" data-testid="tabla-usuarios">
+          <thead>
+            <tr><th>Email</th><th>Perfil</th><th></th></tr>
+          </thead>
+          <tbody id="tabla-usuarios-cuerpo"></tbody>
+        </table>
+        <button type="button" id="btn-agregar-usuario" data-testid="btn-agregar-usuario">+ Agregar usuario</button>
+      </div>
+
+      <div id="usuarios-vista-form" class="oculto">
+        <button type="button" id="usuario-volver" class="btn-link" data-testid="usuario-volver">&larr; Volver a usuarios</button>
+        <h3 id="usuario-form-titulo">Nuevo usuario</h3>
+        <form id="formulario-usuario">
+          <input type="hidden" id="usuario-uid-editando" value="" />
+          <label id="usuario-email-label">Email
+            <input type="email" id="usuario-email" data-testid="usuario-email" required autocomplete="off" />
+          </label>
+          <label id="usuario-password-label">Contraseña inicial
+            <input type="password" id="usuario-password" data-testid="usuario-password" minlength="6" autocomplete="new-password" />
+          </label>
+          <label>Perfil
+            <select id="usuario-perfil" data-testid="usuario-perfil" required></select>
+          </label>
+          <button type="submit" id="usuario-guardar" data-testid="usuario-guardar">Crear usuario</button>
+          <p id="usuario-error" class="mensaje-error oculto" data-testid="usuario-error"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="seccion-perfiles" class="seccion-admin oculto">
+      <div id="perfiles-vista-lista">
+        <table class="tabla-panel" data-testid="tabla-perfiles">
+          <thead>
+            <tr><th>Nombre</th><th>Permisos</th><th></th></tr>
+          </thead>
+          <tbody id="tabla-perfiles-cuerpo"></tbody>
+        </table>
+        <button type="button" id="btn-agregar-perfil" data-testid="btn-agregar-perfil">+ Nuevo perfil</button>
+      </div>
+
+      <div id="perfiles-vista-form" class="oculto">
+        <button type="button" id="perfil-volver" class="btn-link" data-testid="perfil-volver">&larr; Volver a perfiles</button>
+        <h3 id="perfil-form-titulo">Nuevo perfil</h3>
+        <form id="formulario-perfil">
+          <input type="hidden" id="perfil-id-editando" value="" />
+          <label>Nombre del perfil
+            <input type="text" id="perfil-nombre" data-testid="perfil-nombre" required />
+          </label>
+          <fieldset class="fieldset-servicios">
+            <legend>Permisos</legend>
+            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-cargar_lote" data-testid="perfil-permiso-cargar_lote" /> Cargar lotes</label>
+            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-editar_lote_propio" data-testid="perfil-permiso-editar_lote_propio" /> Editar lotes propios</label>
+            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-editar_lote_ajeno" data-testid="perfil-permiso-editar_lote_ajeno" /> Editar lotes ajenos</label>
+            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-borrar_lote_propio" data-testid="perfil-permiso-borrar_lote_propio" /> Borrar lotes propios</label>
+            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-borrar_lote_ajeno" data-testid="perfil-permiso-borrar_lote_ajeno" /> Borrar lotes ajenos</label>
+            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-ver_todos_los_lotes" data-testid="perfil-permiso-ver_todos_los_lotes" /> Ver todos los lotes</label>
+            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_usuarios" data-testid="perfil-permiso-administrar_usuarios" /> Administrar usuarios</label>
+          </fieldset>
+          <button type="submit" id="perfil-guardar-btn" data-testid="perfil-guardar">Guardar perfil</button>
+          <p id="perfil-error" class="mensaje-error oculto" data-testid="perfil-error"></p>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <!-- Vista en lista/grilla de los lotes cargados, alternativa al mapa -->
+  <div id="vista-lista" class="oculto panel-pantalla-completa" data-testid="vista-lista">
+    <div id="vista-lista-header" class="panel-header">
+      <h2>Lotes cargados</h2>
+      <button id="cerrar-vista-lista" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <p id="vista-lista-vacio" class="oculto">Todavía no hay lotes cargados.</p>
+    <table id="tabla-lotes" class="tabla-panel" data-testid="tabla-lotes">
+      <thead>
+        <tr>
+          <th>Lote</th>
+          <th>Superficie</th>
+          <th>Estado</th>
+          <th>Precio</th>
+          <th>Servicios</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tabla-lotes-cuerpo"></tbody>
+    </table>
+  </div>
+
+  <!-- Panel de navegación a pie / brújula -->
+  <div id="panel-navegacion" class="oculto" data-testid="panel-navegacion">
+    <button id="cerrar-navegacion" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    <div id="brujula-flecha" data-testid="brujula-flecha">&#8593;</div>
+    <p id="nav-mensaje" data-testid="nav-mensaje">Buscando tu ubicación&hellip;</p>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
