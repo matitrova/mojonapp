@@ -489,6 +489,98 @@ button:active {
   user-select: text;
 }
 
+/* Lista de interesados por lote (mini-CRM liviano) — mismo look de
+   "caja" que .fieldset-servicios/.permisos-seccion, para que se sienta
+   consistente con el resto de la ficha. */
+#ficha-interesados {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: var(--color-fondo-alterno);
+  padding: 10px 12px 12px;
+  margin-bottom: 12px;
+}
+
+.ficha-interesados-titulo {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+#lista-interesados {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#lista-interesados:empty {
+  display: none;
+}
+
+.fila-interesado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--color-fondo);
+  border-radius: var(--radio-chico);
+  padding: 6px 8px;
+  font-size: 0.82rem;
+}
+
+.fila-interesado-datos strong {
+  color: var(--color-texto);
+}
+
+.fila-interesado-datos span {
+  color: var(--color-texto-secundario);
+}
+
+.fila-interesado button {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--color-vendido);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+#formulario-interesado {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+#formulario-interesado input {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 8px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: #fff;
+  color: var(--color-texto);
+}
+
+#formulario-interesado button[type="submit"] {
+  border: 1px dashed var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: none;
+  color: var(--color-texto-secundario);
+  padding: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#formulario-interesado button[type="submit"]:hover {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
 /* Panel de navegación a pie con brújula */
 #panel-navegacion {
   position: fixed;

@@ -19,7 +19,9 @@ import {
   setDoc,
   doc,
   query,
-  where
+  where,
+  arrayUnion,
+  arrayRemove
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import {
   signInWithEmailAndPassword,
@@ -585,6 +587,94 @@ const elEstado = document.getElementById("ficha-estado");
 const elPrecio = document.getElementById("ficha-precio");
 const elServicios = document.getElementById("ficha-servicios");
 const elObservaciones = document.getElementById("ficha-observaciones");
+
+// Interesados: mini-CRM liviano, solo para quien puede editar el lote.
+const elFichaInteresados = document.getElementById("ficha-interesados");
+const elListaInteresados = document.getElementById("lista-interesados");
+const formularioInteresado = document.getElementById("formulario-interesado");
+const elInteresadoNombre = document.getElementById("interesado-nombre");
+const elInteresadoTelefono = document.getElementById("interesado-telefono");
+const elInteresadoNota = document.getElementById("interesado-nota");
+const elInteresadoError = document.getElementById("interesado-error");
+
+function renderInteresados(feature) {
+  const interesados = feature.properties.interesados || [];
+  elListaInteresados.innerHTML = "";
+  interesados.forEach((interesado) => {
+    const fila = document.createElement("li");
+    fila.className = "fila-interesado";
+
+    const datos = document.createElement("div");
+    datos.className = "fila-interesado-datos";
+    const fecha = interesado.fecha
+      ? new Date(`${interesado.fecha}T00:00:00`).toLocaleDateString("es-AR")
+      : "";
+    datos.innerHTML = `<strong>${interesado.nombre}</strong>${
+      interesado.telefono ? ` · ${interesado.telefono}` : ""
+    }${interesado.nota ? ` · ${interesado.nota}` : ""}${fecha ? ` <span>(${fecha})</span>` : ""}`;
+
+    const botonBorrar = document.createElement("button");
+    botonBorrar.type = "button";
+    botonBorrar.textContent = "Borrar";
+    botonBorrar.addEventListener("click", () => borrarInteresado(feature, interesado));
+
+    fila.append(datos, botonBorrar);
+    elListaInteresados.appendChild(fila);
+  });
+}
+
+async function borrarInteresado(feature, interesado) {
+  if (!window.confirm(`¿Borrar a "${interesado.nombre}" de los interesados en este lote?`)) return;
+  try {
+    await updateDoc(doc(db, COLECCION_LOTES, feature.id), { interesados: arrayRemove(interesado) });
+    feature.properties.interesados = (feature.properties.interesados || []).filter((i) => i !== interesado);
+    renderInteresados(feature);
+  } catch (error) {
+    window.alert(
+      error.code === "permission-denied"
+        ? "No tenés permiso para borrar interesados."
+        : "No se pudo borrar."
+    );
+  }
+}
+
+formularioInteresado.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  if (!lotePolyLayerSeleccionado) return;
+  elInteresadoError.classList.add("oculto");
+
+  const nombre = elInteresadoNombre.value.trim();
+  if (!nombre) return;
+  const interesado = {
+    nombre,
+    telefono: elInteresadoTelefono.value.trim() || null,
+    nota: elInteresadoNota.value.trim() || null,
+    fecha: new Date().toISOString().slice(0, 10)
+  };
+
+  const boton = document.getElementById("interesado-guardar-btn");
+  boton.disabled = true;
+  try {
+    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), {
+      interesados: arrayUnion(interesado)
+    });
+    if (!lotePolyLayerSeleccionado.properties.interesados) {
+      lotePolyLayerSeleccionado.properties.interesados = [];
+    }
+    lotePolyLayerSeleccionado.properties.interesados.push(interesado);
+    renderInteresados(lotePolyLayerSeleccionado);
+    formularioInteresado.reset();
+  } catch (error) {
+    elInteresadoError.textContent =
+      error.code === "permission-denied"
+        ? "No tenés permiso para agregar interesados."
+        : "No se pudo guardar.";
+    elInteresadoError.classList.remove("oculto");
+  } finally {
+    boton.disabled = false;
+  }
+});
+
 const elBtnEditarServicios = document.getElementById("btn-editar-servicios");
 const elEditorServicios = document.getElementById("editor-servicios");
 const elEditarServicioLuz = document.getElementById("editar-servicio-luz");
@@ -658,6 +748,8 @@ function mostrarFicha(feature) {
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
   document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
+  elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(feature));
+  renderInteresados(feature);
   cerrarEditorServicios(); // por si había quedado abierto en el lote anterior
   cerrarEditorSector();
   cerrarEditorBarrio();
@@ -1445,6 +1537,7 @@ onAuthStateChanged(auth, async (usuario) => {
   if (lotePolyLayerSeleccionado) {
     document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(lotePolyLayerSeleccionado));
     document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
+    elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
     cerrarEditorServicios();
     cerrarEditorSector();
     cerrarEditorBarrio();

@@ -164,6 +164,20 @@
       </div>
       <p id="editor-barrio-error" class="mensaje-error oculto" data-testid="editor-barrio-error"></p>
     </div>
+    <!-- Solo visible para quien puede editar el lote (corredor logueado
+         con permiso) — a un comprador que mira el mapa sin sesión no le
+         corresponde ver quién más preguntó por este lote. -->
+    <div id="ficha-interesados" class="oculto" data-testid="ficha-interesados">
+      <p class="ficha-interesados-titulo">Interesados</p>
+      <ul id="lista-interesados" data-testid="lista-interesados"></ul>
+      <form id="formulario-interesado">
+        <input type="text" id="interesado-nombre" data-testid="interesado-nombre" placeholder="Nombre" required />
+        <input type="text" id="interesado-telefono" data-testid="interesado-telefono" placeholder="Teléfono (opcional)" />
+        <input type="text" id="interesado-nota" data-testid="interesado-nota" placeholder="Nota (opcional)" />
+        <button type="submit" id="interesado-guardar-btn" data-testid="interesado-guardar">+ Agregar interesado</button>
+        <p id="interesado-error" class="mensaje-error oculto" data-testid="interesado-error"></p>
+      </form>
+    </div>
     <div class="ficha-botones">
       <button id="btn-como-llegar" data-testid="btn-como-llegar">Ver en el mapa</button>
       <button id="btn-estoy-yendo" data-testid="btn-estoy-yendo">Estoy yendo</button>
