@@ -358,16 +358,33 @@
           <label>Nombre del perfil
             <input type="text" id="perfil-nombre" data-testid="perfil-nombre" required />
           </label>
-          <fieldset class="fieldset-servicios">
-            <legend>Permisos</legend>
-            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-cargar_lote" data-testid="perfil-permiso-cargar_lote" /> Cargar lotes</label>
-            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-editar_lote_propio" data-testid="perfil-permiso-editar_lote_propio" /> Editar lotes propios</label>
-            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-editar_lote_ajeno" data-testid="perfil-permiso-editar_lote_ajeno" /> Editar lotes ajenos</label>
-            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-borrar_lote_propio" data-testid="perfil-permiso-borrar_lote_propio" /> Borrar lotes propios</label>
-            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-borrar_lote_ajeno" data-testid="perfil-permiso-borrar_lote_ajeno" /> Borrar lotes ajenos</label>
-            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-ver_todos_los_lotes" data-testid="perfil-permiso-ver_todos_los_lotes" /> Ver todos los lotes</label>
-            <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_usuarios" data-testid="perfil-permiso-administrar_usuarios" /> Administrar usuarios</label>
-          </fieldset>
+          <div class="permisos-arbol">
+            <p class="permisos-arbol-titulo">Permisos</p>
+
+            <div class="permisos-seccion">
+              <label class="permisos-seccion-titulo">
+                <input type="checkbox" id="perfil-seccion-lotes" data-testid="perfil-seccion-lotes" /> Lotes
+              </label>
+              <div class="permisos-seccion-items">
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-cargar_lote" data-testid="perfil-permiso-cargar_lote" /> Cargar lotes</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-ver_todos_los_lotes" data-testid="perfil-permiso-ver_todos_los_lotes" /> Ver todos los lotes</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-editar_lote_propio" data-testid="perfil-permiso-editar_lote_propio" /> Editar lotes propios</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-editar_lote_ajeno" data-testid="perfil-permiso-editar_lote_ajeno" /> Editar lotes ajenos</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-borrar_lote_propio" data-testid="perfil-permiso-borrar_lote_propio" /> Borrar lotes propios</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-borrar_lote_ajeno" data-testid="perfil-permiso-borrar_lote_ajeno" /> Borrar lotes ajenos</label>
+              </div>
+            </div>
+
+            <div class="permisos-seccion">
+              <label class="permisos-seccion-titulo">
+                <input type="checkbox" id="perfil-seccion-administracion" data-testid="perfil-seccion-administracion" /> Administración
+              </label>
+              <div class="permisos-seccion-items">
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_sectores" data-testid="perfil-permiso-administrar_sectores" /> Administrar sectores/zonas</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_usuarios" data-testid="perfil-permiso-administrar_usuarios" /> Administrar usuarios</label>
+              </div>
+            </div>
+          </div>
           <button type="submit" id="perfil-guardar-btn" data-testid="perfil-guardar">Guardar perfil</button>
           <p id="perfil-error" class="mensaje-error oculto" data-testid="perfil-error"></p>
         </form>

@@ -1996,16 +1996,34 @@ document.querySelectorAll(".hoja-inferior, #ficha-lote").forEach((el) => {
 // (firestore.rules repite esta misma lógica del lado del servidor).
 // ---------------------------------------------------------------------------
 
-const PERMISOS_INFO = [
-  { clave: "cargar_lote", etiqueta: "Cargar lotes" },
-  { clave: "editar_lote_propio", etiqueta: "Editar lotes propios" },
-  { clave: "editar_lote_ajeno", etiqueta: "Editar lotes ajenos" },
-  { clave: "borrar_lote_propio", etiqueta: "Borrar lotes propios" },
-  { clave: "borrar_lote_ajeno", etiqueta: "Borrar lotes ajenos" },
-  { clave: "ver_todos_los_lotes", etiqueta: "Ver todos los lotes" },
-  { clave: "administrar_sectores", etiqueta: "Administrar sectores/zonas" },
-  { clave: "administrar_usuarios", etiqueta: "Administrar usuarios" }
+// Agrupados en secciones para el formulario de perfil (checkbox
+// "maestro" por sección, ver más abajo) — el resto del código que solo
+// necesita la lista plana (guardar, leer, resumen en la tabla) usa
+// PERMISOS_INFO, derivada de acá.
+const PERMISOS_SECCIONES = [
+  {
+    id: "lotes",
+    nombre: "Lotes",
+    permisos: [
+      { clave: "cargar_lote", etiqueta: "Cargar lotes" },
+      { clave: "ver_todos_los_lotes", etiqueta: "Ver todos los lotes" },
+      { clave: "editar_lote_propio", etiqueta: "Editar lotes propios" },
+      { clave: "editar_lote_ajeno", etiqueta: "Editar lotes ajenos" },
+      { clave: "borrar_lote_propio", etiqueta: "Borrar lotes propios" },
+      { clave: "borrar_lote_ajeno", etiqueta: "Borrar lotes ajenos" }
+    ]
+  },
+  {
+    id: "administracion",
+    nombre: "Administración",
+    permisos: [
+      { clave: "administrar_sectores", etiqueta: "Administrar sectores/zonas" },
+      { clave: "administrar_usuarios", etiqueta: "Administrar usuarios" }
+    ]
+  }
 ];
+
+const PERMISOS_INFO = PERMISOS_SECCIONES.flatMap((s) => s.permisos);
 
 const elPanelAdmin = document.getElementById("panel-admin");
 const elMenuSeguridadUsuarios = document.getElementById("menu-seguridad-usuarios");
@@ -2047,6 +2065,42 @@ let perfilesActuales = []; // último resultado de cargarPerfiles(), lo reusa el
 function elCheckboxPermiso(clave) {
   return document.getElementById(`perfil-permiso-${clave}`);
 }
+
+function elCheckboxSeccion(id) {
+  return document.getElementById(`perfil-seccion-${id}`);
+}
+
+// El checkbox "maestro" de una sección (Lotes, Administración...)
+// refleja el estado de sus permisos hijos: tildado si están todos,
+// "indeterminate" (el guioncito de Firefox/Chrome) si hay una mezcla,
+// destildado si no hay ninguno. Se llama cada vez que cambia un
+// permiso individual, y al precargar un perfil para editarlo.
+function actualizarCheckboxSeccion(seccion) {
+  const casillas = seccion.permisos.map(({ clave }) => elCheckboxPermiso(clave));
+  const marcadas = casillas.filter((c) => c.checked).length;
+  const master = elCheckboxSeccion(seccion.id);
+  master.checked = marcadas === casillas.length;
+  master.indeterminate = marcadas > 0 && marcadas < casillas.length;
+}
+
+function actualizarTodosLosCheckboxSeccion() {
+  PERMISOS_SECCIONES.forEach(actualizarCheckboxSeccion);
+}
+
+// Tocar el checkbox de una sección tilda/destilda de una todos sus
+// permisos — no hace falta ir uno por uno para dar (o sacar) un bloque
+// entero de acceso, como "todo Administración".
+PERMISOS_SECCIONES.forEach((seccion) => {
+  elCheckboxSeccion(seccion.id).addEventListener("change", (evento) => {
+    seccion.permisos.forEach(({ clave }) => {
+      elCheckboxPermiso(clave).checked = evento.target.checked;
+    });
+    evento.target.indeterminate = false;
+  });
+  seccion.permisos.forEach(({ clave }) => {
+    elCheckboxPermiso(clave).addEventListener("change", () => actualizarCheckboxSeccion(seccion));
+  });
+});
 
 function resumenPermisos(permisos) {
   const activos = PERMISOS_INFO.filter(({ clave }) => permisos?.[clave]).map(({ etiqueta }) => etiqueta);
@@ -2130,6 +2184,10 @@ function mostrarFormPerfil(perfil) {
     elPerfilIdEditando.value = "";
     elPerfilFormTitulo.textContent = "Nuevo perfil";
   }
+  // formularioPerfil.reset() no dispara "change" en los checkboxes, así
+  // que los maestros de sección quedan desincronizados si no se los
+  // recalcula acá a mano (tanto al editar como al abrir en blanco).
+  actualizarTodosLosCheckboxSeccion();
   elPerfilesVistaLista.classList.add("oculto");
   elPerfilesVistaForm.classList.remove("oculto");
 }

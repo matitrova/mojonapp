@@ -555,6 +555,48 @@ button:active {
   padding: 0;
 }
 
+/* Árbol de permisos en "Perfiles de seguridad": secciones (Lotes,
+   Administración...) con un checkbox "maestro" que tilda/destilda a
+   todos sus permisos hijos de una — ver PERMISOS_SECCIONES en app.js. */
+.permisos-arbol-titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+  margin: 0 0 -4px;
+}
+
+.permisos-seccion {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: var(--color-fondo-alterno);
+  padding: 10px 12px;
+}
+
+.permisos-seccion + .permisos-seccion {
+  margin-top: 8px;
+}
+
+.permisos-seccion-titulo {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px !important;
+  font-weight: 700 !important;
+  color: var(--color-texto) !important;
+}
+
+.permisos-seccion-titulo input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+}
+
+.permisos-seccion-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 0 24px;
+}
+
 /* Chips de servicios: reusados en la ficha del lote y en la vista en
    grilla. Sin dato cargado (lotes importados del catastro, que no trae
    este dato) se distingue de "no tiene el servicio": ahí no se muestra
