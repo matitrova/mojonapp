@@ -90,7 +90,8 @@ let corredorLogueado = false; // se actualiza en onAuthStateChanged; true con cu
 // tienePermiso() sin necesidad de tildar cada permiso a mano.
 let miPerfilActual = null;
 let lotesActuales = []; // último resultado de cargarLotesDesdeFirestore, lo reusa la vista en lista
-let sectoresActuales = []; // catálogo de sectores/zonas (colección "sectores"), alimenta los combos
+let sectoresActuales = []; // catálogo de zonas (colección "sectores"), alimenta los combos
+let barriosActuales = []; // catálogo de barrios (colección "barrios") — misma idea, categoría independiente de zona
 let watchId = null; // id de navigator.geolocation.watchPosition, para poder cancelarlo
 let listenerOrientacion = null; // referencia al handler de deviceorientation, para poder sacarlo
 
@@ -112,23 +113,45 @@ async function cargarSectores() {
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
   } catch {
     // Si falla (reglas viejas sin esta colección, sin conexión, etc.) el
-    // combo queda con "Sin sector" nomás — no puede tirar abajo el login
+    // combo queda con "Sin zona" nomás — no puede tirar abajo el login
     // ni el resto de la carga de lotes.
     sectoresActuales = [];
   }
 }
 
-// valorActual: el sector que ya tiene el lote (si lo tiene), para
+// Mismo catálogo que zonas, colección separada — un lote tiene zona Y
+// barrio a la vez, son dos categorías independientes.
+async function cargarBarrios() {
+  try {
+    const snapshot = await getDocs(collection(db, "barrios"));
+    barriosActuales = snapshot.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  } catch {
+    barriosActuales = [];
+  }
+}
+
+// valorActual: el nombre que ya tiene el lote (si lo tiene), para
 // preseleccionarlo — y para no perderlo si ya no está en el catálogo
 // (se borró después de asignárselo a este lote, o se cargó a mano antes
-// de que existiera esta lista).
-function poblarSelectSector(elSelect, valorActual) {
-  const opciones = sectoresActuales.map((s) => `<option value="${s.nombre}">${s.nombre}</option>`);
-  if (valorActual && !sectoresActuales.some((s) => s.nombre === valorActual)) {
+// de que existiera esta lista). catalogo/textoVacio parametrizan entre
+// zona y barrio, que comparten exactamente esta misma lógica.
+function poblarSelectCatalogo(elSelect, valorActual, catalogo, textoVacio) {
+  const opciones = catalogo.map((s) => `<option value="${s.nombre}">${s.nombre}</option>`);
+  if (valorActual && !catalogo.some((s) => s.nombre === valorActual)) {
     opciones.push(`<option value="${valorActual}">${valorActual} (fuera del catálogo)</option>`);
   }
-  elSelect.innerHTML = '<option value="">Sin sector</option>' + opciones.join("");
+  elSelect.innerHTML = `<option value="">${textoVacio}</option>` + opciones.join("");
   elSelect.value = valorActual || "";
+}
+
+function poblarSelectSector(elSelect, valorActual) {
+  poblarSelectCatalogo(elSelect, valorActual, sectoresActuales, "Sin zona");
+}
+
+function poblarSelectBarrio(elSelect, valorActual) {
+  poblarSelectCatalogo(elSelect, valorActual, barriosActuales, "Sin barrio");
 }
 
 // ---------------------------------------------------------------------------
@@ -304,7 +327,7 @@ async function cargarLotesDesdeFirestore() {
         // tocar el lote — pedido explícito. "sticky" para que el cartel
         // siga al cursor en vez de quedar fijo en un punto del
         // polígono (con lotes grandes, quedaba lejos del mouse).
-        layer.bindTooltip(contenidoTooltipLote(feature.properties), {
+        layer.bindTooltip(contenidoTooltipLote(feature), {
           direction: "top",
           sticky: true,
           className: "tooltip-lote-mapa"
@@ -395,6 +418,42 @@ function areaEnM2(anillo) {
     area2 += x0 * y1 - x1 * y0;
   }
   return Math.abs(area2) / 2;
+}
+
+// Largo en metros de cada lado de un anillo de polígono ([lon, lat], ...),
+// en el orden en que están los vértices — misma proyección local que
+// areaEnM2, más que suficiente de precisa para un lote (decenas de
+// metros, no kilómetros). Se usa para mostrar "cuánto mide" un lote sin
+// que el corredor tenga que medir nada a mano: pedido explícito, para
+// saber el frente/fondo de un terreno con solo mirarlo.
+function ladosDelPoligonoEnMetros(anillo) {
+  const puntos = anillo[0][0] === anillo[anillo.length - 1][0] && anillo[0][1] === anillo[anillo.length - 1][1]
+    ? anillo.slice(0, -1)
+    : anillo;
+  if (puntos.length < 2) return [];
+
+  const [lonOrigen, latOrigen] = puntos[0];
+  const mPorGradoLat = 111320;
+  const mPorGradoLon = 111320 * Math.cos(aRadianes(latOrigen));
+  const puntosMetros = puntos.map(([lon, lat]) => [
+    (lon - lonOrigen) * mPorGradoLon,
+    (lat - latOrigen) * mPorGradoLat
+  ]);
+
+  return puntosMetros.map(([x0, y0], i) => {
+    const [x1, y1] = puntosMetros[(i + 1) % puntosMetros.length];
+    return Math.hypot(x1 - x0, y1 - y0);
+  });
+}
+
+// Texto listo para mostrar ("45.2 m, 30.1 m, 44.8 m, 29.9 m") — no se
+// etiqueta como "frente"/"fondo" porque no hay forma de saber desde la
+// geometría sola cuál lado da a la calle; se listan en orden y el
+// corredor, que conoce el lote, los reconoce con solo mirar el mapa.
+function textoMedidasLados(anillo) {
+  const lados = ladosDelPoligonoEnMetros(anillo);
+  if (lados.length === 0) return "Sin datos";
+  return lados.map((m) => `${m.toFixed(1)} m`).join(", ");
 }
 
 // Ray casting: ¿el punto (lat, lon) está dentro del anillo exterior?
@@ -504,6 +563,7 @@ document.querySelectorAll(".drawer-grupo-titulo").forEach((boton) => {
 const elFicha = document.getElementById("ficha-lote");
 const elTitulo = document.getElementById("ficha-titulo");
 const elSuperficie = document.getElementById("ficha-superficie");
+const elMedidas = document.getElementById("ficha-medidas");
 const elEstado = document.getElementById("ficha-estado");
 const elPrecio = document.getElementById("ficha-precio");
 const elServicios = document.getElementById("ficha-servicios");
@@ -526,6 +586,14 @@ const elBtnGuardarSector = document.getElementById("btn-guardar-sector");
 const elBtnCancelarSector = document.getElementById("btn-cancelar-sector");
 const elEditorSectorError = document.getElementById("editor-sector-error");
 
+const elBarrio = document.getElementById("ficha-barrio");
+const elBtnEditarBarrio = document.getElementById("btn-editar-barrio");
+const elEditorBarrio = document.getElementById("editor-barrio");
+const elEditarBarrioValor = document.getElementById("editar-barrio-valor");
+const elBtnGuardarBarrio = document.getElementById("btn-guardar-barrio");
+const elBtnCancelarBarrio = document.getElementById("btn-cancelar-barrio");
+const elEditorBarrioError = document.getElementById("editor-barrio-error");
+
 // Varios lotes reales todavía no tienen nomenclatura catastral asignada ni
 // manzana/lote definidos (loteos nuevos, en trámite). Se arma el título con
 // el mejor identificador disponible, sin mostrar nunca "null".
@@ -538,13 +606,16 @@ function tituloLote(p) {
 // Contenido del cartel que aparece al pasar el mouse por encima de un
 // lote cargado (ver bindTooltip en cargarLotesDesdeFirestore) — un
 // resumen rápido sin tener que tocarlo y abrir la ficha completa.
-function contenidoTooltipLote(p) {
+function contenidoTooltipLote(feature) {
+  const p = feature.properties;
   const superficie = p.superficie_m2 == null ? "Sin datos" : `${p.superficie_m2} m²`;
   const precio = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   return `
     <div class="tooltip-lote-titulo">${tituloLote(p)}</div>
-    <div>Sector: ${p.sector || "Sin datos"}</div>
+    <div>Zona: ${p.sector || "Sin datos"}</div>
+    <div>Barrio: ${p.barrio || "Sin datos"}</div>
     <div>Superficie: ${superficie}</div>
+    <div>Medidas: ${textoMedidasLados(feature.geometry.coordinates[0])}</div>
     <div>Estado: ${ETIQUETA_ESTADO[p.estado] || p.estado}</div>
     <div>Precio: ${precio}</div>
   `;
@@ -556,11 +627,13 @@ function mostrarFicha(feature) {
 
   elTitulo.textContent = tituloLote(p);
   elSector.textContent = p.sector || "Sin datos";
+  elBarrio.textContent = p.barrio || "Sin datos";
   // superficie_m2 puede venir en null: el catastro no siempre la declara
   // para sub-parcelas (se vio con datos reales de "+ Manzana"), y a
   // diferencia del formulario manual, la importación en bloque no pasa
   // por el "required" del campo — puede llegar null a Firestore.
   elSuperficie.textContent = p.superficie_m2 == null ? "Sin datos" : `${p.superficie_m2} m²`;
+  elMedidas.textContent = textoMedidasLados(feature.geometry.coordinates[0]);
   elEstado.textContent = ETIQUETA_ESTADO[p.estado] || p.estado;
   elPrecio.textContent = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   elServicios.innerHTML = renderServiciosHTML(p.servicios);
@@ -570,6 +643,7 @@ function mostrarFicha(feature) {
   document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
   cerrarEditorServicios(); // por si había quedado abierto en el lote anterior
   cerrarEditorSector();
+  cerrarEditorBarrio();
 
   abrirHoja(elFicha);
 }
@@ -590,6 +664,7 @@ document.getElementById("btn-editar-lote-completo").addEventListener("click", ()
   elFicha.classList.add("oculto");
   document.getElementById("panel-admin").classList.add("oculto");
   document.getElementById("panel-sectores").classList.add("oculto");
+  document.getElementById("panel-barrios").classList.add("oculto");
   elVistaLista.classList.remove("oculto");
   elBtnVerLista.classList.add("activo");
   loteEditadoDesdeFicha = true;
@@ -691,11 +766,56 @@ elBtnGuardarSector.addEventListener("click", async () => {
   } catch (error) {
     elEditorSectorError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para editar el sector. Iniciá sesión de nuevo."
-        : "No se pudo guardar el sector.";
+        ? "No tenés permiso para editar la zona. Iniciá sesión de nuevo."
+        : "No se pudo guardar la zona.";
     elEditorSectorError.classList.remove("oculto");
   } finally {
     elBtnGuardarSector.disabled = false;
+  }
+});
+
+// Editar barrio: mismo patrón exacto que "Editar zona" arriba — segunda
+// categorización independiente de un lote.
+function cerrarEditorBarrio() {
+  elEditorBarrio.classList.add("oculto");
+  elBarrio.classList.remove("oculto");
+  elBtnEditarBarrio.classList.toggle(
+    "oculto",
+    !lotePolyLayerSeleccionado || !puedeEditarLote(lotePolyLayerSeleccionado)
+  );
+  elEditorBarrioError.classList.add("oculto");
+}
+
+elBtnEditarBarrio.addEventListener("click", () => {
+  poblarSelectBarrio(elEditarBarrioValor, lotePolyLayerSeleccionado?.properties?.barrio);
+  elBarrio.classList.add("oculto");
+  elBtnEditarBarrio.classList.add("oculto");
+  elEditorBarrio.classList.remove("oculto");
+  elEditarBarrioValor.focus();
+});
+
+elBtnCancelarBarrio.addEventListener("click", cerrarEditorBarrio);
+
+elBtnGuardarBarrio.addEventListener("click", async () => {
+  if (!lotePolyLayerSeleccionado) return;
+  const barrio = elEditarBarrioValor.value.trim() || null;
+
+  elBtnGuardarBarrio.disabled = true;
+  elEditorBarrioError.classList.add("oculto");
+  try {
+    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { barrio });
+    lotePolyLayerSeleccionado.properties.barrio = barrio;
+    elBarrio.textContent = barrio || "Sin datos";
+    cerrarEditorBarrio();
+    cargarLotesDesdeFirestore(); // refresca mapa y grilla; la ficha ya se actualizó sola arriba
+  } catch (error) {
+    elEditorBarrioError.textContent =
+      error.code === "permission-denied"
+        ? "No tenés permiso para editar el barrio. Iniciá sesión de nuevo."
+        : "No se pudo guardar el barrio.";
+    elEditorBarrioError.classList.remove("oculto");
+  } finally {
+    elBtnGuardarBarrio.disabled = false;
   }
 });
 
@@ -743,6 +863,7 @@ const elVistaListaSinResultados = document.getElementById("vista-lista-sin-resul
 const elTablaLotes = document.getElementById("tabla-lotes");
 const elTablaLotesCuerpo = document.getElementById("tabla-lotes-cuerpo");
 const elFiltroSector = document.getElementById("filtro-sector");
+const elFiltroBarrio = document.getElementById("filtro-barrio");
 const elFiltroEstado = document.getElementById("filtro-estado");
 
 const elLoteVistaLista = document.getElementById("lote-vista-lista");
@@ -757,6 +878,7 @@ const elEditarLoteSuperficie = document.getElementById("editar-lote-superficie")
 const elEditarLoteEstado = document.getElementById("editar-lote-estado");
 const elEditarLotePrecio = document.getElementById("editar-lote-precio");
 const elEditarLoteSector = document.getElementById("editar-lote-sector");
+const elEditarLoteBarrio = document.getElementById("editar-lote-barrio");
 const elEditarLoteServicioLuz = document.getElementById("editar-lote-servicio-luz");
 const elEditarLoteServicioAgua = document.getElementById("editar-lote-servicio-agua");
 const elEditarLoteServicioGas = document.getElementById("editar-lote-servicio-gas");
@@ -771,21 +893,31 @@ let loteEditandoDesdeGrilla = null; // feature actual del formulario de edición
 let loteEditadoDesdeFicha = false;
 
 // El filtro se arma con lo que ya se cargó, no con el catálogo entero —
-// no tiene sentido ofrecer para filtrar un sector que ningún lote tiene
-// puesto todavía.
+// no tiene sentido ofrecer para filtrar una zona que ningún lote tiene
+// puesto todavía. Misma lógica para zona y barrio.
 function actualizarOpcionesFiltroSector() {
   const seleccionPrevia = elFiltroSector.value;
   const sectores = [...new Set(lotesActuales.map((f) => f.properties.sector).filter(Boolean))].sort();
   elFiltroSector.innerHTML =
-    '<option value="">Todos los sectores</option>' +
+    '<option value="">Todas las zonas</option>' +
     sectores.map((s) => `<option value="${s}">${s}</option>`).join("");
   if (sectores.includes(seleccionPrevia)) elFiltroSector.value = seleccionPrevia;
+}
+
+function actualizarOpcionesFiltroBarrio() {
+  const seleccionPrevia = elFiltroBarrio.value;
+  const barrios = [...new Set(lotesActuales.map((f) => f.properties.barrio).filter(Boolean))].sort();
+  elFiltroBarrio.innerHTML =
+    '<option value="">Todos los barrios</option>' +
+    barrios.map((b) => `<option value="${b}">${b}</option>`).join("");
+  if (barrios.includes(seleccionPrevia)) elFiltroBarrio.value = seleccionPrevia;
 }
 
 function lotesFiltrados() {
   return lotesActuales.filter((feature) => {
     const p = feature.properties;
     if (elFiltroSector.value && p.sector !== elFiltroSector.value) return false;
+    if (elFiltroBarrio.value && p.barrio !== elFiltroBarrio.value) return false;
     if (elFiltroEstado.value && p.estado !== elFiltroEstado.value) return false;
     return true;
   });
@@ -793,6 +925,7 @@ function lotesFiltrados() {
 
 function actualizarVistaLista() {
   actualizarOpcionesFiltroSector();
+  actualizarOpcionesFiltroBarrio();
   const lotes = lotesFiltrados();
 
   elTablaLotesCuerpo.innerHTML = "";
@@ -811,6 +944,7 @@ function actualizarVistaLista() {
     fila.innerHTML = `
       <td>${tituloLote(p)}</td>
       <td>${p.sector || "—"}</td>
+      <td>${p.barrio || "—"}</td>
       <td>${p.superficie_m2 == null ? "—" : `${p.superficie_m2} m²`}</td>
       <td>${ETIQUETA_ESTADO[p.estado] || p.estado}</td>
       <td>${p.precio_usd == null ? "—" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`}</td>
@@ -859,6 +993,7 @@ function actualizarVistaLista() {
 }
 
 elFiltroSector.addEventListener("change", actualizarVistaLista);
+elFiltroBarrio.addEventListener("change", actualizarVistaLista);
 elFiltroEstado.addEventListener("change", actualizarVistaLista);
 
 // Editar un lote directo desde la grilla (sin pasar por el mapa/ficha):
@@ -884,6 +1019,7 @@ function mostrarEditarLoteDesdeGrilla(feature) {
   elEditarLoteEstado.value = p.estado || "disponible";
   elEditarLotePrecio.value = p.precio_usd ?? "";
   poblarSelectSector(elEditarLoteSector, p.sector);
+  poblarSelectBarrio(elEditarLoteBarrio, p.barrio);
   const s = p.servicios || {};
   elEditarLoteServicioLuz.checked = !!s.luz;
   elEditarLoteServicioAgua.checked = !!s.agua;
@@ -931,6 +1067,7 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
       estado: elEditarLoteEstado.value,
       precio_usd: elEditarLotePrecio.value.trim() === "" ? null : Number(elEditarLotePrecio.value),
       sector: elEditarLoteSector.value.trim() || null,
+      barrio: elEditarLoteBarrio.value.trim() || null,
       servicios: {
         luz: elEditarLoteServicioLuz.checked,
         agua: elEditarLoteServicioAgua.checked,
@@ -974,7 +1111,8 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
 elBtnVerLista.addEventListener("click", () => {
   const mostrar = elVistaLista.classList.contains("oculto");
   document.getElementById("panel-admin").classList.add("oculto"); // no superponer con "Seguridad"
-  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Sectores"
+  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Zonas"
+  document.getElementById("panel-barrios").classList.add("oculto"); // ni con "Barrios"
   if (mostrar) mostrarListaLotesGrilla(); // siempre arranca en la lista, no en edición
   elVistaLista.classList.toggle("oculto", !mostrar);
   elBtnVerLista.classList.toggle("activo", mostrar);
@@ -1208,15 +1346,18 @@ onAuthStateChanged(auth, async (usuario) => {
     document.getElementById("drawer-sesion-activa").classList.remove("oculto");
     elSesionEmail.textContent = usuario.email;
     actualizarUIPorPermisos();
-    // El catálogo de sectores necesita sesión para leerse (ver
+    // El catálogo de zonas/barrios necesita sesión para leerse (ver
     // firestore.rules), así que se carga acá y no al arrancar la app.
     await cargarSectores();
+    await cargarBarrios();
     poblarSelectSector(elLoteSector, elLoteSector.value);
+    poblarSelectBarrio(elLoteBarrio, elLoteBarrio.value);
   } else {
     elBtnAbrirLogin.classList.remove("oculto");
     elSesionActiva.classList.add("oculto");
     document.getElementById("drawer-sesion-activa").classList.add("oculto");
     sectoresActuales = [];
+    barriosActuales = [];
     // Cerrar sesión apaga todas las herramientas de corredor, no solo
     // "+ Lote": sin esto, si alguien cerraba sesión con "Ver catastro
     // cercano" prendido (o cualquier otro panel abierto), el botón para
@@ -1235,6 +1376,7 @@ onAuthStateChanged(auth, async (usuario) => {
     document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
     cerrarEditorServicios();
     cerrarEditorSector();
+    cerrarEditorBarrio();
   }
 
   // El alcance de la consulta a Firestore depende del permiso
@@ -1254,6 +1396,7 @@ const elLoteManzana = document.getElementById("lote-manzana");
 const elLoteNumero = document.getElementById("lote-numero");
 const elLoteNomenclatura = document.getElementById("lote-nomenclatura");
 const elLoteSector = document.getElementById("lote-sector");
+const elLoteBarrio = document.getElementById("lote-barrio");
 const elLoteSuperficie = document.getElementById("lote-superficie");
 const elLoteEstado = document.getElementById("lote-estado");
 const elLotePrecio = document.getElementById("lote-precio");
@@ -1279,6 +1422,7 @@ function limpiarFormLote() {
 elBtnCargarLote.addEventListener("click", () => {
   limpiarFormLote();
   poblarSelectSector(elLoteSector, null);
+  poblarSelectBarrio(elLoteBarrio, null);
   abrirHoja(elFormLote);
 });
 document.getElementById("cerrar-form-lote").addEventListener("click", () => {
@@ -1373,6 +1517,7 @@ formularioLote.addEventListener("submit", async (evento) => {
       lote: elLoteNumero.value.trim() || null,
       nomenclatura,
       sector: elLoteSector.value.trim() || null,
+      barrio: elLoteBarrio.value.trim() || null,
       superficie_m2: Number(elLoteSuperficie.value),
       estado: elLoteEstado.value,
       precio_usd: elLotePrecio.value.trim() === "" ? null : Number(elLotePrecio.value),
@@ -1669,6 +1814,7 @@ function cargarParcelaEnFormLote(feature) {
   elLoteNumero.value = feature.properties.ETIQUETA || "";
   elLoteNomenclatura.value = nomenclatura;
   poblarSelectSector(elLoteSector, null);
+  poblarSelectBarrio(elLoteBarrio, null);
   elLoteSuperficie.value = superficieDesdeNombreCatastro(feature.properties.NOMBRE) ?? "";
   elLoteEstado.value = "disponible";
   elLotePrecio.value = "";
@@ -2139,7 +2285,7 @@ const PERMISOS_SECCIONES = [
     id: "administracion",
     nombre: "Administración",
     permisos: [
-      { clave: "administrar_sectores", etiqueta: "Administrar sectores/zonas" },
+      { clave: "administrar_sectores", etiqueta: "Administrar zonas/barrios" },
       { clave: "administrar_usuarios", etiqueta: "Administrar usuarios" }
     ]
   }
@@ -2473,7 +2619,8 @@ formularioUsuario.addEventListener("submit", async (evento) => {
 async function abrirPanelSeguridad(tab) {
   elVistaLista.classList.add("oculto"); // no superponer con "Ver como lista"
   elBtnVerLista.classList.remove("activo");
-  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Sectores"
+  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Zonas"
+  document.getElementById("panel-barrios").classList.add("oculto"); // ni con "Barrios"
   mostrarListaUsuarios();
   mostrarListaPerfiles();
   if (tab === "perfiles") mostrarTabPerfiles();
@@ -2554,7 +2701,7 @@ function mostrarFormSector(sector) {
     elSectorNombre.value = sector.nombre;
   } else {
     elSectorIdEditando.value = "";
-    elSectorFormTitulo.textContent = "Nuevo sector";
+    elSectorFormTitulo.textContent = "Nueva zona";
   }
   elSectoresVistaLista.classList.add("oculto");
   elSectoresVistaForm.classList.remove("oculto");
@@ -2579,8 +2726,8 @@ formularioSector.addEventListener("submit", async (evento) => {
   } catch (error) {
     elSectorError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para administrar sectores."
-        : "No se pudo guardar el sector.";
+        ? "No tenés permiso para administrar zonas."
+        : "No se pudo guardar la zona.";
     elSectorError.classList.remove("oculto");
   }
 });
@@ -2589,7 +2736,7 @@ formularioSector.addEventListener("submit", async (evento) => {
 // tenían asignado (ver comentario arriba de cargarSectores) — solo dejan
 // de poder elegirlo de nuevo para otro lote.
 async function borrarSector(sector, boton) {
-  if (!window.confirm(`¿Borrar el sector "${sector.nombre}"? Los lotes que ya lo tienen asignado no se ven afectados.`)) return;
+  if (!window.confirm(`¿Borrar la zona "${sector.nombre}"? Los lotes que ya la tienen asignada no se ven afectados.`)) return;
   boton.disabled = true;
   try {
     await deleteDoc(doc(db, "sectores", sector.id));
@@ -2597,8 +2744,8 @@ async function borrarSector(sector, boton) {
   } catch (error) {
     window.alert(
       error.code === "permission-denied"
-        ? "No tenés permiso para borrar sectores."
-        : "No se pudo borrar el sector."
+        ? "No tenés permiso para borrar zonas."
+        : "No se pudo borrar la zona."
     );
   } finally {
     boton.disabled = false;
@@ -2609,6 +2756,7 @@ elBtnAbrirSectores.addEventListener("click", async () => {
   elVistaLista.classList.add("oculto"); // no superponer con "Ver como lista"
   elBtnVerLista.classList.remove("activo");
   elPanelAdmin.classList.add("oculto"); // ni con "Seguridad"
+  elPanelBarrios.classList.add("oculto"); // ni con "Barrios"
   mostrarListaSectoresPanel();
   elPanelSectores.classList.remove("oculto");
   await cargarPanelSectores();
@@ -2616,4 +2764,133 @@ elBtnAbrirSectores.addEventListener("click", async () => {
 
 document.getElementById("cerrar-panel-sectores").addEventListener("click", () => {
   elPanelSectores.classList.add("oculto");
+});
+
+// ---------------------------------------------------------------------------
+// Panel "Barrios" (root / permiso administrar_sectores): mismo patrón
+// exacto que el panel "Sectores" de arriba — catálogo independiente,
+// segunda categorización de un lote.
+// ---------------------------------------------------------------------------
+
+const elPanelBarrios = document.getElementById("panel-barrios");
+const elBtnAbrirBarrios = document.getElementById("btn-abrir-barrios");
+const elBarriosVistaLista = document.getElementById("barrios-vista-lista");
+const elBarriosVistaForm = document.getElementById("barrios-vista-form");
+const elTablaBarriosCuerpo = document.getElementById("tabla-barrios-cuerpo");
+const elBtnAgregarBarrio = document.getElementById("btn-agregar-barrio");
+const elBarrioVolver = document.getElementById("barrio-volver");
+const elBarrioFormTitulo = document.getElementById("barrio-form-titulo");
+const formularioBarrio = document.getElementById("formulario-barrio");
+const elBarrioIdEditando = document.getElementById("barrio-id-editando");
+const elBarrioNombre = document.getElementById("barrio-nombre");
+const elBarrioError = document.getElementById("barrio-error");
+
+async function cargarPanelBarrios() {
+  await cargarBarrios();
+
+  elTablaBarriosCuerpo.innerHTML = "";
+  barriosActuales.forEach((barrio) => {
+    const fila = document.createElement("tr");
+    const celdaNombre = document.createElement("td");
+    celdaNombre.textContent = barrio.nombre;
+
+    const celdaAcciones = document.createElement("td");
+    const botonEditar = document.createElement("button");
+    botonEditar.type = "button";
+    botonEditar.className = "btn-editar-fila";
+    botonEditar.textContent = "Editar";
+    botonEditar.addEventListener("click", () => mostrarFormBarrio(barrio));
+    celdaAcciones.appendChild(botonEditar);
+
+    const botonBorrar = document.createElement("button");
+    botonBorrar.type = "button";
+    botonBorrar.className = "btn-borrar-fila";
+    botonBorrar.textContent = "Borrar";
+    botonBorrar.addEventListener("click", () => borrarBarrio(barrio, botonBorrar));
+    celdaAcciones.appendChild(botonBorrar);
+
+    fila.append(celdaNombre, celdaAcciones);
+    elTablaBarriosCuerpo.appendChild(fila);
+  });
+}
+
+function mostrarListaBarriosPanel() {
+  elBarriosVistaForm.classList.add("oculto");
+  elBarriosVistaLista.classList.remove("oculto");
+}
+
+// barrio == null: alta de un barrio nuevo. Con un barrio, lo precarga
+// para editarlo (mismo formulario, en modo edición).
+function mostrarFormBarrio(barrio) {
+  formularioBarrio.reset();
+  elBarrioError.classList.add("oculto");
+  if (barrio) {
+    elBarrioIdEditando.value = barrio.id;
+    elBarrioFormTitulo.textContent = `Editar "${barrio.nombre}"`;
+    elBarrioNombre.value = barrio.nombre;
+  } else {
+    elBarrioIdEditando.value = "";
+    elBarrioFormTitulo.textContent = "Nuevo barrio";
+  }
+  elBarriosVistaLista.classList.add("oculto");
+  elBarriosVistaForm.classList.remove("oculto");
+}
+
+elBtnAgregarBarrio.addEventListener("click", () => mostrarFormBarrio(null));
+elBarrioVolver.addEventListener("click", mostrarListaBarriosPanel);
+
+formularioBarrio.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  elBarrioError.classList.add("oculto");
+  try {
+    const datos = { nombre: elBarrioNombre.value.trim() };
+    const idEditando = elBarrioIdEditando.value;
+    if (idEditando) {
+      await setDoc(doc(db, "barrios", idEditando), datos);
+    } else {
+      await addDoc(collection(db, "barrios"), datos);
+    }
+    await cargarPanelBarrios();
+    mostrarListaBarriosPanel();
+  } catch (error) {
+    elBarrioError.textContent =
+      error.code === "permission-denied"
+        ? "No tenés permiso para administrar barrios."
+        : "No se pudo guardar el barrio.";
+    elBarrioError.classList.remove("oculto");
+  }
+});
+
+// Borrar un barrio del catálogo no le toca el dato a los lotes que ya lo
+// tenían asignado (mismo criterio que borrarSector) — solo dejan de
+// poder elegirlo de nuevo para otro lote.
+async function borrarBarrio(barrio, boton) {
+  if (!window.confirm(`¿Borrar el barrio "${barrio.nombre}"? Los lotes que ya lo tienen asignado no se ven afectados.`)) return;
+  boton.disabled = true;
+  try {
+    await deleteDoc(doc(db, "barrios", barrio.id));
+    await cargarPanelBarrios();
+  } catch (error) {
+    window.alert(
+      error.code === "permission-denied"
+        ? "No tenés permiso para borrar barrios."
+        : "No se pudo borrar el barrio."
+    );
+  } finally {
+    boton.disabled = false;
+  }
+}
+
+elBtnAbrirBarrios.addEventListener("click", async () => {
+  elVistaLista.classList.add("oculto"); // no superponer con "Ver como lista"
+  elBtnVerLista.classList.remove("activo");
+  elPanelAdmin.classList.add("oculto"); // ni con "Seguridad"
+  elPanelSectores.classList.add("oculto"); // ni con "Zonas"
+  mostrarListaBarriosPanel();
+  elPanelBarrios.classList.remove("oculto");
+  await cargarPanelBarrios();
+});
+
+document.getElementById("cerrar-panel-barrios").addEventListener("click", () => {
+  elPanelBarrios.classList.add("oculto");
 });

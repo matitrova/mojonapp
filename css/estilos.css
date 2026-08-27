@@ -302,6 +302,16 @@ button:active {
   right: 0;
 }
 
+/* Leaflet hace los polígonos enfocables por accesibilidad (tabindex),
+   así que al tocar un lote el navegador le dibuja su contorno de foco
+   por default — un rectángulo recto alrededor de todo el polígono, sin
+   relación con su forma real (se nota fuerte en lotes irregulares).
+   Se saca: no es una selección que hayamos diseñado, es un efecto del
+   navegador que quedaba feo y confuso. */
+#mapa .leaflet-interactive:focus {
+  outline: none;
+}
+
 #leyenda-legal {
   position: fixed;
   bottom: 0;

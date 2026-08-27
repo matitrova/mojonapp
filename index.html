@@ -69,11 +69,12 @@
 
       <div id="drawer-grupo-sectores" class="drawer-grupo oculto">
         <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-sectores">
-          Sectores
+          Zonas y barrios
           <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
         </button>
         <div class="drawer-grupo-items oculto">
-          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores">Gestionar sectores</button>
+          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores">Gestionar zonas</button>
+          <button type="button" class="drawer-item" id="btn-abrir-barrios" data-testid="btn-abrir-barrios">Gestionar barrios</button>
         </div>
       </div>
     </div>
@@ -96,12 +97,18 @@
     <button id="cerrar-ficha" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     <h2 id="ficha-titulo" data-testid="ficha-titulo"></h2>
     <dl class="ficha-datos">
-      <dt>Sector</dt>
+      <dt>Zona</dt>
       <dd>
         <span id="ficha-sector" data-testid="ficha-sector"></span>
         <button id="btn-editar-sector" class="oculto btn-link" type="button" data-testid="btn-editar-sector">Editar</button>
       </dd>
+      <dt>Barrio</dt>
+      <dd>
+        <span id="ficha-barrio" data-testid="ficha-barrio"></span>
+        <button id="btn-editar-barrio" class="oculto btn-link" type="button" data-testid="btn-editar-barrio">Editar</button>
+      </dd>
       <dt>Superficie</dt><dd id="ficha-superficie" data-testid="ficha-superficie"></dd>
+      <dt>Medidas</dt><dd id="ficha-medidas" data-testid="ficha-medidas"></dd>
       <dt>Estado</dt><dd id="ficha-estado" data-testid="ficha-estado"></dd>
       <dt>Precio</dt><dd id="ficha-precio" data-testid="ficha-precio"></dd>
       <dt>Servicios</dt>
@@ -134,9 +141,9 @@
       <p id="editor-servicios-error" class="mensaje-error oculto" data-testid="editor-servicios-error"></p>
     </div>
     <div id="editor-sector" class="oculto" data-testid="editor-sector">
-      <label>Sector / zona
+      <label>Zona
         <select id="editar-sector-valor" data-testid="editar-sector-valor">
-          <option value="">Sin sector</option>
+          <option value="">Sin zona</option>
         </select>
       </label>
       <div class="botones-alternativos">
@@ -144,6 +151,18 @@
         <button type="button" id="btn-cancelar-sector" data-testid="btn-cancelar-sector">Cancelar</button>
       </div>
       <p id="editor-sector-error" class="mensaje-error oculto" data-testid="editor-sector-error"></p>
+    </div>
+    <div id="editor-barrio" class="oculto" data-testid="editor-barrio">
+      <label>Barrio
+        <select id="editar-barrio-valor" data-testid="editar-barrio-valor">
+          <option value="">Sin barrio</option>
+        </select>
+      </label>
+      <div class="botones-alternativos">
+        <button type="button" id="btn-guardar-barrio" data-testid="btn-guardar-barrio">Guardar</button>
+        <button type="button" id="btn-cancelar-barrio" data-testid="btn-cancelar-barrio">Cancelar</button>
+      </div>
+      <p id="editor-barrio-error" class="mensaje-error oculto" data-testid="editor-barrio-error"></p>
     </div>
     <div class="ficha-botones">
       <button id="btn-como-llegar" data-testid="btn-como-llegar">Ver en el mapa</button>
@@ -183,9 +202,14 @@
       <label>Nomenclatura catastral
         <input type="text" id="lote-nomenclatura" data-testid="lote-nomenclatura" />
       </label>
-      <label>Sector / zona
+      <label>Zona
         <select id="lote-sector" data-testid="lote-sector">
-          <option value="">Sin sector</option>
+          <option value="">Sin zona</option>
+        </select>
+      </label>
+      <label>Barrio
+        <select id="lote-barrio" data-testid="lote-barrio">
+          <option value="">Sin barrio</option>
         </select>
       </label>
       <label>Superficie (m²)
@@ -385,7 +409,7 @@
                 <input type="checkbox" id="perfil-seccion-administracion" data-testid="perfil-seccion-administracion" /> Administración
               </label>
               <div class="permisos-seccion-items">
-                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_sectores" data-testid="perfil-permiso-administrar_sectores" /> Administrar sectores/zonas</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_sectores" data-testid="perfil-permiso-administrar_sectores" /> Administrar zonas/barrios</label>
                 <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_usuarios" data-testid="perfil-permiso-administrar_usuarios" /> Administrar usuarios</label>
               </div>
             </div>
@@ -402,7 +426,7 @@
        corredor invente su propia variante del mismo nombre a mano. -->
   <div id="panel-sectores" class="oculto panel-pantalla-completa" data-testid="panel-sectores">
     <div class="panel-header">
-      <h2>Sectores</h2>
+      <h2>Zonas</h2>
       <button id="cerrar-panel-sectores" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     </div>
 
@@ -415,19 +439,54 @@
           <tbody id="tabla-sectores-cuerpo"></tbody>
         </table>
       </div>
-      <button type="button" id="btn-agregar-sector" data-testid="btn-agregar-sector">+ Nuevo sector</button>
+      <button type="button" id="btn-agregar-sector" data-testid="btn-agregar-sector">+ Nueva zona</button>
     </div>
 
     <div id="sectores-vista-form" class="oculto">
-      <button type="button" id="sector-volver" class="btn-link" data-testid="sector-volver">&larr; Volver a sectores</button>
-      <h3 id="sector-form-titulo">Nuevo sector</h3>
+      <button type="button" id="sector-volver" class="btn-link" data-testid="sector-volver">&larr; Volver a zonas</button>
+      <h3 id="sector-form-titulo">Nueva zona</h3>
       <form id="formulario-sector">
         <input type="hidden" id="sector-id-editando" value="" />
         <label>Nombre
           <input type="text" id="sector-nombre" data-testid="sector-nombre" required placeholder="Ej: Zona Norte, Cerro de Oro..." />
         </label>
-        <button type="submit" id="sector-guardar-btn" data-testid="sector-guardar">Guardar sector</button>
+        <button type="submit" id="sector-guardar-btn" data-testid="sector-guardar">Guardar zona</button>
         <p id="sector-error" class="mensaje-error oculto" data-testid="sector-error"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel "Barrios": catálogo análogo al de Zonas — mismo patrón,
+       segunda categorización independiente de un lote (un lote puede
+       tener zona y barrio a la vez, son dos cosas distintas). -->
+  <div id="panel-barrios" class="oculto panel-pantalla-completa" data-testid="panel-barrios">
+    <div class="panel-header">
+      <h2>Barrios</h2>
+      <button id="cerrar-panel-barrios" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div id="barrios-vista-lista">
+      <div class="tabla-scroll">
+        <table class="tabla-panel" data-testid="tabla-barrios">
+          <thead>
+            <tr><th>Nombre</th><th></th></tr>
+          </thead>
+          <tbody id="tabla-barrios-cuerpo"></tbody>
+        </table>
+      </div>
+      <button type="button" id="btn-agregar-barrio" data-testid="btn-agregar-barrio">+ Nuevo barrio</button>
+    </div>
+
+    <div id="barrios-vista-form" class="oculto">
+      <button type="button" id="barrio-volver" class="btn-link" data-testid="barrio-volver">&larr; Volver a barrios</button>
+      <h3 id="barrio-form-titulo">Nuevo barrio</h3>
+      <form id="formulario-barrio">
+        <input type="hidden" id="barrio-id-editando" value="" />
+        <label>Nombre
+          <input type="text" id="barrio-nombre" data-testid="barrio-nombre" required placeholder="Ej: Las Vertientes, El Trapiche..." />
+        </label>
+        <button type="submit" id="barrio-guardar-btn" data-testid="barrio-guardar">Guardar barrio</button>
+        <p id="barrio-error" class="mensaje-error oculto" data-testid="barrio-error"></p>
       </form>
     </div>
   </div>
@@ -441,9 +500,14 @@
 
     <div id="lote-vista-lista">
       <div id="vista-lista-filtros" data-testid="vista-lista-filtros">
-        <label>Sector
+        <label>Zona
           <select id="filtro-sector" data-testid="filtro-sector">
-            <option value="">Todos los sectores</option>
+            <option value="">Todas las zonas</option>
+          </select>
+        </label>
+        <label>Barrio
+          <select id="filtro-barrio" data-testid="filtro-barrio">
+            <option value="">Todos los barrios</option>
           </select>
         </label>
         <label>Estado
@@ -462,7 +526,8 @@
           <thead>
             <tr>
               <th>Lote</th>
-              <th>Sector</th>
+              <th>Zona</th>
+              <th>Barrio</th>
               <th>Superficie</th>
               <th>Estado</th>
               <th>Precio</th>
@@ -501,9 +566,14 @@
         <label>Precio (USD)
           <input type="number" id="editar-lote-precio" data-testid="editar-lote-precio" min="0" step="1" />
         </label>
-        <label>Sector / zona
+        <label>Zona
           <select id="editar-lote-sector" data-testid="editar-lote-sector">
-            <option value="">Sin sector</option>
+            <option value="">Sin zona</option>
+          </select>
+        </label>
+        <label>Barrio
+          <select id="editar-lote-barrio" data-testid="editar-lote-barrio">
+            <option value="">Sin barrio</option>
           </select>
         </label>
         <fieldset class="fieldset-servicios">
