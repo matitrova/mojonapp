@@ -51,6 +51,18 @@ const COLECCION_LOTES = "lotes";
 const CATASTRO_WFS_URL =
   location.protocol === "https:" ? "/.netlify/functions/catastro-proxy" : "http://visualcatsl.dyndns.info/geoserver/SanLuis/ows";
 
+// GeoServer de IDECOR (Dirección General de Catastro de Córdoba) — a
+// diferencia del de San Luis, este SÍ es un servicio oficial y
+// documentado (mapascordoba.gob.ar), y responde por HTTPS sin
+// problemas de certificado — no necesita pasar por un proxy propio.
+// Se suma porque hay lotes limítrofes con Córdoba. Esquema bien
+// distinto al de San Luis: la capa "idecor:parcelas_graf" trae campos
+// estructurados propios (Nomenclatura, Tipo_Parcela, Superficie_Tierra_
+// Urbana/Rural) en vez de todo empaquetado en un campo de texto libre
+// como el NOMBRE de San Luis, y la geometría es MultiPolygon en vez de
+// Polygon (ver primerAnilloDeGeometria más abajo).
+const CATASTRO_CBA_WFS_URL = "https://gn-idecor.mapascordoba.gob.ar/geoserver/wfs";
+
 const COLOR_POR_ESTADO = {
   disponible: "#2e7d32",
   reservado: "#f9a825",
@@ -1827,8 +1839,12 @@ function bboxDelMapaVisible() {
   return `${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
 }
 
-async function pedirWfs(params) {
-  const url = `${CATASTRO_WFS_URL}?${new URLSearchParams(params).toString()}`;
+// baseUrl parametrizado para poder pedirle tanto al WFS de San Luis
+// como al de Córdoba con la misma función — pedirWfs() (sin base propia)
+// sigue siendo el de San Luis de siempre, para no tocar el resto de los
+// call sites que ya lo usan así.
+async function pedirWfsA(baseUrl, params) {
+  const url = `${baseUrl}?${new URLSearchParams(params).toString()}`;
   const respuesta = await fetch(url);
   if (!respuesta.ok) {
     throw new Error("El catastro no respondió. Probá de nuevo en un momento.");
@@ -1838,6 +1854,47 @@ async function pedirWfs(params) {
     throw new Error("El catastro devolvió una respuesta inesperada.");
   }
   return datos.features;
+}
+
+async function pedirWfs(params) {
+  return pedirWfsA(CATASTRO_WFS_URL, params);
+}
+
+// La geometría de una parcela puede venir como Polygon (San Luis) o
+// MultiPolygon (Córdoba) — esto da el primer anillo exterior en
+// cualquiera de los dos casos, para todo el código que solo necesita
+// "la forma" y no le importan islas/partes adicionales (no hay lotes
+// reales con agujeros o multi-parte en esta app).
+function primerAnilloDeGeometria(geometry) {
+  return geometry.type === "MultiPolygon" ? geometry.coordinates[0][0] : geometry.coordinates[0];
+}
+
+// Normalizan una parcela cruda del WFS (esquemas completamente
+// distintos entre provincias) a la única forma que el resto de la app
+// necesita para poder cargarla como lote: nomenclatura, una etiqueta
+// corta para mostrar en el mapa, y superficie si se puede determinar.
+// Se guarda en feature.properties._mojon en vez de tocar las
+// propiedades originales del WFS (por si hace falta depurar con los
+// datos crudos más adelante).
+function normalizarParcelaSanLuis(feature) {
+  feature.properties._mojon = {
+    provincia: "San Luis",
+    nomenclatura: feature.properties.CATNMC_CAT || null,
+    etiqueta: feature.properties.ETIQUETA || "",
+    superficie_m2: superficieDesdeNombreCatastro(feature.properties.NOMBRE)
+  };
+  return feature;
+}
+
+function normalizarParcelaCordoba(feature) {
+  const p = feature.properties;
+  feature.properties._mojon = {
+    provincia: "Córdoba",
+    nomenclatura: p.Nomenclatura || null,
+    etiqueta: p.desig_oficial || "",
+    superficie_m2: p.Superficie_Tierra_Urbana > 0 ? p.Superficie_Tierra_Urbana : p.Superficie_Tierra_Rural || null
+  };
+  return feature;
 }
 
 // El número de manzana NO es único en toda la provincia (hay una "manzana
@@ -2048,18 +2105,22 @@ function manzanaDesdeNomenclaturaDeParcela(nomenclatura) {
 // revisar o completar estado/precio/observaciones antes de guardar — y
 // para reusar ese único camino de guardado, ya probado.
 function cargarParcelaEnFormLote(feature) {
-  const nomenclatura = feature.properties.CATNMC_CAT || "";
-  const anillo = feature.geometry.coordinates[0];
+  // Las llamadas desde "+ Manzana"/"+ Parcela" (San Luis, sin tocar en
+  // este cambio) pasan la parcela cruda sin normalizar — se normaliza
+  // acá mismo si hace falta, para no tener que tocar esos otros dos
+  // call sites.
+  const datos = feature.properties._mojon || normalizarParcelaSanLuis(feature).properties._mojon;
+  const anillo = primerAnilloDeGeometria(feature.geometry);
 
-  elLoteManzana.value = manzanaDesdeNomenclaturaDeParcela(nomenclatura) || "";
-  elLoteNumero.value = feature.properties.ETIQUETA || "";
-  elLoteNomenclatura.value = nomenclatura;
+  elLoteManzana.value = manzanaDesdeNomenclaturaDeParcela(datos.nomenclatura) || "";
+  elLoteNumero.value = datos.etiqueta || "";
+  elLoteNomenclatura.value = datos.nomenclatura || "";
   poblarSelectSector(elLoteSector, null);
   poblarSelectBarrio(elLoteBarrio, null);
-  elLoteSuperficie.value = superficieDesdeNombreCatastro(feature.properties.NOMBRE) ?? "";
+  elLoteSuperficie.value = datos.superficie_m2 ?? "";
   elLoteEstado.value = "disponible";
   elLotePrecio.value = "";
-  elLoteObservaciones.value = "Importado del catastro de San Luis (parcela individual).";
+  elLoteObservaciones.value = `Importado del catastro de ${datos.provincia} (parcela individual).`;
   elLoteVertices.value = anillo.map(([lon, lat]) => `${lat},${lon}`).join("\n");
   elLoteVertices.dispatchEvent(new Event("input"));
   abrirHoja(elFormLote);
@@ -2201,6 +2262,52 @@ function ocultarMensajeCatastroCercano() {
   elCatastroCercanoMensaje.classList.add("oculto");
 }
 
+// San Luis y Córdoba se piden en paralelo y se combinan — geográficamente
+// casi nunca se superponen (son provincias vecinas), así que el que no
+// tiene cobertura en el área visible simplemente devuelve 0 parcelas,
+// sin afectar al otro. Si UNO de los dos falla (well, "throws"), no
+// tiene que tirar abajo al que sí respondió — Promise.allSettled en vez
+// de esperar que las dos promesas salgan bien.
+async function pedirParcelasCatastroCercano() {
+  const bbox = bboxDelMapaVisible();
+  const [sanLuis, cordoba] = await Promise.allSettled([
+    pedirWfsA(CATASTRO_WFS_URL, {
+      service: "WFS",
+      version: "2.0.0",
+      request: "GetFeature",
+      typeName: "SanLuis:GIS_PARCELAS_VV",
+      outputFormat: "application/json",
+      srsName: "EPSG:4326",
+      CQL_FILTER: `BBOX(GEOM,${bbox},'EPSG:4326')`
+    }),
+    pedirWfsA(CATASTRO_CBA_WFS_URL, {
+      service: "WFS",
+      version: "2.0.0",
+      request: "GetFeature",
+      typeName: "idecor:parcelas_graf",
+      outputFormat: "application/json",
+      srsName: "EPSG:4326",
+      CQL_FILTER: `BBOX(geom,${bbox},'EPSG:4326')`
+    })
+  ]);
+
+  const features = [];
+  if (sanLuis.status === "fulfilled") {
+    features.push(
+      ...sanLuis.value.filter((f) => !esParcelaDeCalle(f.properties.NOMBRE)).map(normalizarParcelaSanLuis)
+    );
+  }
+  if (cordoba.status === "fulfilled") {
+    features.push(...cordoba.value.map(normalizarParcelaCordoba));
+  }
+
+  // Si los DOS fallaron, es un error real (sin conexión, etc.) — si solo
+  // uno falló pero el otro respondió (así sea con 0 parcelas, zona sin
+  // cobertura en ese catastro), no hace falta alarmar por eso.
+  const huboErrorTotal = sanLuis.status === "rejected" && cordoba.status === "rejected";
+  return { features, huboErrorTotal };
+}
+
 async function actualizarCatastroCercano() {
   if (!catastroCercanoActivo) return;
 
@@ -2213,20 +2320,9 @@ async function actualizarCatastroCercano() {
     return;
   }
 
-  let features;
-  try {
-    features = (
-      await pedirWfs({
-        service: "WFS",
-        version: "2.0.0",
-        request: "GetFeature",
-        typeName: "SanLuis:GIS_PARCELAS_VV",
-        outputFormat: "application/json",
-        srsName: "EPSG:4326",
-        CQL_FILTER: `BBOX(GEOM,${bboxDelMapaVisible()},'EPSG:4326')`
-      })
-    ).filter((feature) => !esParcelaDeCalle(feature.properties.NOMBRE));
-  } catch (error) {
+  const { features, huboErrorTotal } = await pedirParcelasCatastroCercano();
+
+  if (huboErrorTotal) {
     // La capa de referencia es un complemento opcional: si el catastro no
     // responde, no tiene que interrumpir el resto de la app — pero sí hay
     // que avisar, porque si no parece que el botón no hace nada.
@@ -2269,14 +2365,14 @@ async function actualizarCatastroCercano() {
   ).addTo(capaCatastroCercano);
 
   features.forEach((feature) => {
-    const anillo = feature.geometry.coordinates[0];
+    const anillo = primerAnilloDeGeometria(feature.geometry);
     if (!anillo || anillo.length < 3) return;
     const { lat, lon } = centroideDePoligono(anillo);
     L.marker([lat, lon], {
       icon: L.divIcon({ className: "", iconSize: [0, 0] }),
       interactive: false
     })
-      .bindTooltip(feature.properties.ETIQUETA || "", {
+      .bindTooltip(feature.properties._mojon.etiqueta || "", {
         permanent: true,
         direction: "center",
         className: "etiqueta-parcela-catastro"
