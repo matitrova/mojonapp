@@ -439,17 +439,83 @@ function areaEnM2(anillo) {
   return Math.abs(area2) / 2;
 }
 
-// Largo en metros de cada lado de un anillo de polígono ([lon, lat], ...),
-// en el orden en que están los vértices — misma proyección local que
-// areaEnM2, más que suficiente de precisa para un lote (decenas de
-// metros, no kilómetros). Se usa para mostrar "cuánto mide" un lote sin
-// que el corredor tenga que medir nada a mano: pedido explícito, para
-// saber el frente/fondo de un terreno con solo mirarlo.
-function ladosDelPoligonoEnMetros(anillo) {
+// Envoltura convexa (monotone chain) de puntos en metros locales
+// [[x,y], ...] — paso previo para el rectángulo mínimo de abajo.
+function envolturaConvexa(puntos) {
+  const pts = [...puntos].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cruz = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+
+  const inferior = [];
+  for (const p of pts) {
+    while (inferior.length >= 2 && cruz(inferior[inferior.length - 2], inferior[inferior.length - 1], p) <= 0) {
+      inferior.pop();
+    }
+    inferior.push(p);
+  }
+  const superior = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (superior.length >= 2 && cruz(superior[superior.length - 2], superior[superior.length - 1], p) <= 0) {
+      superior.pop();
+    }
+    superior.push(p);
+  }
+  inferior.pop();
+  superior.pop();
+  return inferior.concat(superior);
+}
+
+// Ancho y largo (en metros) del rectángulo de área mínima que envuelve
+// el lote ("rotating calipers": prueba un rectángulo alineado con cada
+// lado de la envoltura convexa, y se queda con el de menor área). Da
+// dos medidas para CUALQUIER polígono, no solo rectángulos perfectos —
+// necesario porque varias parcelas del catastro tienen más de 4 lados.
+// Devuelve [corto, largo]; null si el polígono es degenerado.
+function rectanguloMinimoEnMetros(puntosMetros) {
+  const hull = envolturaConvexa(puntosMetros);
+  if (hull.length < 3) return null;
+
+  let mejorArea = Infinity;
+  let mejorDims = null;
+  for (let i = 0; i < hull.length; i++) {
+    const [x0, y0] = hull[i];
+    const [x1, y1] = hull[(i + 1) % hull.length];
+    const angulo = Math.atan2(y1 - y0, x1 - x0);
+    const cos = Math.cos(-angulo);
+    const sin = Math.sin(-angulo);
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const [x, y] of hull) {
+      const rx = x * cos - y * sin;
+      const ry = x * sin + y * cos;
+      minX = Math.min(minX, rx);
+      maxX = Math.max(maxX, rx);
+      minY = Math.min(minY, ry);
+      maxY = Math.max(maxY, ry);
+    }
+    const ancho = maxX - minX;
+    const alto = maxY - minY;
+    const area = ancho * alto;
+    if (area < mejorArea) {
+      mejorArea = area;
+      mejorDims = [ancho, alto];
+    }
+  }
+  mejorDims.sort((a, b) => a - b);
+  return mejorDims; // [corto, largo]
+}
+
+// Frente y largo del lote — misma proyección local que areaEnM2, más
+// que suficiente de precisa para un lote (decenas de metros, no
+// kilómetros). "Frente" es el lado corto del rectángulo mínimo, "Largo"
+// el lado largo: no hay forma de saber desde la geometría sola cuál
+// lado da realmente a la calle, así que es una aproximación por
+// tamaño, no una lectura literal del frente catastral.
+function medidasFrenteYLargo(anillo) {
   const puntos = anillo[0][0] === anillo[anillo.length - 1][0] && anillo[0][1] === anillo[anillo.length - 1][1]
     ? anillo.slice(0, -1)
     : anillo;
-  if (puntos.length < 2) return [];
+  if (puntos.length < 3) return null;
 
   const [lonOrigen, latOrigen] = puntos[0];
   const mPorGradoLat = 111320;
@@ -459,20 +525,14 @@ function ladosDelPoligonoEnMetros(anillo) {
     (lat - latOrigen) * mPorGradoLat
   ]);
 
-  return puntosMetros.map(([x0, y0], i) => {
-    const [x1, y1] = puntosMetros[(i + 1) % puntosMetros.length];
-    return Math.hypot(x1 - x0, y1 - y0);
-  });
+  return rectanguloMinimoEnMetros(puntosMetros);
 }
 
-// Texto listo para mostrar ("45.2 m, 30.1 m, 44.8 m, 29.9 m") — no se
-// etiqueta como "frente"/"fondo" porque no hay forma de saber desde la
-// geometría sola cuál lado da a la calle; se listan en orden y el
-// corredor, que conoce el lote, los reconoce con solo mirar el mapa.
 function textoMedidasLados(anillo) {
-  const lados = ladosDelPoligonoEnMetros(anillo);
-  if (lados.length === 0) return "Sin datos";
-  return lados.map((m) => `${m.toFixed(1)} m`).join(", ");
+  const dims = medidasFrenteYLargo(anillo);
+  if (!dims) return "Sin datos";
+  const [frente, largo] = dims;
+  return `Frente ${frente.toFixed(1)} m × Largo ${largo.toFixed(1)} m`;
 }
 
 // Ray casting: ¿el punto (lat, lon) está dentro del anillo exterior?
