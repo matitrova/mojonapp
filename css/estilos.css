@@ -236,7 +236,8 @@ button:active {
 
 #btn-flotante-catastro {
   position: fixed;
-  right: 14px;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: 46px;
   z-index: 1100;
   background: var(--color-primario);

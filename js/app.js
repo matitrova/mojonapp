@@ -264,6 +264,24 @@ L.tileLayer(
   }
 ).addTo(mapa);
 
+// Capa de referencia (calles, localidades, límites) — mismo proveedor
+// gratis y sin API key que la imagen satelital, pensada por Esri
+// justo para superponerse arriba de "World_Imagery" (fondo
+// transparente, solo texto/líneas). Pedido explícito: la vista
+// satelital sola no trae ningún nombre. A diferencia de la capa base,
+// esta nunca muestra un placeholder feo fuera de su zoom nativo —
+// donde no tiene nada que dibujar, el tile viene vacío/transparente
+// nomás (verificado bajando tiles reales), así que no hace falta
+// limitarle el maxNativeZoom.
+const capaReferencia = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+  {
+    maxZoom: 24,
+    maxNativeZoom: 23, // el servicio no tiene tiles más allá de este nivel (confirmado por su propio ?f=json)
+    attribution: "Reference &copy; Esri"
+  }
+).addTo(mapa);
+
 // Leyenda de colores por estado
 const leyenda = L.control({ position: "bottomleft" });
 leyenda.onAdd = function () {
@@ -2604,6 +2622,10 @@ function desactivarCatastroCercano() {
     mapa.removeLayer(capaCatastroCercano);
     capaCatastroCercano = null;
   }
+  // Vuelve la capa de calles/localidades — mientras el catastro de
+  // referencia está activo se saca (ver el "if" de abajo) para no
+  // amontonar texto de los dos a la vez sobre el mapa.
+  if (!mapa.hasLayer(capaReferencia)) capaReferencia.addTo(mapa);
 }
 
 elBtnVerCatastroCercano.addEventListener("click", () => {
@@ -2611,6 +2633,7 @@ elBtnVerCatastroCercano.addEventListener("click", () => {
   elBtnVerCatastroCercano.classList.toggle("activo", catastroCercanoActivo);
   if (catastroCercanoActivo) {
     elBtnFlotanteCatastro.classList.remove("oculto");
+    mapa.removeLayer(capaReferencia);
     actualizarCatastroCercano();
   } else {
     desactivarCatastroCercano();
