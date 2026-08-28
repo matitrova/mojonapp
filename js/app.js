@@ -44,12 +44,13 @@ const COLECCION_LOTES = "lotes";
 // No se pide directo: ese GeoServer solo responde por HTTP (sin TLS
 // válido), y el navegador bloquea ese pedido como "mixed content" desde
 // una página HTTPS como mojonapp.com.ar. Se pasa por
-// netlify/functions/catastro-proxy.js, que sí puede hablarle por HTTP
-// (corre en el servidor, no en el navegador) y devuelve la respuesta
-// por HTTPS. En local (servidor de pruebas por HTTP) esta ruta no
-// existe — pedirWfs() cae al WFS real directo en ese caso, ver abajo.
+// functions/catastro-proxy.js (Cloudflare Pages Functions), que sí
+// puede hablarle por HTTP (corre en el servidor, no en el navegador) y
+// devuelve la respuesta por HTTPS. En local (servidor de pruebas por
+// HTTP) esta ruta no existe — pedirWfs() cae al WFS real directo en ese
+// caso, ver abajo.
 const CATASTRO_WFS_URL =
-  location.protocol === "https:" ? "/.netlify/functions/catastro-proxy" : "http://visualcatsl.dyndns.info/geoserver/SanLuis/ows";
+  location.protocol === "https:" ? "/catastro-proxy" : "http://visualcatsl.dyndns.info/geoserver/SanLuis/ows";
 
 // GeoServer de IDECOR (Dirección General de Catastro de Córdoba) — a
 // diferencia del de San Luis, este SÍ es un servicio oficial y
