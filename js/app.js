@@ -2411,6 +2411,13 @@ function ocultarMensajeCatastroCercano() {
 // sin afectar al otro. Si UNO de los dos falla (well, "throws"), no
 // tiene que tirar abajo al que sí respondió — Promise.allSettled en vez
 // de esperar que las dos promesas salgan bien.
+// Tope de features por catastro: en un área densa (un pueblo entero
+// visible a zoom bajo) el WFS puede devolver miles de parcelas — eso es
+// lo que trababa el mapa ("quiere cargar todo y se laguea"). Con el
+// zoom mínimo ya exigido (ZOOM_MINIMO_CATASTRO_CERCANO) esto rara vez
+// se llega a usar, pero es un techo duro para el peor caso.
+const MAX_PARCELAS_CATASTRO_CERCANO = 400;
+
 async function pedirParcelasCatastroCercano() {
   const bbox = bboxDelMapaVisible();
   const [sanLuis, cordoba] = await Promise.allSettled([
@@ -2421,6 +2428,7 @@ async function pedirParcelasCatastroCercano() {
       typeName: "SanLuis:GIS_PARCELAS_VV",
       outputFormat: "application/json",
       srsName: "EPSG:4326",
+      count: MAX_PARCELAS_CATASTRO_CERCANO,
       CQL_FILTER: `BBOX(GEOM,${bbox},'EPSG:4326')`
     }),
     pedirWfsA(CATASTRO_CBA_WFS_URL, {
@@ -2430,6 +2438,7 @@ async function pedirParcelasCatastroCercano() {
       typeName: "idecor:parcelas_graf",
       outputFormat: "application/json",
       srsName: "EPSG:4326",
+      count: MAX_PARCELAS_CATASTRO_CERCANO,
       CQL_FILTER: `BBOX(geom,${bbox},'EPSG:4326')`
     })
   ]);
@@ -2451,10 +2460,18 @@ async function pedirParcelasCatastroCercano() {
   return { features, huboErrorTotal };
 }
 
+// Se incrementa en cada llamada a actualizarCatastroCercano() — si el
+// usuario paneó de nuevo antes de que la respuesta anterior llegara
+// (common paneando rápido), esa respuesta vieja ya no es la generación
+// actual y se descarta en vez de dibujar una capa que no corresponde a
+// dónde está parado el mapa ahora.
+let generacionCatastroCercano = 0;
+
 async function actualizarCatastroCercano() {
   if (!catastroCercanoActivo) return;
 
   if (mapa.getZoom() < ZOOM_MINIMO_CATASTRO_CERCANO) {
+    generacionCatastroCercano++; // invalida cualquier pedido en curso de antes de alejar el zoom
     if (capaCatastroCercano) {
       mapa.removeLayer(capaCatastroCercano);
       capaCatastroCercano = null;
@@ -2463,7 +2480,13 @@ async function actualizarCatastroCercano() {
     return;
   }
 
+  const generacion = ++generacionCatastroCercano;
+
   const { features, huboErrorTotal } = await pedirParcelasCatastroCercano();
+
+  // Llegó tarde: el mapa ya se movió de nuevo y hay un pedido más nuevo
+  // en curso (o ya resuelto) — no pisarlo con esta respuesta vieja.
+  if (generacion !== generacionCatastroCercano) return;
 
   if (huboErrorTotal) {
     // La capa de referencia es un complemento opcional: si el catastro no
@@ -2562,8 +2585,17 @@ elBtnFlotanteCatastro.addEventListener("click", desactivarCatastroCercano);
 
 window.addEventListener("mojonapp:sesion-cerrada", desactivarCatastroCercano);
 
+// Debounce: paneando/haciendo zoom rápido, "moveend" puede disparar
+// varias veces seguidas — sin esto, cada una lanzaba su propio par de
+// pedidos WFS (San Luis + Córdoba) en paralelo, y ahí es donde se
+// sentía pesado ("se laguea"). Se espera a que el mapa quede quieto un
+// momento antes de pedir de nuevo.
+let timerCatastroCercano = null;
+
 mapa.on("moveend", () => {
-  if (catastroCercanoActivo) actualizarCatastroCercano();
+  if (!catastroCercanoActivo) return;
+  clearTimeout(timerCatastroCercano);
+  timerCatastroCercano = setTimeout(actualizarCatastroCercano, 400);
 });
 
 // ---------------------------------------------------------------------------
