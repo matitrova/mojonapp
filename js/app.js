@@ -63,6 +63,16 @@ const CATASTRO_WFS_URL =
 // Polygon (ver primerAnilloDeGeometria más abajo).
 const CATASTRO_CBA_WFS_URL = "https://gn-idecor.mapascordoba.gob.ar/geoserver/wfs";
 
+// GeoServer de ARBA/IDERA (Agencia de Recaudación de la Provincia de
+// Buenos Aires) — mismo criterio que Córdoba: oficial, documentado,
+// HTTPS sin problemas. Capa "idera:Parcela", con nombres de campo bien
+// abreviados: cca (código catastral, hace de nomenclatura), tpa (tipo:
+// "Urbano"/"Rural", sin equivalente a "CALLE" visto en el muestreo, no
+// se filtra nada), ara1 (superficie en m², numérico), pda (número de
+// partida — más corto que el cca, se usa como etiqueta en el mapa).
+// Geometría también MultiPolygon.
+const CATASTRO_BSAS_WFS_URL = "https://geo.arba.gov.ar/geoserver/idera/wfs";
+
 const COLOR_POR_ESTADO = {
   disponible: "#2e7d32",
   reservado: "#f9a825",
@@ -2040,6 +2050,17 @@ function normalizarParcelaCordoba(feature) {
   return feature;
 }
 
+function normalizarParcelaBuenosAires(feature) {
+  const p = feature.properties;
+  feature.properties._mojon = {
+    provincia: "Buenos Aires",
+    nomenclatura: p.cca || null,
+    etiqueta: p.pda || "",
+    superficie_m2: p.ara1 || null
+  };
+  return feature;
+}
+
 // El número de manzana NO es único en toda la provincia (hay una "manzana
 // 104" en cada pueblo), así que la búsqueda se acota al área visible del
 // mapa además del número — si no encuadra la manzana correcta antes de
@@ -2405,12 +2426,13 @@ function ocultarMensajeCatastroCercano() {
   elCatastroCercanoMensaje.classList.add("oculto");
 }
 
-// San Luis y Córdoba se piden en paralelo y se combinan — geográficamente
-// casi nunca se superponen (son provincias vecinas), así que el que no
-// tiene cobertura en el área visible simplemente devuelve 0 parcelas,
-// sin afectar al otro. Si UNO de los dos falla (well, "throws"), no
-// tiene que tirar abajo al que sí respondió — Promise.allSettled en vez
-// de esperar que las dos promesas salgan bien.
+// Los tres catastros (San Luis, Córdoba, Buenos Aires) se piden en
+// paralelo y se combinan — geográficamente casi nunca se superponen
+// entre sí, así que el que no tiene cobertura en el área visible
+// simplemente devuelve 0 parcelas, sin afectar a los otros. Si alguno
+// falla (well, "throws"), no tiene que tirar abajo a los que sí
+// respondieron — Promise.allSettled en vez de esperar que las tres
+// promesas salgan bien.
 // Tope de features por catastro: en un área densa (un pueblo entero
 // visible a zoom bajo) el WFS puede devolver miles de parcelas — eso es
 // lo que trababa el mapa ("quiere cargar todo y se laguea"). Con el
@@ -2420,7 +2442,7 @@ const MAX_PARCELAS_CATASTRO_CERCANO = 400;
 
 async function pedirParcelasCatastroCercano() {
   const bbox = bboxDelMapaVisible();
-  const [sanLuis, cordoba] = await Promise.allSettled([
+  const [sanLuis, cordoba, buenosAires] = await Promise.allSettled([
     pedirWfsA(CATASTRO_WFS_URL, {
       service: "WFS",
       version: "2.0.0",
@@ -2440,6 +2462,16 @@ async function pedirParcelasCatastroCercano() {
       srsName: "EPSG:4326",
       count: MAX_PARCELAS_CATASTRO_CERCANO,
       CQL_FILTER: `BBOX(geom,${bbox},'EPSG:4326')`
+    }),
+    pedirWfsA(CATASTRO_BSAS_WFS_URL, {
+      service: "WFS",
+      version: "2.0.0",
+      request: "GetFeature",
+      typeName: "idera:Parcela",
+      outputFormat: "application/json",
+      srsName: "EPSG:4326",
+      count: MAX_PARCELAS_CATASTRO_CERCANO,
+      CQL_FILTER: `BBOX(geom,${bbox},'EPSG:4326')`
     })
   ]);
 
@@ -2452,11 +2484,15 @@ async function pedirParcelasCatastroCercano() {
   if (cordoba.status === "fulfilled") {
     features.push(...cordoba.value.map(normalizarParcelaCordoba));
   }
+  if (buenosAires.status === "fulfilled") {
+    features.push(...buenosAires.value.map(normalizarParcelaBuenosAires));
+  }
 
-  // Si los DOS fallaron, es un error real (sin conexión, etc.) — si solo
-  // uno falló pero el otro respondió (así sea con 0 parcelas, zona sin
-  // cobertura en ese catastro), no hace falta alarmar por eso.
-  const huboErrorTotal = sanLuis.status === "rejected" && cordoba.status === "rejected";
+  // Error real solo si LOS TRES fallaron (sin conexión, etc.) — si
+  // alguno respondió, así sea con 0 parcelas (zona sin cobertura en
+  // ese catastro puntual), no hace falta alarmar por eso.
+  const huboErrorTotal =
+    sanLuis.status === "rejected" && cordoba.status === "rejected" && buenosAires.status === "rejected";
   return { features, huboErrorTotal };
 }
 
