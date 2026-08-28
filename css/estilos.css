@@ -254,6 +254,72 @@ button:active {
   background: var(--color-primario-oscuro);
 }
 
+/* Barra flotante del editor de forma del lote — ver iniciarEdicionPoligono
+   en app.js. Arriba del mapa (no abajo, para no tapar el dedo/mouse
+   mientras se arrastra una esquina cerca del borde inferior). */
+#editor-poligono-barra {
+  position: fixed;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  box-shadow: var(--sombra-calida-suave);
+  padding: 10px 14px;
+  max-width: 92vw;
+  width: 320px;
+}
+
+.editor-poligono-ayuda {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  color: var(--color-texto-secundario);
+  text-align: center;
+}
+
+#editor-poligono-medidas {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+}
+
+#editor-poligono-medidas span {
+  color: var(--color-texto-secundario);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#editor-poligono-medidas strong {
+  color: var(--color-primario-oscuro);
+  font-size: 0.95rem;
+}
+
+#editor-poligono-barra .botones-alternativos button {
+  font-size: 0.85rem;
+}
+
+/* Marcador arrastrable en cada esquina del lote, mientras se ajusta la
+   forma — circulito bien visible y con área de toque grande (importa en
+   celular, no solo con mouse). */
+.marcador-vertice-edicion {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--color-acento);
+  box-shadow: 0 1px 4px rgba(56, 38, 20, 0.4);
+  cursor: grab;
+}
+
+.marcador-vertice-edicion:active {
+  cursor: grabbing;
+}
+
 /* Cartel al pasar el mouse sobre un lote cargado (ver bindTooltip en
    cargarLotesDesdeFirestore) — Leaflet trae su propio estilo de
    tooltip por default, blanco/genérico, no combina con el resto. */

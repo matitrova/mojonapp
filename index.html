@@ -185,7 +185,25 @@
     <button id="btn-compartir-lote" class="btn-editar-ficha" data-testid="btn-compartir-lote">Compartir este lote</button>
     <p id="compartir-lote-mensaje" class="oculto" data-testid="compartir-lote-mensaje">Link copiado.</p>
     <button id="btn-editar-lote-completo" class="oculto btn-editar-ficha" data-testid="btn-editar-lote-completo">Editar lote</button>
+    <button id="btn-editar-forma-lote" class="oculto btn-editar-ficha" data-testid="btn-editar-forma-lote">Ajustar forma en el mapa</button>
     <button id="btn-borrar-lote" class="oculto btn-peligro" data-testid="btn-borrar-lote">Borrar lote</button>
+  </div>
+
+  <!-- Barra flotante del editor de forma: aparece sobre el mapa mientras se
+       arrastra una esquina del lote, con superficie/frente/largo recalculados
+       en vivo (ver iniciarEdicionPoligono en app.js). -->
+  <div id="editor-poligono-barra" class="oculto" data-testid="editor-poligono-barra">
+    <p class="editor-poligono-ayuda">Arrastrá una esquina para ajustar la forma del lote.</p>
+    <div id="editor-poligono-medidas">
+      <span>Superficie <strong id="editor-poligono-superficie">—</strong></span>
+      <span>Frente <strong id="editor-poligono-frente">—</strong></span>
+      <span>Largo <strong id="editor-poligono-largo">—</strong></span>
+    </div>
+    <div class="botones-alternativos">
+      <button type="button" id="btn-guardar-poligono" data-testid="btn-guardar-poligono">Guardar forma</button>
+      <button type="button" id="btn-cancelar-poligono" data-testid="btn-cancelar-poligono">Cancelar</button>
+    </div>
+    <p id="editor-poligono-error" class="mensaje-error oculto" data-testid="editor-poligono-error"></p>
   </div>
 
   <!-- Formulario de login (corredores) -->

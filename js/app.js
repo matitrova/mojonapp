@@ -820,6 +820,7 @@ function mostrarFicha(feature) {
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
   document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
+  document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(feature));
   elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(feature));
   renderInteresados(feature);
   cerrarEditorServicios(); // por si había quedado abierto en el lote anterior
@@ -850,6 +851,147 @@ document.getElementById("btn-editar-lote-completo").addEventListener("click", ()
   elBtnVerLista.classList.add("activo");
   loteEditadoDesdeFicha = true;
   mostrarEditarLoteDesdeGrilla(lotePolyLayerSeleccionado);
+});
+
+// ---------------------------------------------------------------------------
+// Ajustar la forma de un lote ya cargado: el catastro puede traer un
+// polígono más chico que el terreno real (caso real: un lote que en
+// los papeles medía menos que el terreno de verdad) — pedido explícito
+// para poder arrastrar cada esquina directo sobre el mapa, con
+// superficie/frente/largo recalculados EN VIVO mientras se mueve, no
+// solo al soltar.
+// ---------------------------------------------------------------------------
+
+const elEditorPoligonoBarra = document.getElementById("editor-poligono-barra");
+const elEditorPoligonoSuperficie = document.getElementById("editor-poligono-superficie");
+const elEditorPoligonoFrente = document.getElementById("editor-poligono-frente");
+const elEditorPoligonoLargo = document.getElementById("editor-poligono-largo");
+const elEditorPoligonoError = document.getElementById("editor-poligono-error");
+const elBtnGuardarPoligono = document.getElementById("btn-guardar-poligono");
+
+let edicionPoligono = null; // { feature, capa: L.Polygon, marcadores: L.Marker[] } | null
+
+// El anillo guardado en Firestore siempre viene cerrado (primer punto
+// igual al último, ver anilloAGeometryFirestore) — para editar interesa
+// la lista de vértices ÚNICOS, sin ese cierre duplicado.
+function verticesUnicos(anillo) {
+  const cerrado =
+    anillo.length > 1 && anillo[0][0] === anillo[anillo.length - 1][0] && anillo[0][1] === anillo[anillo.length - 1][1];
+  return cerrado ? anillo.slice(0, -1) : anillo;
+}
+
+function actualizarMedidasEdicionPoligono() {
+  if (!edicionPoligono) return;
+  const puntos = edicionPoligono.marcadores.map((m) => {
+    const { lat, lng } = m.getLatLng();
+    return [lng, lat]; // [lon, lat], como espera areaEnM2/medidasFrenteYLargo
+  });
+  const anillo = [...puntos, puntos[0]];
+
+  elEditorPoligonoSuperficie.textContent = `${areaEnM2(anillo).toFixed(1)} m²`;
+  const dims = medidasFrenteYLargo(anillo);
+  if (dims) {
+    elEditorPoligonoFrente.textContent = `${dims[0].toFixed(1)} m`;
+    elEditorPoligonoLargo.textContent = `${dims[1].toFixed(1)} m`;
+  }
+}
+
+function terminarEdicionPoligono() {
+  if (!edicionPoligono) return;
+  mapa.removeLayer(edicionPoligono.capa);
+  edicionPoligono.marcadores.forEach((m) => mapa.removeLayer(m));
+  edicionPoligono = null;
+  modoCaptura = null;
+  elEditorPoligonoBarra.classList.add("oculto");
+  elEditorPoligonoError.classList.add("oculto");
+}
+
+// Si se cierra sesión con el editor de forma abierto (mismo criterio que
+// desactivarCatastroCercano/limpiarCaptura), no se queda a mitad de
+// camino con marcadores sueltos sobre el mapa.
+window.addEventListener("mojonapp:sesion-cerrada", terminarEdicionPoligono);
+
+function iniciarEdicionPoligono(feature) {
+  elFicha.classList.add("oculto");
+  // Reusa el mismo "semáforo" que ya usa la captura de vértices a mano
+  // (ver más abajo) para bloquear otros clicks sobre el mapa mientras se
+  // edita — un valor que no es "mapa" ni "gps", así que no dispara nada
+  // de esa lógica, solo aprovecha los "if (modoCaptura !== null) return"
+  // que ya protegen los clicks sobre lotes/catastro en el resto de la app.
+  modoCaptura = "editando-poligono";
+
+  const anillo = verticesUnicos(feature.geometry.coordinates[0]);
+  const latlngs = anillo.map(([lon, lat]) => [lat, lon]);
+
+  const capa = L.polygon(latlngs, {
+    color: "#c1663f",
+    weight: 3,
+    dashArray: "6 4",
+    fillOpacity: 0.15
+  }).addTo(mapa);
+
+  const marcadores = latlngs.map(([lat, lon]) =>
+    L.marker([lat, lon], {
+      draggable: true,
+      icon: L.divIcon({ className: "marcador-vertice-edicion", iconSize: [22, 22] })
+    }).addTo(mapa)
+  );
+
+  marcadores.forEach((marcador) => {
+    marcador.on("drag", () => {
+      capa.setLatLngs(marcadores.map((m) => m.getLatLng()));
+      actualizarMedidasEdicionPoligono();
+    });
+  });
+
+  edicionPoligono = { feature, capa, marcadores };
+  actualizarMedidasEdicionPoligono();
+  elEditorPoligonoError.classList.add("oculto");
+  elEditorPoligonoBarra.classList.remove("oculto");
+}
+
+document.getElementById("btn-editar-forma-lote").addEventListener("click", () => {
+  if (!lotePolyLayerSeleccionado) return;
+  iniciarEdicionPoligono(lotePolyLayerSeleccionado);
+});
+
+document.getElementById("btn-cancelar-poligono").addEventListener("click", () => {
+  const feature = edicionPoligono?.feature;
+  terminarEdicionPoligono();
+  if (feature) mostrarFicha(feature);
+});
+
+elBtnGuardarPoligono.addEventListener("click", async () => {
+  if (!edicionPoligono) return;
+  const puntos = edicionPoligono.marcadores.map((m) => {
+    const { lat, lng } = m.getLatLng();
+    return [lng, lat];
+  });
+  const anillo = [...puntos, puntos[0]];
+  const superficie = Math.round(areaEnM2(anillo) * 10) / 10;
+
+  elBtnGuardarPoligono.disabled = true;
+  elEditorPoligonoError.classList.add("oculto");
+  try {
+    await updateDoc(doc(db, COLECCION_LOTES, edicionPoligono.feature.id), {
+      geometry: anilloAGeometryFirestore(anillo),
+      superficie_m2: superficie
+    });
+    const feature = edicionPoligono.feature;
+    feature.properties.superficie_m2 = superficie;
+    feature.geometry = { type: "Polygon", coordinates: [anillo] };
+    terminarEdicionPoligono();
+    mostrarFicha(feature);
+    await cargarLotesDesdeFirestore();
+  } catch (error) {
+    elEditorPoligonoError.textContent =
+      error.code === "permission-denied"
+        ? "No tenés permiso para editar este lote."
+        : "No se pudo guardar la forma nueva.";
+    elEditorPoligonoError.classList.remove("oculto");
+  } finally {
+    elBtnGuardarPoligono.disabled = false;
+  }
 });
 
 // Editar servicios de un lote ya cargado: el catastro no trae este dato,
@@ -1609,6 +1751,7 @@ onAuthStateChanged(auth, async (usuario) => {
   if (lotePolyLayerSeleccionado) {
     document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(lotePolyLayerSeleccionado));
     document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
+    document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
     elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
     cerrarEditorServicios();
     cerrarEditorSector();
