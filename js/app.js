@@ -941,6 +941,8 @@ const elEditorPoligonoFrente = document.getElementById("editor-poligono-frente")
 const elEditorPoligonoLargo = document.getElementById("editor-poligono-largo");
 const elEditorPoligonoError = document.getElementById("editor-poligono-error");
 const elBtnGuardarPoligono = document.getElementById("btn-guardar-poligono");
+const elEditorPoligonoSimplificar = document.getElementById("editor-poligono-simplificar");
+const elBtnSimplificarForma = document.getElementById("btn-simplificar-forma");
 const elBtnModoLadoTocar = document.getElementById("btn-modo-lado-tocar");
 const elBtnModoLadoLista = document.getElementById("btn-modo-lado-lista");
 const elLadoTocarAyuda = document.getElementById("lado-tocar-ayuda");
@@ -976,6 +978,79 @@ function longitudLadoEnMetros(latlngA, latlngB) {
   return Math.hypot(dx, dy);
 }
 
+// Distancia perpendicular (metros) de un punto a la RECTA que pasa por
+// otros dos — no al segmento, a la recta infinita. Se usa para detectar
+// esquinas casi en línea recta (ver más abajo): si "actual" está a
+// pocos centímetros/metros de la recta entre su vecino anterior y el
+// siguiente, ese vértice no aporta forma real, es un quiebre
+// imperceptible que solo complica elegir un lado para editar.
+function distanciaPuntoALineaMetros(punto, a, b) {
+  const mPorGradoLat = 111320;
+  const mPorGradoLon = 111320 * Math.cos(aRadianes(a.lat));
+  const ax = 0;
+  const ay = 0;
+  const bx = (b.lng - a.lng) * mPorGradoLon;
+  const by = (b.lat - a.lat) * mPorGradoLat;
+  const px = (punto.lng - a.lng) * mPorGradoLon;
+  const py = (punto.lat - a.lat) * mPorGradoLat;
+  const largo = Math.hypot(bx - ax, by - ay);
+  if (largo === 0) return Math.hypot(px - ax, py - ay);
+  return Math.abs((bx - ax) * (ay - py) - (ax - px) * (by - ay)) / largo;
+}
+
+// Lote real que motivó esto: una parcela del catastro con 5 vértices
+// donde 4 caían casi perfectamente sobre una misma línea recta (el
+// "lado de abajo" partido en 3 tramos casi invisibles) — se veía como
+// un triángulo pero elegir "ese lado" para escribirle una medida exacta
+// obligaba a lidiar con 3 lados distintos en vez de uno. Un metro de
+// margen es generoso para cualquier quiebre real de una mensura (que
+// se nota a simple vista) y estricto para uno que no se nota.
+const UMBRAL_SIMPLIFICAR_METROS = 1;
+
+function verticesCasiColineales(marcadores) {
+  const n = marcadores.length;
+  if (n <= 3) return false;
+  for (let i = 0; i < n; i++) {
+    const anterior = marcadores[(i - 1 + n) % n].getLatLng();
+    const actual = marcadores[i].getLatLng();
+    const siguiente = marcadores[(i + 1) % n].getLatLng();
+    if (distanciaPuntoALineaMetros(actual, anterior, siguiente) < UMBRAL_SIMPLIFICAR_METROS) return true;
+  }
+  return false;
+}
+
+// Saca, de a uno por vez, cualquier vértice casi en línea recta con sus
+// dos vecinos — repite hasta que no quede ninguno o hasta llegar a un
+// triángulo (no tiene sentido simplificar más allá de 3 lados).
+function verticesSimplificados(marcadores) {
+  let latlngs = marcadores.map((m) => m.getLatLng());
+  let siguioSacando = true;
+  while (siguioSacando && latlngs.length > 3) {
+    siguioSacando = false;
+    const n = latlngs.length;
+    for (let i = 0; i < n; i++) {
+      const anterior = latlngs[(i - 1 + n) % n];
+      const actual = latlngs[i];
+      const siguiente = latlngs[(i + 1) % n];
+      if (distanciaPuntoALineaMetros(actual, anterior, siguiente) < UMBRAL_SIMPLIFICAR_METROS) {
+        latlngs.splice(i, 1);
+        siguioSacando = true;
+        break;
+      }
+    }
+  }
+  return latlngs;
+}
+
+// Saca los marcadores/capa viejos y los reemplaza por unos nuevos en
+// las posiciones dadas — hace falta para "Simplificar forma" porque
+// cambia la CANTIDAD de vértices, no solo mueve uno.
+function reemplazarVerticesEdicionPoligono(latlngs) {
+  edicionPoligono.marcadores.forEach((m) => mapa.removeLayer(m));
+  edicionPoligono.marcadores = latlngs.map((latlng) => crearMarcadorVerticeEdicion(latlng));
+  edicionPoligono.capa.setLatLngs(latlngs);
+}
+
 function actualizarMedidasEdicionPoligono() {
   if (!edicionPoligono) return;
   const puntos = edicionPoligono.marcadores.map((m) => {
@@ -993,6 +1068,7 @@ function actualizarMedidasEdicionPoligono() {
 
   actualizarResaltadoLado();
   if (modoSeleccionLado === "lista") renderizarListaLados();
+  elEditorPoligonoSimplificar.classList.toggle("oculto", !verticesCasiColineales(edicionPoligono.marcadores));
 }
 
 // Dibuja (o borra) la línea amarilla que marca el lado elegido — se
@@ -1170,6 +1246,16 @@ function iniciarEdicionPoligono(feature) {
 document.getElementById("btn-editar-forma-lote").addEventListener("click", () => {
   if (!lotePolyLayerSeleccionado) return;
   iniciarEdicionPoligono(lotePolyLayerSeleccionado);
+});
+
+elBtnSimplificarForma.addEventListener("click", () => {
+  if (!edicionPoligono) return;
+  // El índice de lado seleccionado deja de tener sentido — la cantidad
+  // de vértices cambia, así que se limpia la selección en vez de
+  // arriesgarse a que quede apuntando a un lado distinto del que se ve.
+  ladoSeleccionado = null;
+  reemplazarVerticesEdicionPoligono(verticesSimplificados(edicionPoligono.marcadores));
+  actualizarMedidasEdicionPoligono();
 });
 
 // Ajustar un lado puntual a su medida real: en vez de una medida

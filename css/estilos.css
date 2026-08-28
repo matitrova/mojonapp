@@ -304,6 +304,25 @@ button:active {
   font-size: 0.85rem;
 }
 
+/* Aviso + botón "Simplificar forma" — solo aparece cuando se detectan
+   esquinas casi en línea recta (ver detectarVerticesCasiColineales en
+   app.js), no siempre. */
+#editor-poligono-simplificar {
+  margin-bottom: 10px;
+  padding: 6px 8px;
+  background: var(--color-fondo-alterno, rgba(0, 0, 0, 0.04));
+  border-radius: var(--radio-chico);
+}
+
+#editor-poligono-simplificar .editor-poligono-ayuda {
+  margin: 0 0 6px;
+}
+
+#editor-poligono-simplificar button {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+}
+
 /* Bloque "ajustar un lado a su medida real" dentro de la misma barra
    flotante — ver seleccionarLado/aplicarLargoDeLado en app.js. */
 #editor-poligono-lados {
