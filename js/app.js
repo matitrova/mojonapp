@@ -519,18 +519,20 @@ function envolturaConvexa(puntos) {
   return inferior.concat(superior);
 }
 
-// Ancho y largo (en metros) del rectángulo de área mínima que envuelve
-// el lote ("rotating calipers": prueba un rectángulo alineado con cada
-// lado de la envoltura convexa, y se queda con el de menor área). Da
-// dos medidas para CUALQUIER polígono, no solo rectángulos perfectos —
-// necesario porque varias parcelas del catastro tienen más de 4 lados.
-// Devuelve [corto, largo]; null si el polígono es degenerado.
-function rectanguloMinimoEnMetros(puntosMetros) {
+// Rectángulo de área mínima que envuelve el lote ("rotating calipers":
+// prueba un rectángulo alineado con cada lado de la envoltura convexa, y
+// se queda con el de menor área). Devuelve ancho/alto SIN ordenar (tal
+// como quedan según el lado de la envoltura que ganó) más el ángulo de
+// ese lado y el centro del rectángulo — la orientación y el centro son
+// lo que necesita esquinasRectanguloEnMetros más abajo para reconstruir
+// un rectángulo nuevo con otras medidas en el mismo lugar. Null si el
+// polígono es degenerado.
+function rectanguloMinimoConTransform(puntosMetros) {
   const hull = envolturaConvexa(puntosMetros);
   if (hull.length < 3) return null;
 
   let mejorArea = Infinity;
-  let mejorDims = null;
+  let mejor = null;
   for (let i = 0; i < hull.length; i++) {
     const [x0, y0] = hull[i];
     const [x1, y1] = hull[(i + 1) % hull.length];
@@ -552,11 +554,47 @@ function rectanguloMinimoEnMetros(puntosMetros) {
     const area = ancho * alto;
     if (area < mejorArea) {
       mejorArea = area;
-      mejorDims = [ancho, alto];
+      mejor = { ancho, alto, angulo, centroRotado: [(minX + maxX) / 2, (minY + maxY) / 2] };
     }
   }
-  mejorDims.sort((a, b) => a - b);
-  return mejorDims; // [corto, largo]
+  return mejor;
+}
+
+// Ancho y largo (en metros) del rectángulo de área mínima. Devuelve
+// [corto, largo]; null si el polígono es degenerado.
+function rectanguloMinimoEnMetros(puntosMetros) {
+  const info = rectanguloMinimoConTransform(puntosMetros);
+  if (!info) return null;
+  return [info.ancho, info.alto].sort((a, b) => a - b);
+}
+
+// Arma las 4 esquinas (en los mismos metros locales de puntosMetros) de
+// un rectángulo NUEVO con el frente/largo exactos que se escriban a
+// mano — pensado para cuando alguien tiene la medida real de una mensura
+// y quiere que el lote quede con esa forma en vez de andar arrastrando
+// esquinas a ojo. Mantiene la orientación y el centro del rectángulo
+// mínimo actual (así el lote no "salta" de lugar, solo cambia de
+// tamaño), y siempre pone el lado más corto de los dos valores como
+// frente — mismo criterio que medidasFrenteYLargo, para que lo que
+// se ve después de aplicar coincida con lo que se escribió.
+function esquinasRectanguloEnMetros(puntosMetros, frente, largo) {
+  const info = rectanguloMinimoConTransform(puntosMetros);
+  if (!info) return null;
+
+  const corto = Math.min(frente, largo);
+  const largoReal = Math.max(frente, largo);
+  const [medioX, medioY] = info.ancho <= info.alto ? [corto / 2, largoReal / 2] : [largoReal / 2, corto / 2];
+  const [cx, cy] = info.centroRotado;
+  const esquinasRotadas = [
+    [cx - medioX, cy - medioY],
+    [cx + medioX, cy - medioY],
+    [cx + medioX, cy + medioY],
+    [cx - medioX, cy + medioY]
+  ];
+
+  const cos = Math.cos(info.angulo);
+  const sin = Math.sin(info.angulo);
+  return esquinasRotadas.map(([rx, ry]) => [rx * cos - ry * sin, rx * sin + ry * cos]);
 }
 
 // Frente y largo del lote — misma proyección local que areaEnM2, más
@@ -953,6 +991,32 @@ function terminarEdicionPoligono() {
 // camino con marcadores sueltos sobre el mapa.
 window.addEventListener("mojonapp:sesion-cerrada", terminarEdicionPoligono);
 
+// Crea un marcador arrastrable de vértice y lo cablea contra el estado
+// ACTUAL de edicionPoligono (no contra un array cerrado por closure) —
+// así sirve tanto para el armado inicial como para cuando "Aplicar
+// medidas" reemplaza todos los vértices por uno nuevo rectángulo.
+function crearMarcadorVerticeEdicion(latlng) {
+  const marcador = L.marker(latlng, {
+    draggable: true,
+    icon: L.divIcon({ className: "marcador-vertice-edicion", iconSize: [22, 22] })
+  }).addTo(mapa);
+  marcador.on("drag", () => {
+    edicionPoligono.capa.setLatLngs(edicionPoligono.marcadores.map((m) => m.getLatLng()));
+    actualizarMedidasEdicionPoligono();
+  });
+  return marcador;
+}
+
+// Saca los marcadores/capa viejos y los reemplaza por unos nuevos en las
+// posiciones dadas — usado por "Aplicar medidas" (el rectángulo nuevo
+// puede tener 4 esquinas aunque el lote original tuviera más lados, así
+// que no alcanza con mover los marcadores existentes uno a uno).
+function reemplazarVerticesEdicionPoligono(latlngs) {
+  edicionPoligono.marcadores.forEach((m) => mapa.removeLayer(m));
+  edicionPoligono.marcadores = latlngs.map((latlng) => crearMarcadorVerticeEdicion(latlng));
+  edicionPoligono.capa.setLatLngs(latlngs);
+}
+
 function iniciarEdicionPoligono(feature) {
   elFicha.classList.add("oculto");
   // Reusa el mismo "semáforo" que ya usa la captura de vértices a mano
@@ -972,22 +1036,14 @@ function iniciarEdicionPoligono(feature) {
     fillOpacity: 0.15
   }).addTo(mapa);
 
-  const marcadores = latlngs.map(([lat, lon]) =>
-    L.marker([lat, lon], {
-      draggable: true,
-      icon: L.divIcon({ className: "marcador-vertice-edicion", iconSize: [22, 22] })
-    }).addTo(mapa)
-  );
+  // edicionPoligono se arma ANTES de crear los marcadores porque
+  // crearMarcadorVerticeEdicion cablea el evento "drag" contra él.
+  edicionPoligono = { feature, capa, marcadores: [] };
+  edicionPoligono.marcadores = latlngs.map((latlng) => crearMarcadorVerticeEdicion(latlng));
 
-  marcadores.forEach((marcador) => {
-    marcador.on("drag", () => {
-      capa.setLatLngs(marcadores.map((m) => m.getLatLng()));
-      actualizarMedidasEdicionPoligono();
-    });
-  });
-
-  edicionPoligono = { feature, capa, marcadores };
   actualizarMedidasEdicionPoligono();
+  document.getElementById("input-medida-frente").value = "";
+  document.getElementById("input-medida-largo").value = "";
   elEditorPoligonoError.classList.add("oculto");
   elEditorPoligonoBarra.classList.remove("oculto");
 }
@@ -995,6 +1051,56 @@ function iniciarEdicionPoligono(feature) {
 document.getElementById("btn-editar-forma-lote").addEventListener("click", () => {
   if (!lotePolyLayerSeleccionado) return;
   iniciarEdicionPoligono(lotePolyLayerSeleccionado);
+});
+
+// "Aplicar medidas": en vez de arrastrar esquinas a ojo, se escribe el
+// frente y el largo reales (por ejemplo, los de una mensura) y se arma
+// un rectángulo prolijo con esas medidas exactas, en el mismo lugar y
+// orientación que tenía el rectángulo mínimo del lote hasta ese momento.
+// Pedido explícito del caso del amigo martillero: cuando ya se sabe la
+// medida real, es más preciso escribirla que intentar acertarla arrastrando.
+const elInputMedidaFrente = document.getElementById("input-medida-frente");
+const elInputMedidaLargo = document.getElementById("input-medida-largo");
+
+document.getElementById("btn-aplicar-medidas").addEventListener("click", () => {
+  if (!edicionPoligono) return;
+  elEditorPoligonoError.classList.add("oculto");
+
+  const frente = parseFloat(elInputMedidaFrente.value);
+  const largo = parseFloat(elInputMedidaLargo.value);
+  if (!(frente > 0) || !(largo > 0)) {
+    elEditorPoligonoError.textContent = "Escribí el frente y el largo en metros (mayores a 0) para aplicar la medida.";
+    elEditorPoligonoError.classList.remove("oculto");
+    return;
+  }
+
+  const puntos = edicionPoligono.marcadores.map((m) => {
+    const { lat, lng } = m.getLatLng();
+    return [lng, lat]; // [lon, lat]
+  });
+  const [lonOrigen, latOrigen] = puntos[0];
+  const mPorGradoLat = 111320;
+  const mPorGradoLon = 111320 * Math.cos(aRadianes(latOrigen));
+  const puntosMetros = puntos.map(([lon, lat]) => [
+    (lon - lonOrigen) * mPorGradoLon,
+    (lat - latOrigen) * mPorGradoLat
+  ]);
+
+  const esquinas = esquinasRectanguloEnMetros(puntosMetros, frente, largo);
+  if (!esquinas) {
+    elEditorPoligonoError.textContent = "No se pudo calcular el rectángulo con esta forma. Probá arrastrando una esquina primero.";
+    elEditorPoligonoError.classList.remove("oculto");
+    return;
+  }
+
+  // El rectángulo nuevo siempre tiene 4 esquinas — si la parcela venía
+  // del catastro con más de 4 lados, esos lados de más se pierden acá:
+  // escribir un frente/largo exacto solo tiene sentido para un rectángulo.
+  const nuevosLatLngs = esquinas.map(([x, y]) =>
+    L.latLng(y / mPorGradoLat + latOrigen, x / mPorGradoLon + lonOrigen)
+  );
+  reemplazarVerticesEdicionPoligono(nuevosLatLngs);
+  actualizarMedidasEdicionPoligono();
 });
 
 document.getElementById("btn-cancelar-poligono").addEventListener("click", () => {
