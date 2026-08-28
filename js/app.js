@@ -264,23 +264,37 @@ L.tileLayer(
   }
 ).addTo(mapa);
 
-// Capa de referencia (calles, localidades, límites) — mismo proveedor
-// gratis y sin API key que la imagen satelital, pensada por Esri
+// Capas de referencia (calles, localidades, límites) — mismo proveedor
+// gratis y sin API key que la imagen satelital, pensadas por Esri
 // justo para superponerse arriba de "World_Imagery" (fondo
 // transparente, solo texto/líneas). Pedido explícito: la vista
-// satelital sola no trae ningún nombre. A diferencia de la capa base,
-// esta nunca muestra un placeholder feo fuera de su zoom nativo —
-// donde no tiene nada que dibujar, el tile viene vacío/transparente
-// nomás (verificado bajando tiles reales), así que no hace falta
-// limitarle el maxNativeZoom.
-const capaReferencia = L.tileLayer(
-  "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-  {
+// satelital sola no trae ningún nombre. Ninguna de las dos muestra un
+// placeholder feo fuera de su zoom nativo — donde no tienen nada que
+// dibujar, el tile viene vacío/transparente nomás (verificado bajando
+// tiles reales).
+//
+// Son DOS capas, no una — se probó primero solo con
+// "World_Boundaries_and_Places" y quedó vacía justo en el zoom 16-18
+// que usa la app para mirar lotes (esa capa solo tiene nombres de
+// localidad/límites a zoom bajo, ≤15 en la zona de Merlo/Carpintería —
+// confirmado bajando tiles reales, deja de traer nada más cerca).
+// "World_Transportation" es la que sí tiene calles con nombre en ese
+// rango de zoom (confirmado con un tile real: "Avenida del Sol",
+// "Presbítero Becerra", "C Champaquí" cerca de los lotes cargados) —
+// juntas cubren tanto "en qué localidad estoy" (zoom lejos) como "qué
+// calle es esta" (zoom cerca), que es lo que se pidió.
+const capasReferencia = L.layerGroup([
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 24,
-    maxNativeZoom: 23, // el servicio no tiene tiles más allá de este nivel (confirmado por su propio ?f=json)
+    maxNativeZoom: 23, // tope real del servicio, confirmado por su propio ?f=json
     attribution: "Reference &copy; Esri"
-  }
-).addTo(mapa);
+  }),
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 24,
+    maxNativeZoom: 23,
+    attribution: "Reference &copy; Esri"
+  })
+]).addTo(mapa);
 
 // Leyenda de colores por estado
 const leyenda = L.control({ position: "bottomleft" });
@@ -2625,7 +2639,7 @@ function desactivarCatastroCercano() {
   // Vuelve la capa de calles/localidades — mientras el catastro de
   // referencia está activo se saca (ver el "if" de abajo) para no
   // amontonar texto de los dos a la vez sobre el mapa.
-  if (!mapa.hasLayer(capaReferencia)) capaReferencia.addTo(mapa);
+  if (!mapa.hasLayer(capasReferencia)) capasReferencia.addTo(mapa);
 }
 
 elBtnVerCatastroCercano.addEventListener("click", () => {
@@ -2633,7 +2647,7 @@ elBtnVerCatastroCercano.addEventListener("click", () => {
   elBtnVerCatastroCercano.classList.toggle("activo", catastroCercanoActivo);
   if (catastroCercanoActivo) {
     elBtnFlotanteCatastro.classList.remove("oculto");
-    mapa.removeLayer(capaReferencia);
+    mapa.removeLayer(capasReferencia);
     actualizarCatastroCercano();
   } else {
     desactivarCatastroCercano();
