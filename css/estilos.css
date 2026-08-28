@@ -304,25 +304,76 @@ button:active {
   font-size: 0.85rem;
 }
 
-/* Bloque "escribir medidas exactas" (frente/largo a mano) dentro de la
-   misma barra flotante — ver esquinasRectanguloEnMetros en app.js. */
-#editor-poligono-manual {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
+/* Bloque "ajustar un lado a su medida real" dentro de la misma barra
+   flotante — ver seleccionarLado/aplicarLargoDeLado en app.js. */
+#editor-poligono-lados {
   margin-bottom: 10px;
   padding-top: 8px;
   border-top: 1px dashed var(--color-borde);
 }
 
-#editor-poligono-manual .editor-poligono-ayuda {
-  flex-basis: 100%;
-  margin: 0 0 2px;
+#editor-poligono-lados .editor-poligono-ayuda {
+  margin: 0 0 6px;
   text-align: left;
 }
 
-#editor-poligono-manual label {
+.botones-modo-lado {
+  margin-bottom: 8px;
+}
+
+.botones-modo-lado button {
+  font-size: 0.78rem;
+  padding: 3px 9px;
+  opacity: 0.6;
+}
+
+.botones-modo-lado button.activo {
+  opacity: 1;
+  background: var(--color-primario-oscuro);
+  color: #fff;
+}
+
+#lista-lados {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  max-height: 110px;
+  overflow-y: auto;
+}
+
+#lista-lados li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 6px;
+  font-size: 0.8rem;
+  border-radius: var(--radio-chico);
+  cursor: pointer;
+}
+
+#lista-lados li:hover {
+  background: var(--color-fondo-alterno, rgba(0, 0, 0, 0.05));
+}
+
+#lista-lados li.activo {
+  background: var(--color-acento);
+  color: #fff;
+}
+
+#lado-seleccionado-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+#lado-seleccionado-form span {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--color-texto-secundario);
+}
+
+#lado-seleccionado-form label {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -330,7 +381,7 @@ button:active {
   color: var(--color-texto-secundario);
 }
 
-#editor-poligono-manual input[type="number"] {
+#lado-seleccionado-form input[type="number"] {
   width: 64px;
   padding: 3px 6px;
   font-size: 0.85rem;
@@ -338,9 +389,14 @@ button:active {
   border-radius: var(--radio-chico);
 }
 
-#editor-poligono-manual button {
+#lado-seleccionado-form button {
   font-size: 0.8rem;
   padding: 4px 10px;
+}
+
+#lado-seleccionado-form .editor-poligono-ayuda {
+  font-size: 0.72rem;
+  margin: 2px 0 0;
 }
 
 /* Marcador arrastrable en cada esquina del lote, mientras se ajusta la

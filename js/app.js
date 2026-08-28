@@ -284,15 +284,31 @@ L.tileLayer(
 // "Presbítero Becerra", "C Champaquí" cerca de los lotes cargados) —
 // juntas cubren tanto "en qué localidad estoy" (zoom lejos) como "qué
 // calle es esta" (zoom cerca), que es lo que se pidió.
+// minZoom 16: con todo el pueblo a la vista (zoom ~14-15) esta capa
+// mete el nombre de CADA calle, y se ve como un empapelado de texto
+// encima del satelital — reportado en vivo ("muchas cosas en
+// pantalla"). Recién se prende al acercarse a la escala de un barrio,
+// que es donde realmente hace falta saber qué calle es cuál.
+// opacity 0.75: la tipografía de Esri para estas capas viene con halo
+// blanco bien marcado — no hay forma de aflojar el grosor de la letra
+// en sí (son tiles ya dibujados en el servidor, no texto editable del
+// lado del navegador), pero bajarle la opacidad a la capa entera
+// atenúa ese contraste tan fuerte contra el satelital sin perder
+// legibilidad — pedido en vivo ("no quiero que se vean tan
+// resaltadas").
 const capasReferencia = L.layerGroup([
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 24,
     maxNativeZoom: 23, // tope real del servicio, confirmado por su propio ?f=json
+    minZoom: 16,
+    opacity: 0.75,
     attribution: "Reference &copy; Esri"
   }),
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 24,
     maxNativeZoom: 23,
+    minZoom: 16,
+    opacity: 0.75,
     attribution: "Reference &copy; Esri"
   })
 ]).addTo(mapa);
@@ -532,10 +548,7 @@ function envolturaConvexa(puntos) {
 // prueba un rectángulo alineado con cada lado de la envoltura convexa, y
 // se queda con el de menor área). Devuelve ancho/alto SIN ordenar (tal
 // como quedan según el lado de la envoltura que ganó) más el ángulo de
-// ese lado y el centro del rectángulo — la orientación y el centro son
-// lo que necesita puntosEscaladosAMedida más abajo para reescalar el
-// lote a otras medidas en el mismo lugar. Null si el polígono es
-// degenerado.
+// ese lado y el centro del rectángulo. Null si el polígono es degenerado.
 function rectanguloMinimoConTransform(puntosMetros) {
   const hull = envolturaConvexa(puntosMetros);
   if (hull.length < 3) return null;
@@ -577,49 +590,6 @@ function rectanguloMinimoEnMetros(puntosMetros) {
   return [info.ancho, info.alto].sort((a, b) => a - b);
 }
 
-// Reescala la forma que YA tiene el lote (en los mismos metros locales
-// de puntosMetros) para que su rectángulo mínimo termine midiendo el
-// frente/largo exactos que se escriban a mano — pensado para cuando
-// alguien tiene la medida real de una mensura y quiere corregir el
-// tamaño sin andar arrastrando esquinas a ojo. A propósito NO arma un
-// rectángulo de 4 esquinas nuevo: eso convertía cualquier lote no
-// rectangular (un triángulo, por ejemplo) en un rectángulo limpio,
-// perdiendo la forma real — acá se escala cada vértice original por
-// separado (mismo eje/centro que el rectángulo mínimo), así un
-// triángulo sigue siendo un triángulo, solo cambia de tamaño. Para un
-// lote que YA es un rectángulo, da exactamente el mismo resultado que
-// reemplazar las 4 esquinas. Mantiene la orientación y el centro del
-// rectángulo mínimo actual (el lote no "salta" de lugar), y siempre
-// pone el lado más corto de los dos valores como frente — mismo
-// criterio que medidasFrenteYLargo, para que lo que se ve después de
-// aplicar coincida con lo que se escribió.
-function puntosEscaladosAMedida(puntosMetros, frente, largo) {
-  const info = rectanguloMinimoConTransform(puntosMetros);
-  if (!info) return null;
-
-  const corto = Math.min(frente, largo);
-  const largoReal = Math.max(frente, largo);
-  const [escalaX, escalaY] =
-    info.ancho <= info.alto ? [corto / info.ancho, largoReal / info.alto] : [largoReal / info.ancho, corto / info.alto];
-
-  const cosIda = Math.cos(-info.angulo);
-  const sinIda = Math.sin(-info.angulo);
-  const cosVuelta = Math.cos(info.angulo);
-  const sinVuelta = Math.sin(info.angulo);
-  const [cx, cy] = info.centroRotado;
-
-  return puntosMetros.map(([x, y]) => {
-    // Al marco alineado con el rectángulo mínimo...
-    const rx = x * cosIda - y * sinIda;
-    const ry = x * sinIda + y * cosIda;
-    // ...se escala cada eje por separado alrededor del centro...
-    const ex = cx + (rx - cx) * escalaX;
-    const ey = cy + (ry - cy) * escalaY;
-    // ...y de vuelta al marco original.
-    return [ex * cosVuelta - ey * sinVuelta, ex * sinVuelta + ey * cosVuelta];
-  });
-}
-
 // Frente y largo del lote — misma proyección local que areaEnM2, más
 // que suficiente de precisa para un lote (decenas de metros, no
 // kilómetros). "Frente" es el lado corto del rectángulo mínimo, "Largo"
@@ -649,29 +619,6 @@ function textoMedidasLados(anillo) {
   const [frente, largo] = dims;
   return `Frente ${frente.toFixed(1)} m × Largo ${largo.toFixed(1)} m`;
 }
-
-// Qué tan parecida es la forma a un rectángulo: superficie real del
-// polígono contra la superficie de su rectángulo mínimo. Para un
-// rectángulo real da ~1; para un triángulo, ~0.5 (la mitad de su
-// rectángulo envolvente, por geometría básica); para formas más
-// irregulares, menos todavía. Se usa para decidir si "Aplicar medidas"
-// (más abajo, editor de forma) tiene sentido: escribir un frente/largo
-// exacto y escalar la forma para llegar a esa medida solo da un
-// resultado confiable si la forma YA es más o menos un rectángulo —
-// en un triángulo, escalarlo para que su rectángulo mínimo mida X no
-// garantiza que el rectángulo mínimo recalculado DESPUÉS siga midiendo
-// X (puede terminar alineado con otro lado del triángulo en vez del
-// que se usó para escalar) — reportado en vivo con un lote triangular
-// real que terminaba con medidas distintas a las escritas.
-function proporcionRectangular(anillo) {
-  const dims = medidasFrenteYLargo(anillo);
-  if (!dims) return 0;
-  const areaRectangulo = dims[0] * dims[1];
-  if (areaRectangulo <= 0) return 0;
-  return areaEnM2(anillo) / areaRectangulo;
-}
-
-const UMBRAL_FORMA_RECTANGULAR = 0.9;
 
 // Ray casting: ¿el punto (lat, lon) está dentro del anillo exterior?
 function puntoDentroDePoligono(lat, lon, anillo) {
@@ -989,15 +936,24 @@ document.getElementById("btn-editar-lote-completo").addEventListener("click", ()
 // ---------------------------------------------------------------------------
 
 const elEditorPoligonoBarra = document.getElementById("editor-poligono-barra");
-const elEditorPoligonoManual = document.getElementById("editor-poligono-manual");
-const elEditorPoligonoManualNota = document.getElementById("editor-poligono-manual-nota");
 const elEditorPoligonoSuperficie = document.getElementById("editor-poligono-superficie");
 const elEditorPoligonoFrente = document.getElementById("editor-poligono-frente");
 const elEditorPoligonoLargo = document.getElementById("editor-poligono-largo");
 const elEditorPoligonoError = document.getElementById("editor-poligono-error");
 const elBtnGuardarPoligono = document.getElementById("btn-guardar-poligono");
+const elBtnModoLadoTocar = document.getElementById("btn-modo-lado-tocar");
+const elBtnModoLadoLista = document.getElementById("btn-modo-lado-lista");
+const elLadoTocarAyuda = document.getElementById("lado-tocar-ayuda");
+const elListaLados = document.getElementById("lista-lados");
+const elLadoSeleccionadoForm = document.getElementById("lado-seleccionado-form");
+const elLadoSeleccionadoMedida = document.getElementById("lado-seleccionado-medida");
+const elInputLadoNuevo = document.getElementById("input-lado-nuevo");
+const elBtnAplicarLado = document.getElementById("btn-aplicar-lado");
 
 let edicionPoligono = null; // { feature, capa: L.Polygon, marcadores: L.Marker[] } | null
+let ladoSeleccionado = null; // índice i: el lado entre marcadores[i] y marcadores[(i+1) % n]
+let modoSeleccionLado = "tocar"; // "tocar" (en el mapa) | "lista"
+let capaResaltadoLado = null; // L.Polyline que resalta el lado seleccionado
 
 // El anillo guardado en Firestore siempre viene cerrado (primer punto
 // igual al último, ver anilloAGeometryFirestore) — para editar interesa
@@ -1006,6 +962,18 @@ function verticesUnicos(anillo) {
   const cerrado =
     anillo.length > 1 && anillo[0][0] === anillo[anillo.length - 1][0] && anillo[0][1] === anillo[anillo.length - 1][1];
   return cerrado ? anillo.slice(0, -1) : anillo;
+}
+
+// Distancia real (metros) entre dos esquinas del editor — misma
+// proyección local equirectangular que el resto del archivo, con
+// origen en el primer punto (alcanza de sobra para el tamaño de un
+// lote, no hace falta más precisión que esa).
+function longitudLadoEnMetros(latlngA, latlngB) {
+  const mPorGradoLat = 111320;
+  const mPorGradoLon = 111320 * Math.cos(aRadianes(latlngA.lat));
+  const dx = (latlngB.lng - latlngA.lng) * mPorGradoLon;
+  const dy = (latlngB.lat - latlngA.lat) * mPorGradoLat;
+  return Math.hypot(dx, dy);
 }
 
 function actualizarMedidasEdicionPoligono() {
@@ -1023,21 +991,116 @@ function actualizarMedidasEdicionPoligono() {
     elEditorPoligonoLargo.textContent = `${dims[1].toFixed(1)} m`;
   }
 
-  // "Aplicar medidas" (escribir frente/largo a mano) solo se ofrece si
-  // la forma actual ya es más o menos un rectángulo — ver
-  // proporcionRectangular más arriba para el motivo. Se reevalúa acá
-  // porque se llama en cada drag: si se arrastra una esquina hasta que
-  // deje de parecer un rectángulo (o al revés), el bloque aparece o
-  // desaparece en vivo, no solo al abrir el editor.
-  const esRectangular = proporcionRectangular(anillo) >= UMBRAL_FORMA_RECTANGULAR;
-  elEditorPoligonoManual.classList.toggle("oculto", !esRectangular);
-  elEditorPoligonoManualNota.classList.toggle("oculto", esRectangular);
+  actualizarResaltadoLado();
+  if (modoSeleccionLado === "lista") renderizarListaLados();
 }
+
+// Dibuja (o borra) la línea amarilla que marca el lado elegido — se
+// llama después de cualquier cambio de posición de los marcadores, así
+// el resaltado sigue al lado aunque se lo arrastre.
+function actualizarResaltadoLado() {
+  if (capaResaltadoLado) {
+    mapa.removeLayer(capaResaltadoLado);
+    capaResaltadoLado = null;
+  }
+  if (!edicionPoligono || ladoSeleccionado === null) {
+    elLadoSeleccionadoForm.classList.add("oculto");
+    return;
+  }
+  const marcadores = edicionPoligono.marcadores;
+  const n = marcadores.length;
+  const a = marcadores[ladoSeleccionado].getLatLng();
+  const b = marcadores[(ladoSeleccionado + 1) % n].getLatLng();
+  capaResaltadoLado = L.polyline([a, b], { color: "#ffcc00", weight: 7, opacity: 0.9 }).addTo(mapa);
+
+  elLadoSeleccionadoForm.classList.remove("oculto");
+  elLadoSeleccionadoMedida.textContent = `${longitudLadoEnMetros(a, b).toFixed(1)} m`;
+}
+
+function renderizarListaLados() {
+  if (!edicionPoligono) return;
+  const marcadores = edicionPoligono.marcadores;
+  const n = marcadores.length;
+  elListaLados.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const a = marcadores[i].getLatLng();
+    const b = marcadores[(i + 1) % n].getLatLng();
+    const li = document.createElement("li");
+    li.textContent = `Lado ${i + 1}: ${longitudLadoEnMetros(a, b).toFixed(1)} m`;
+    li.classList.toggle("activo", i === ladoSeleccionado);
+    li.addEventListener("click", () => seleccionarLado(i));
+    elListaLados.appendChild(li);
+  }
+}
+
+function seleccionarLado(indice) {
+  ladoSeleccionado = indice;
+  if (indice !== null) {
+    const marcadores = edicionPoligono.marcadores;
+    const n = marcadores.length;
+    const a = marcadores[indice].getLatLng();
+    const b = marcadores[(indice + 1) % n].getLatLng();
+    elInputLadoNuevo.value = longitudLadoEnMetros(a, b).toFixed(1);
+  }
+  actualizarResaltadoLado();
+  if (modoSeleccionLado === "lista") renderizarListaLados();
+}
+
+// Distancia (en píxeles de pantalla, no metros) de un punto a un
+// segmento — para saber a qué lado del lote corresponde un click/touch
+// en el mapa. En píxeles y no en metros porque así el radio de
+// tolerancia (25px más abajo) es el mismo "qué tan cerca hay que tocar"
+// sin importar el zoom o el tamaño real del lote.
+function distanciaPuntoASegmentoPx(p, a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const largo2 = dx * dx + dy * dy;
+  if (largo2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / largo2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+// Qué lado del lote está más cerca de un click en el mapa — null si el
+// click cayó lejos de todos (por ejemplo, en el medio de un lote
+// grande), para no "adivinar" una selección que no tiene sentido.
+function ladoMasCercano(latlngClick) {
+  const marcadores = edicionPoligono.marcadores;
+  const n = marcadores.length;
+  const p = mapa.latLngToLayerPoint(latlngClick);
+  let mejorIndice = null;
+  let mejorDistancia = Infinity;
+  for (let i = 0; i < n; i++) {
+    const a = mapa.latLngToLayerPoint(marcadores[i].getLatLng());
+    const b = mapa.latLngToLayerPoint(marcadores[(i + 1) % n].getLatLng());
+    const d = distanciaPuntoASegmentoPx(p, a, b);
+    if (d < mejorDistancia) {
+      mejorDistancia = d;
+      mejorIndice = i;
+    }
+  }
+  return mejorDistancia <= 25 ? mejorIndice : null;
+}
+
+function fijarModoSeleccionLado(modo) {
+  modoSeleccionLado = modo;
+  elBtnModoLadoTocar.classList.toggle("activo", modo === "tocar");
+  elBtnModoLadoLista.classList.toggle("activo", modo === "lista");
+  elLadoTocarAyuda.classList.toggle("oculto", modo !== "tocar");
+  elListaLados.classList.toggle("oculto", modo !== "lista");
+  if (modo === "lista") renderizarListaLados();
+}
+
+elBtnModoLadoTocar.addEventListener("click", () => fijarModoSeleccionLado("tocar"));
+elBtnModoLadoLista.addEventListener("click", () => fijarModoSeleccionLado("lista"));
 
 function terminarEdicionPoligono() {
   if (!edicionPoligono) return;
   mapa.removeLayer(edicionPoligono.capa);
   edicionPoligono.marcadores.forEach((m) => mapa.removeLayer(m));
+  if (capaResaltadoLado) mapa.removeLayer(capaResaltadoLado);
+  capaResaltadoLado = null;
+  ladoSeleccionado = null;
   edicionPoligono = null;
   modoCaptura = null;
   elEditorPoligonoBarra.classList.add("oculto");
@@ -1050,9 +1113,7 @@ function terminarEdicionPoligono() {
 window.addEventListener("mojonapp:sesion-cerrada", terminarEdicionPoligono);
 
 // Crea un marcador arrastrable de vértice y lo cablea contra el estado
-// ACTUAL de edicionPoligono (no contra un array cerrado por closure) —
-// así sirve tanto para el armado inicial como para cuando "Aplicar
-// medidas" reemplaza todos los vértices por uno nuevo rectángulo.
+// ACTUAL de edicionPoligono (no contra un array cerrado por closure).
 function crearMarcadorVerticeEdicion(latlng) {
   const marcador = L.marker(latlng, {
     draggable: true,
@@ -1063,16 +1124,6 @@ function crearMarcadorVerticeEdicion(latlng) {
     actualizarMedidasEdicionPoligono();
   });
   return marcador;
-}
-
-// Saca los marcadores/capa viejos y los reemplaza por unos nuevos en las
-// posiciones dadas — usado por "Aplicar medidas" (el rectángulo nuevo
-// puede tener 4 esquinas aunque el lote original tuviera más lados, así
-// que no alcanza con mover los marcadores existentes uno a uno).
-function reemplazarVerticesEdicionPoligono(latlngs) {
-  edicionPoligono.marcadores.forEach((m) => mapa.removeLayer(m));
-  edicionPoligono.marcadores = latlngs.map((latlng) => crearMarcadorVerticeEdicion(latlng));
-  edicionPoligono.capa.setLatLngs(latlngs);
 }
 
 function iniciarEdicionPoligono(feature) {
@@ -1094,14 +1145,24 @@ function iniciarEdicionPoligono(feature) {
     fillOpacity: 0.15
   }).addTo(mapa);
 
+  // Tocar el contorno (o el relleno) del lote selecciona el lado más
+  // cercano al toque — así funciona el modo "Tocar en el mapa" del
+  // bloque de abajo. stopPropagation para que no le llegue también al
+  // listener global del mapa (aunque ese ya no hace nada con
+  // modoCaptura distinto de null, es más prolijo cortarlo acá).
+  capa.on("click", (e) => {
+    L.DomEvent.stopPropagation(e);
+    seleccionarLado(ladoMasCercano(e.latlng));
+  });
+
   // edicionPoligono se arma ANTES de crear los marcadores porque
   // crearMarcadorVerticeEdicion cablea el evento "drag" contra él.
   edicionPoligono = { feature, capa, marcadores: [] };
   edicionPoligono.marcadores = latlngs.map((latlng) => crearMarcadorVerticeEdicion(latlng));
 
+  ladoSeleccionado = null;
+  fijarModoSeleccionLado("tocar");
   actualizarMedidasEdicionPoligono();
-  document.getElementById("input-medida-frente").value = "";
-  document.getElementById("input-medida-largo").value = "";
   elEditorPoligonoError.classList.add("oculto");
   elEditorPoligonoBarra.classList.remove("oculto");
 }
@@ -1111,53 +1172,53 @@ document.getElementById("btn-editar-forma-lote").addEventListener("click", () =>
   iniciarEdicionPoligono(lotePolyLayerSeleccionado);
 });
 
-// "Aplicar medidas": en vez de arrastrar esquinas a ojo, se escribe el
-// frente y el largo reales (por ejemplo, los de una mensura) y se arma
-// un rectángulo prolijo con esas medidas exactas, en el mismo lugar y
-// orientación que tenía el rectángulo mínimo del lote hasta ese momento.
-// Pedido explícito del caso del amigo martillero: cuando ya se sabe la
-// medida real, es más preciso escribirla que intentar acertarla arrastrando.
-const elInputMedidaFrente = document.getElementById("input-medida-frente");
-const elInputMedidaLargo = document.getElementById("input-medida-largo");
-
-document.getElementById("btn-aplicar-medidas").addEventListener("click", () => {
-  if (!edicionPoligono) return;
+// Ajustar un lado puntual a su medida real: en vez de una medida
+// "promedio" (el viejo enfoque de rectángulo mínimo, que no tenía
+// mucho sentido para un lote triangular o irregular — pedido explícito
+// a partir de un caso real, Manzana 18 Lote 5), se elige un lado
+// concreto del polígono (tocándolo en el mapa o de una lista) y se
+// escribe su medida real. La esquina en el otro extremo del lado queda
+// fija; la esquina de este extremo se corre en línea recta sobre la
+// misma dirección que ya tenía el lado, hasta la nueva distancia —
+// mismo resultado que arrastrarla a mano hasta ese punto exacto, pero
+// preciso en vez de a ojo. Funciona igual para cualquier forma
+// (triángulo, rectángulo, lo que sea), porque no depende de ninguna
+// noción de "rectángulo mínimo": solo mueve un vértice a lo largo de
+// una dirección ya existente.
+elBtnAplicarLado.addEventListener("click", () => {
+  if (!edicionPoligono || ladoSeleccionado === null) return;
   elEditorPoligonoError.classList.add("oculto");
 
-  const frente = parseFloat(elInputMedidaFrente.value);
-  const largo = parseFloat(elInputMedidaLargo.value);
-  if (!(frente > 0) || !(largo > 0)) {
-    elEditorPoligonoError.textContent = "Escribí el frente y el largo en metros (mayores a 0) para aplicar la medida.";
+  const nuevaLongitud = parseFloat(elInputLadoNuevo.value);
+  if (!(nuevaLongitud > 0)) {
+    elEditorPoligonoError.textContent = "Escribí una medida en metros mayor a 0 para aplicar.";
     elEditorPoligonoError.classList.remove("oculto");
     return;
   }
 
-  const puntos = edicionPoligono.marcadores.map((m) => {
-    const { lat, lng } = m.getLatLng();
-    return [lng, lat]; // [lon, lat]
-  });
-  const [lonOrigen, latOrigen] = puntos[0];
+  const marcadores = edicionPoligono.marcadores;
+  const n = marcadores.length;
+  const i = ladoSeleccionado;
+  const j = (i + 1) % n;
+  const latlngI = marcadores[i].getLatLng();
+  const latlngJ = marcadores[j].getLatLng();
+
   const mPorGradoLat = 111320;
-  const mPorGradoLon = 111320 * Math.cos(aRadianes(latOrigen));
-  const puntosMetros = puntos.map(([lon, lat]) => [
-    (lon - lonOrigen) * mPorGradoLon,
-    (lat - latOrigen) * mPorGradoLat
-  ]);
-
-  const puntosEscalados = puntosEscaladosAMedida(puntosMetros, frente, largo);
-  if (!puntosEscalados) {
-    elEditorPoligonoError.textContent = "No se pudo calcular la medida con esta forma. Probá arrastrando una esquina primero.";
+  const mPorGradoLon = 111320 * Math.cos(aRadianes(latlngI.lat));
+  const dx = (latlngJ.lng - latlngI.lng) * mPorGradoLon;
+  const dy = (latlngJ.lat - latlngI.lat) * mPorGradoLat;
+  const distanciaActual = Math.hypot(dx, dy);
+  if (distanciaActual === 0) {
+    elEditorPoligonoError.textContent = "Las dos esquinas de este lado están en el mismo punto — arrastrá una primero.";
     elEditorPoligonoError.classList.remove("oculto");
     return;
   }
 
-  // Reescala cada vértice tal cual estaba (ver puntosEscaladosAMedida) —
-  // un lote triangular sigue teniendo 3 vértices después de esto, no se
-  // lo fuerza a un rectángulo de 4 esquinas.
-  const nuevosLatLngs = puntosEscalados.map(([x, y]) =>
-    L.latLng(y / mPorGradoLat + latOrigen, x / mPorGradoLon + lonOrigen)
-  );
-  reemplazarVerticesEdicionPoligono(nuevosLatLngs);
+  const factor = nuevaLongitud / distanciaActual;
+  const nuevoLatLng = L.latLng(latlngI.lat + (dy * factor) / mPorGradoLat, latlngI.lng + (dx * factor) / mPorGradoLon);
+
+  marcadores[j].setLatLng(nuevoLatLng);
+  edicionPoligono.capa.setLatLngs(marcadores.map((m) => m.getLatLng()));
   actualizarMedidasEdicionPoligono();
 });
 
