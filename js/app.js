@@ -411,7 +411,15 @@ async function cargarLotesDesdeFirestore() {
   ).addTo(mapa);
 
   if (features.length > 0) {
-    mapa.fitBounds(capaLotes.getBounds(), { padding: [20, 20] });
+    // maxZoom explícito: si el contenedor del mapa todavía no tiene un
+    // tamaño real en este instante (puede pasar, esta llamada es lo
+    // primero que corre la app apenas responde Firestore), Leaflet
+    // calcula mal el zoom que hace falta para encuadrar y termina
+    // clavado en el maxZoom del mapa (24) — un solo lote de golpe
+    // aislado en una esquina, imagen satelital reventada de borrosa.
+    // Reproducido de forma consistente en pruebas. 18 alcanza de sobra
+    // para encuadrar cualquier cartera real de lotes de un corredor.
+    mapa.fitBounds(capaLotes.getBounds(), { padding: [20, 20], maxZoom: 18 });
   }
 
   if (habiaCatastroCercano) capaCatastroCercano.addTo(mapa);
