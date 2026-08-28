@@ -199,12 +199,15 @@
       <span>Frente <strong id="editor-poligono-frente">—</strong></span>
       <span>Largo <strong id="editor-poligono-largo">—</strong></span>
     </div>
-    <div id="editor-poligono-manual">
+    <div id="editor-poligono-manual" class="oculto">
       <p class="editor-poligono-ayuda">O escribí las medidas exactas (de una mensura, por ejemplo) y el polígono se ajusta solo:</p>
       <label>Frente (m) <input type="number" id="input-medida-frente" min="0" step="0.1" inputmode="decimal" data-testid="input-medida-frente"></label>
       <label>Largo (m) <input type="number" id="input-medida-largo" min="0" step="0.1" inputmode="decimal" data-testid="input-medida-largo"></label>
       <button type="button" id="btn-aplicar-medidas" data-testid="btn-aplicar-medidas">Aplicar medidas</button>
     </div>
+    <p id="editor-poligono-manual-nota" class="editor-poligono-ayuda oculto" data-testid="editor-poligono-manual-nota">
+      Esta forma no es rectangular (es un lote triangular o irregular) — escribir un frente/largo exacto no da un resultado confiable acá. Ajustala arrastrando las esquinas.
+    </p>
     <div class="botones-alternativos">
       <button type="button" id="btn-guardar-poligono" data-testid="btn-guardar-poligono">Guardar forma</button>
       <button type="button" id="btn-cancelar-poligono" data-testid="btn-cancelar-poligono">Cancelar</button>

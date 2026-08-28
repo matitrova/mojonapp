@@ -525,9 +525,9 @@ function envolturaConvexa(puntos) {
 // se queda con el de menor área). Devuelve ancho/alto SIN ordenar (tal
 // como quedan según el lado de la envoltura que ganó) más el ángulo de
 // ese lado y el centro del rectángulo — la orientación y el centro son
-// lo que necesita esquinasRectanguloEnMetros más abajo para reconstruir
-// un rectángulo nuevo con otras medidas en el mismo lugar. Null si el
-// polígono es degenerado.
+// lo que necesita puntosEscaladosAMedida más abajo para reescalar el
+// lote a otras medidas en el mismo lugar. Null si el polígono es
+// degenerado.
 function rectanguloMinimoConTransform(puntosMetros) {
   const hull = envolturaConvexa(puntosMetros);
   if (hull.length < 3) return null;
@@ -569,33 +569,47 @@ function rectanguloMinimoEnMetros(puntosMetros) {
   return [info.ancho, info.alto].sort((a, b) => a - b);
 }
 
-// Arma las 4 esquinas (en los mismos metros locales de puntosMetros) de
-// un rectángulo NUEVO con el frente/largo exactos que se escriban a
-// mano — pensado para cuando alguien tiene la medida real de una mensura
-// y quiere que el lote quede con esa forma en vez de andar arrastrando
-// esquinas a ojo. Mantiene la orientación y el centro del rectángulo
-// mínimo actual (así el lote no "salta" de lugar, solo cambia de
-// tamaño), y siempre pone el lado más corto de los dos valores como
-// frente — mismo criterio que medidasFrenteYLargo, para que lo que
-// se ve después de aplicar coincida con lo que se escribió.
-function esquinasRectanguloEnMetros(puntosMetros, frente, largo) {
+// Reescala la forma que YA tiene el lote (en los mismos metros locales
+// de puntosMetros) para que su rectángulo mínimo termine midiendo el
+// frente/largo exactos que se escriban a mano — pensado para cuando
+// alguien tiene la medida real de una mensura y quiere corregir el
+// tamaño sin andar arrastrando esquinas a ojo. A propósito NO arma un
+// rectángulo de 4 esquinas nuevo: eso convertía cualquier lote no
+// rectangular (un triángulo, por ejemplo) en un rectángulo limpio,
+// perdiendo la forma real — acá se escala cada vértice original por
+// separado (mismo eje/centro que el rectángulo mínimo), así un
+// triángulo sigue siendo un triángulo, solo cambia de tamaño. Para un
+// lote que YA es un rectángulo, da exactamente el mismo resultado que
+// reemplazar las 4 esquinas. Mantiene la orientación y el centro del
+// rectángulo mínimo actual (el lote no "salta" de lugar), y siempre
+// pone el lado más corto de los dos valores como frente — mismo
+// criterio que medidasFrenteYLargo, para que lo que se ve después de
+// aplicar coincida con lo que se escribió.
+function puntosEscaladosAMedida(puntosMetros, frente, largo) {
   const info = rectanguloMinimoConTransform(puntosMetros);
   if (!info) return null;
 
   const corto = Math.min(frente, largo);
   const largoReal = Math.max(frente, largo);
-  const [medioX, medioY] = info.ancho <= info.alto ? [corto / 2, largoReal / 2] : [largoReal / 2, corto / 2];
-  const [cx, cy] = info.centroRotado;
-  const esquinasRotadas = [
-    [cx - medioX, cy - medioY],
-    [cx + medioX, cy - medioY],
-    [cx + medioX, cy + medioY],
-    [cx - medioX, cy + medioY]
-  ];
+  const [escalaX, escalaY] =
+    info.ancho <= info.alto ? [corto / info.ancho, largoReal / info.alto] : [largoReal / info.ancho, corto / info.alto];
 
-  const cos = Math.cos(info.angulo);
-  const sin = Math.sin(info.angulo);
-  return esquinasRotadas.map(([rx, ry]) => [rx * cos - ry * sin, rx * sin + ry * cos]);
+  const cosIda = Math.cos(-info.angulo);
+  const sinIda = Math.sin(-info.angulo);
+  const cosVuelta = Math.cos(info.angulo);
+  const sinVuelta = Math.sin(info.angulo);
+  const [cx, cy] = info.centroRotado;
+
+  return puntosMetros.map(([x, y]) => {
+    // Al marco alineado con el rectángulo mínimo...
+    const rx = x * cosIda - y * sinIda;
+    const ry = x * sinIda + y * cosIda;
+    // ...se escala cada eje por separado alrededor del centro...
+    const ex = cx + (rx - cx) * escalaX;
+    const ey = cy + (ry - cy) * escalaY;
+    // ...y de vuelta al marco original.
+    return [ex * cosVuelta - ey * sinVuelta, ex * sinVuelta + ey * cosVuelta];
+  });
 }
 
 // Frente y largo del lote — misma proyección local que areaEnM2, más
@@ -627,6 +641,29 @@ function textoMedidasLados(anillo) {
   const [frente, largo] = dims;
   return `Frente ${frente.toFixed(1)} m × Largo ${largo.toFixed(1)} m`;
 }
+
+// Qué tan parecida es la forma a un rectángulo: superficie real del
+// polígono contra la superficie de su rectángulo mínimo. Para un
+// rectángulo real da ~1; para un triángulo, ~0.5 (la mitad de su
+// rectángulo envolvente, por geometría básica); para formas más
+// irregulares, menos todavía. Se usa para decidir si "Aplicar medidas"
+// (más abajo, editor de forma) tiene sentido: escribir un frente/largo
+// exacto y escalar la forma para llegar a esa medida solo da un
+// resultado confiable si la forma YA es más o menos un rectángulo —
+// en un triángulo, escalarlo para que su rectángulo mínimo mida X no
+// garantiza que el rectángulo mínimo recalculado DESPUÉS siga midiendo
+// X (puede terminar alineado con otro lado del triángulo en vez del
+// que se usó para escalar) — reportado en vivo con un lote triangular
+// real que terminaba con medidas distintas a las escritas.
+function proporcionRectangular(anillo) {
+  const dims = medidasFrenteYLargo(anillo);
+  if (!dims) return 0;
+  const areaRectangulo = dims[0] * dims[1];
+  if (areaRectangulo <= 0) return 0;
+  return areaEnM2(anillo) / areaRectangulo;
+}
+
+const UMBRAL_FORMA_RECTANGULAR = 0.9;
 
 // Ray casting: ¿el punto (lat, lon) está dentro del anillo exterior?
 function puntoDentroDePoligono(lat, lon, anillo) {
@@ -944,6 +981,8 @@ document.getElementById("btn-editar-lote-completo").addEventListener("click", ()
 // ---------------------------------------------------------------------------
 
 const elEditorPoligonoBarra = document.getElementById("editor-poligono-barra");
+const elEditorPoligonoManual = document.getElementById("editor-poligono-manual");
+const elEditorPoligonoManualNota = document.getElementById("editor-poligono-manual-nota");
 const elEditorPoligonoSuperficie = document.getElementById("editor-poligono-superficie");
 const elEditorPoligonoFrente = document.getElementById("editor-poligono-frente");
 const elEditorPoligonoLargo = document.getElementById("editor-poligono-largo");
@@ -975,6 +1014,16 @@ function actualizarMedidasEdicionPoligono() {
     elEditorPoligonoFrente.textContent = `${dims[0].toFixed(1)} m`;
     elEditorPoligonoLargo.textContent = `${dims[1].toFixed(1)} m`;
   }
+
+  // "Aplicar medidas" (escribir frente/largo a mano) solo se ofrece si
+  // la forma actual ya es más o menos un rectángulo — ver
+  // proporcionRectangular más arriba para el motivo. Se reevalúa acá
+  // porque se llama en cada drag: si se arrastra una esquina hasta que
+  // deje de parecer un rectángulo (o al revés), el bloque aparece o
+  // desaparece en vivo, no solo al abrir el editor.
+  const esRectangular = proporcionRectangular(anillo) >= UMBRAL_FORMA_RECTANGULAR;
+  elEditorPoligonoManual.classList.toggle("oculto", !esRectangular);
+  elEditorPoligonoManualNota.classList.toggle("oculto", esRectangular);
 }
 
 function terminarEdicionPoligono() {
@@ -1087,17 +1136,17 @@ document.getElementById("btn-aplicar-medidas").addEventListener("click", () => {
     (lat - latOrigen) * mPorGradoLat
   ]);
 
-  const esquinas = esquinasRectanguloEnMetros(puntosMetros, frente, largo);
-  if (!esquinas) {
-    elEditorPoligonoError.textContent = "No se pudo calcular el rectángulo con esta forma. Probá arrastrando una esquina primero.";
+  const puntosEscalados = puntosEscaladosAMedida(puntosMetros, frente, largo);
+  if (!puntosEscalados) {
+    elEditorPoligonoError.textContent = "No se pudo calcular la medida con esta forma. Probá arrastrando una esquina primero.";
     elEditorPoligonoError.classList.remove("oculto");
     return;
   }
 
-  // El rectángulo nuevo siempre tiene 4 esquinas — si la parcela venía
-  // del catastro con más de 4 lados, esos lados de más se pierden acá:
-  // escribir un frente/largo exacto solo tiene sentido para un rectángulo.
-  const nuevosLatLngs = esquinas.map(([x, y]) =>
+  // Reescala cada vértice tal cual estaba (ver puntosEscaladosAMedida) —
+  // un lote triangular sigue teniendo 3 vértices después de esto, no se
+  // lo fuerza a un rectángulo de 4 esquinas.
+  const nuevosLatLngs = puntosEscalados.map(([x, y]) =>
     L.latLng(y / mPorGradoLat + latOrigen, x / mPorGradoLon + lonOrigen)
   );
   reemplazarVerticesEdicionPoligono(nuevosLatLngs);
