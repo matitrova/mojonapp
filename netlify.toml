@@ -1,6 +1,0 @@
-# MojonApp es un sitio estático sin build step (ver README/CLAUDE.md del
-# proyecto) — este archivo solo le dice a Netlify dónde están las
-# funciones serverless (netlify/functions/), no hace falta un
-# [build.command] porque no hay nada que compilar.
-[build]
-  functions = "netlify/functions"
