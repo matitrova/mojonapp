@@ -69,7 +69,7 @@ def base_url():
 # ---------------------------------------------------------------------------
 
 
-def _id_token_de_prueba():
+def _sesion_de_prueba():
     respuesta = requests.post(
         "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
         params={"key": FIREBASE_API_KEY},
@@ -81,7 +81,18 @@ def _id_token_de_prueba():
         timeout=10,
     )
     respuesta.raise_for_status()
-    return respuesta.json()["idToken"]
+    return respuesta.json()
+
+
+def _id_token_de_prueba():
+    return _sesion_de_prueba()["idToken"]
+
+
+def _uid_de_prueba():
+    """El uid de la cuenta de test — hace falta para sembrar un lote con
+    "creado_por" válido (la regla de creación en firestore.rules exige
+    que coincida con quien está creando, ver el comentario ahí)."""
+    return _sesion_de_prueba()["localId"]
 
 
 def _a_valor_firestore(valor):
@@ -103,8 +114,13 @@ def _a_valor_firestore(valor):
 
 
 def crear_lote_de_prueba(datos):
-    """Crea un documento en la colección "lotes" y devuelve su id."""
+    """Crea un documento en la colección "lotes" y devuelve su id.
+    Agrega "creado_por" solo si datos no lo trae ya — la regla de
+    creación en firestore.rules exige que sea el uid real de quien
+    crea, así que no alcanza con omitirlo."""
     id_token = _id_token_de_prueba()
+    if "creado_por" not in datos:
+        datos = {**datos, "creado_por": _uid_de_prueba()}
     campos = {clave: _a_valor_firestore(valor) for clave, valor in datos.items()}
     respuesta = requests.post(
         FIRESTORE_URL_BASE,

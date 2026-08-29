@@ -65,7 +65,15 @@ service cloud.firestore {
     match /lotes/{loteId} {
       allow read: if true;
 
-      allow create: if esRoot() || tienePermiso('cargar_lote');
+      // "creado_por" tiene que ser quien realmente está creando el lote
+      // — sin esto, cualquiera con "cargar_lote" (no hace falta ser
+      // root) podría saltarse la UI y pegarle directo a la API con un
+      // "creado_por" de OTRO corredor, atribuyéndole el lote a otro sin
+      // que lo haya cargado. La app siempre manda su propio uid acá
+      // (ver js/app.js, addDoc de "lotes"), esto solo hace que no sea
+      // opcional confiar en que el cliente se porte bien.
+      allow create: if (esRoot() || tienePermiso('cargar_lote'))
+        && request.resource.data.creado_por == request.auth.uid;
 
       // Un lote cargado antes de que existiera "creado_por" no tiene
       // dueño: cae directo en la rama "ajeno", nunca en la de "propio".
