@@ -219,7 +219,8 @@ button:active {
   opacity: 0.6;
 }
 
-#catastro-cercano-mensaje {
+#catastro-cercano-mensaje,
+#mensaje-carga-inicial {
   position: fixed;
   top: 54px;
   left: 50%;

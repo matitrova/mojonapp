@@ -328,6 +328,7 @@ leyenda.onAdd = function () {
 leyenda.addTo(mapa);
 
 let capaLotes = null;
+const elMensajeCargaInicial = document.getElementById("mensaje-carga-inicial");
 
 // Un documento de Firestore es {geometry, ...propiedades} (ver
 // formularioLote.addEventListener("submit", ...) más abajo). Se reconstruye
@@ -362,7 +363,16 @@ function docALoteFeature(doc) {
   };
 }
 
+// Se muestra un "Cargando lotes…" solo la primera vez que arranca la
+// app — esta función se vuelve a llamar seguido después (al guardar un
+// lote, al iniciar/cerrar sesión, etc.) y repetir el aviso en cada una
+// de esas veces sería más ruido que ayuda, además de parpadear sobre
+// lotes que ya están a la vista.
+let primeraCargaDeLotesHecha = false;
+
 async function cargarLotesDesdeFirestore() {
+  if (!primeraCargaDeLotesHecha) elMensajeCargaInicial.classList.remove("oculto");
+
   // Un corredor sin "ver_todos_los_lotes" solo trae lo suyo — root, y
   // cualquiera sin sesión (el catálogo público), siguen viendo todo.
   const restringirAPropios = !!miPerfilActual && !esRootActual() && !tienePermiso("ver_todos_los_lotes");
@@ -439,10 +449,17 @@ async function cargarLotesDesdeFirestore() {
   }
 
   if (habiaCatastroCercano) capaCatastroCercano.addTo(mapa);
+
+  elMensajeCargaInicial.classList.add("oculto");
+  primeraCargaDeLotesHecha = true;
 }
 
 cargarLotesDesdeFirestore().catch((error) => {
   console.error("No se pudieron cargar los lotes desde Firestore:", error);
+  // Si la primera carga falla, no dejar el aviso de "Cargando…" pegado
+  // para siempre — mejor un mensaje de error concreto que uno que
+  // sugiere que todavía está en curso.
+  elMensajeCargaInicial.textContent = "No se pudieron cargar los lotes. Recargá la página para reintentar.";
 });
 
 // ---------------------------------------------------------------------------
@@ -2861,6 +2878,10 @@ async function actualizarCatastroCercano() {
 
   const generacion = ++generacionCatastroCercano;
 
+  // El pedido a los 3 catastros puede tardar unos segundos con
+  // conexión rural — sin este aviso, el mapa se queda sin cambios
+  // visibles y parece que el botón no hizo nada.
+  mostrarMensajeCatastroCercano("Buscando parcelas cercanas…");
   const { features, huboErrorTotal } = await pedirParcelasCatastroCercano();
 
   // Llegó tarde: el mapa ya se movió de nuevo y hay un pedido más nuevo

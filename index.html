@@ -4,8 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>MojonApp</title>
+<!-- El "?v=" de estilos.css y app.js más abajo es cache-busting manual —
+     no hay build step en este proyecto (decisión deliberada, ver
+     CLAUDE.md/memoria), así que no hay forma de generarlo solo. Bumpear
+     este número cada vez que se edite alguno de los dos archivos, o un
+     navegador que ya tenía la app abierta puede quedarse sirviendo la
+     versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-08-29-1" />
 </head>
 <body>
 
@@ -81,6 +87,12 @@
   </nav>
 
   <div id="mapa"></div>
+
+  <!-- Solo se muestra en la primera carga de la app (ver
+       primeraCargaDeLotesHecha en app.js) — sin esto, mientras responde
+       Firestore el mapa se queda sin ningún cambio visible y parece que
+       no está haciendo nada, sobre todo con conexión rural lenta. -->
+  <p id="mensaje-carga-inicial" class="oculto" data-testid="mensaje-carga-inicial">Cargando lotes…</p>
 
   <div id="catastro-cercano-mensaje" class="oculto" data-testid="catastro-cercano-mensaje"></div>
 
@@ -664,6 +676,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=2026-08-29-1"></script>
 </body>
 </html>
