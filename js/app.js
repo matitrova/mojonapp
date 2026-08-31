@@ -42,9 +42,7 @@ import {
   setLotesActuales,
   getDeepLinkAbierto,
   setDeepLinkAbierto,
-  getSectoresActuales,
   setSectoresActuales,
-  getBarriosActuales,
   setBarriosActuales,
   getModoCaptura,
   setModoCaptura,
@@ -54,6 +52,14 @@ import {
   onSesionCerrada
 } from "./estado.js";
 import { iniciarEstoyYendo } from "./estoy-yendo.js";
+import {
+  configurarCatalogos,
+  iniciarCatalogos,
+  cargarSectores,
+  cargarBarrios,
+  poblarSelectSector,
+  poblarSelectBarrio
+} from "./catalogos.js";
 import {
   initializeApp,
   deleteApp
@@ -81,6 +87,9 @@ import {
   sendPasswordResetEmail,
   getAuth
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+configurarCatalogos({ db, getDocs, addDoc, setDoc, deleteDoc, collection, doc });
+iniciarCatalogos();
 
 const COLECCION_LOTES = "lotes";
 
@@ -131,65 +140,6 @@ function renderServiciosHTML(servicios) {
     const tiene = !!servicios[clave];
     return `<span class="chip-servicio${tiene ? "" : " sin-servicio"}">${icono} ${etiqueta}</span>`;
   }).join("");
-}
-
-// ---------------------------------------------------------------------------
-// Catálogo de sectores/zonas: antes "Sector" era texto libre en cada
-// lote, y cada corredor terminaba escribiendo su propia variante del
-// mismo nombre ("Zona Norte", "zona norte", "Norte"...). Ahora es un
-// combo que sale de la colección "sectores" (administrada desde el
-// panel "Sectores" del menú), y el lote sigue guardando el nombre como
-// texto plano — no hay una relación por id, así que borrar un sector
-// del catálogo no le mueve el dato a los lotes que ya lo tenían.
-// ---------------------------------------------------------------------------
-
-async function cargarSectores() {
-  try {
-    const snapshot = await getDocs(collection(db, "sectores"));
-    setSectoresActuales(
-      snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.nombre.localeCompare(b.nombre))
-    );
-  } catch {
-    // Si falla (reglas viejas sin esta colección, sin conexión, etc.) el
-    // combo queda con "Sin zona" nomás — no puede tirar abajo el login
-    // ni el resto de la carga de lotes.
-    setSectoresActuales([]);
-  }
-}
-
-// Mismo catálogo que zonas, colección separada — un lote tiene zona Y
-// barrio a la vez, son dos categorías independientes.
-async function cargarBarrios() {
-  try {
-    const snapshot = await getDocs(collection(db, "barrios"));
-    setBarriosActuales(
-      snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.nombre.localeCompare(b.nombre))
-    );
-  } catch {
-    setBarriosActuales([]);
-  }
-}
-
-// valorActual: el nombre que ya tiene el lote (si lo tiene), para
-// preseleccionarlo — y para no perderlo si ya no está en el catálogo
-// (se borró después de asignárselo a este lote, o se cargó a mano antes
-// de que existiera esta lista). catalogo/textoVacio parametrizan entre
-// zona y barrio, que comparten exactamente esta misma lógica.
-function poblarSelectCatalogo(elSelect, valorActual, catalogo, textoVacio) {
-  const opciones = catalogo.map((s) => `<option value="${s.nombre}">${s.nombre}</option>`);
-  if (valorActual && !catalogo.some((s) => s.nombre === valorActual)) {
-    opciones.push(`<option value="${valorActual}">${valorActual} (fuera del catálogo)</option>`);
-  }
-  elSelect.innerHTML = `<option value="">${textoVacio}</option>` + opciones.join("");
-  elSelect.value = valorActual || "";
-}
-
-function poblarSelectSector(elSelect, valorActual) {
-  poblarSelectCatalogo(elSelect, valorActual, getSectoresActuales(), "Sin zona");
-}
-
-function poblarSelectBarrio(elSelect, valorActual) {
-  poblarSelectCatalogo(elSelect, valorActual, getBarriosActuales(), "Sin barrio");
 }
 
 // ---------------------------------------------------------------------------
@@ -3338,262 +3288,3 @@ document.getElementById("cerrar-panel-admin").addEventListener("click", () => {
   elPanelAdmin.classList.add("oculto");
 });
 
-// ---------------------------------------------------------------------------
-// Panel "Sectores" (root / permiso administrar_sectores): catálogo de
-// nombres que ofrece el combo de Sector/zona en los lotes. Mismo patrón
-// de lista+form que Perfiles, pero sin pestañas (una sola entidad).
-// ---------------------------------------------------------------------------
-
-const elPanelSectores = document.getElementById("panel-sectores");
-const elBtnAbrirSectores = document.getElementById("btn-abrir-sectores");
-const elSectoresVistaLista = document.getElementById("sectores-vista-lista");
-const elSectoresVistaForm = document.getElementById("sectores-vista-form");
-const elTablaSectoresCuerpo = document.getElementById("tabla-sectores-cuerpo");
-const elBtnAgregarSector = document.getElementById("btn-agregar-sector");
-const elSectorVolver = document.getElementById("sector-volver");
-const elSectorFormTitulo = document.getElementById("sector-form-titulo");
-const formularioSector = document.getElementById("formulario-sector");
-const elSectorIdEditando = document.getElementById("sector-id-editando");
-const elSectorNombre = document.getElementById("sector-nombre");
-const elSectorError = document.getElementById("sector-error");
-
-async function cargarPanelSectores() {
-  await cargarSectores();
-
-  elTablaSectoresCuerpo.innerHTML = "";
-  getSectoresActuales().forEach((sector) => {
-    const fila = document.createElement("tr");
-    const celdaNombre = document.createElement("td");
-    celdaNombre.textContent = sector.nombre;
-
-    const celdaAcciones = document.createElement("td");
-    const botonEditar = document.createElement("button");
-    botonEditar.type = "button";
-    botonEditar.className = "btn-editar-fila";
-    botonEditar.textContent = "Editar";
-    botonEditar.addEventListener("click", () => mostrarFormSector(sector));
-    celdaAcciones.appendChild(botonEditar);
-
-    const botonBorrar = document.createElement("button");
-    botonBorrar.type = "button";
-    botonBorrar.className = "btn-borrar-fila";
-    botonBorrar.textContent = "Borrar";
-    botonBorrar.addEventListener("click", () => borrarSector(sector, botonBorrar));
-    celdaAcciones.appendChild(botonBorrar);
-
-    fila.append(celdaNombre, celdaAcciones);
-    elTablaSectoresCuerpo.appendChild(fila);
-  });
-}
-
-function mostrarListaSectoresPanel() {
-  elSectoresVistaForm.classList.add("oculto");
-  elSectoresVistaLista.classList.remove("oculto");
-}
-
-// sector == null: alta de un sector nuevo. Con un sector, lo precarga
-// para editarlo (mismo formulario, en modo edición).
-function mostrarFormSector(sector) {
-  formularioSector.reset();
-  elSectorError.classList.add("oculto");
-  if (sector) {
-    elSectorIdEditando.value = sector.id;
-    elSectorFormTitulo.textContent = `Editar "${sector.nombre}"`;
-    elSectorNombre.value = sector.nombre;
-  } else {
-    elSectorIdEditando.value = "";
-    elSectorFormTitulo.textContent = "Nueva zona";
-  }
-  elSectoresVistaLista.classList.add("oculto");
-  elSectoresVistaForm.classList.remove("oculto");
-}
-
-elBtnAgregarSector.addEventListener("click", () => mostrarFormSector(null));
-elSectorVolver.addEventListener("click", mostrarListaSectoresPanel);
-
-formularioSector.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  elSectorError.classList.add("oculto");
-  try {
-    const datos = { nombre: elSectorNombre.value.trim() };
-    const idEditando = elSectorIdEditando.value;
-    if (idEditando) {
-      await setDoc(doc(db, "sectores", idEditando), datos);
-    } else {
-      await addDoc(collection(db, "sectores"), datos);
-    }
-    await cargarPanelSectores();
-    mostrarListaSectoresPanel();
-  } catch (error) {
-    elSectorError.textContent =
-      error.code === "permission-denied"
-        ? "No tenés permiso para administrar zonas."
-        : "No se pudo guardar la zona.";
-    elSectorError.classList.remove("oculto");
-  }
-});
-
-// Borrar un sector del catálogo no le toca el dato a los lotes que ya lo
-// tenían asignado (ver comentario arriba de cargarSectores) — solo dejan
-// de poder elegirlo de nuevo para otro lote.
-async function borrarSector(sector, boton) {
-  if (!window.confirm(`¿Borrar la zona "${sector.nombre}"? Los lotes que ya la tienen asignada no se ven afectados.`)) return;
-  boton.disabled = true;
-  try {
-    await deleteDoc(doc(db, "sectores", sector.id));
-    await cargarPanelSectores();
-  } catch (error) {
-    window.alert(
-      error.code === "permission-denied"
-        ? "No tenés permiso para borrar zonas."
-        : "No se pudo borrar la zona."
-    );
-  } finally {
-    boton.disabled = false;
-  }
-}
-
-elBtnAbrirSectores.addEventListener("click", async () => {
-  elVistaLista.classList.add("oculto"); // no superponer con "Ver como lista"
-  elBtnVerLista.classList.remove("activo");
-  elPanelAdmin.classList.add("oculto"); // ni con "Seguridad"
-  elPanelBarrios.classList.add("oculto"); // ni con "Barrios"
-  document.getElementById("panel-dashboard").classList.add("oculto"); // ni con "Dashboard"
-  mostrarListaSectoresPanel();
-  elPanelSectores.classList.remove("oculto");
-  await cargarPanelSectores();
-});
-
-document.getElementById("cerrar-panel-sectores").addEventListener("click", () => {
-  elPanelSectores.classList.add("oculto");
-});
-
-// ---------------------------------------------------------------------------
-// Panel "Barrios" (root / permiso administrar_sectores): mismo patrón
-// exacto que el panel "Sectores" de arriba — catálogo independiente,
-// segunda categorización de un lote.
-// ---------------------------------------------------------------------------
-
-const elPanelBarrios = document.getElementById("panel-barrios");
-const elBtnAbrirBarrios = document.getElementById("btn-abrir-barrios");
-const elBarriosVistaLista = document.getElementById("barrios-vista-lista");
-const elBarriosVistaForm = document.getElementById("barrios-vista-form");
-const elTablaBarriosCuerpo = document.getElementById("tabla-barrios-cuerpo");
-const elBtnAgregarBarrio = document.getElementById("btn-agregar-barrio");
-const elBarrioVolver = document.getElementById("barrio-volver");
-const elBarrioFormTitulo = document.getElementById("barrio-form-titulo");
-const formularioBarrio = document.getElementById("formulario-barrio");
-const elBarrioIdEditando = document.getElementById("barrio-id-editando");
-const elBarrioNombre = document.getElementById("barrio-nombre");
-const elBarrioError = document.getElementById("barrio-error");
-
-async function cargarPanelBarrios() {
-  await cargarBarrios();
-
-  elTablaBarriosCuerpo.innerHTML = "";
-  getBarriosActuales().forEach((barrio) => {
-    const fila = document.createElement("tr");
-    const celdaNombre = document.createElement("td");
-    celdaNombre.textContent = barrio.nombre;
-
-    const celdaAcciones = document.createElement("td");
-    const botonEditar = document.createElement("button");
-    botonEditar.type = "button";
-    botonEditar.className = "btn-editar-fila";
-    botonEditar.textContent = "Editar";
-    botonEditar.addEventListener("click", () => mostrarFormBarrio(barrio));
-    celdaAcciones.appendChild(botonEditar);
-
-    const botonBorrar = document.createElement("button");
-    botonBorrar.type = "button";
-    botonBorrar.className = "btn-borrar-fila";
-    botonBorrar.textContent = "Borrar";
-    botonBorrar.addEventListener("click", () => borrarBarrio(barrio, botonBorrar));
-    celdaAcciones.appendChild(botonBorrar);
-
-    fila.append(celdaNombre, celdaAcciones);
-    elTablaBarriosCuerpo.appendChild(fila);
-  });
-}
-
-function mostrarListaBarriosPanel() {
-  elBarriosVistaForm.classList.add("oculto");
-  elBarriosVistaLista.classList.remove("oculto");
-}
-
-// barrio == null: alta de un barrio nuevo. Con un barrio, lo precarga
-// para editarlo (mismo formulario, en modo edición).
-function mostrarFormBarrio(barrio) {
-  formularioBarrio.reset();
-  elBarrioError.classList.add("oculto");
-  if (barrio) {
-    elBarrioIdEditando.value = barrio.id;
-    elBarrioFormTitulo.textContent = `Editar "${barrio.nombre}"`;
-    elBarrioNombre.value = barrio.nombre;
-  } else {
-    elBarrioIdEditando.value = "";
-    elBarrioFormTitulo.textContent = "Nuevo barrio";
-  }
-  elBarriosVistaLista.classList.add("oculto");
-  elBarriosVistaForm.classList.remove("oculto");
-}
-
-elBtnAgregarBarrio.addEventListener("click", () => mostrarFormBarrio(null));
-elBarrioVolver.addEventListener("click", mostrarListaBarriosPanel);
-
-formularioBarrio.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  elBarrioError.classList.add("oculto");
-  try {
-    const datos = { nombre: elBarrioNombre.value.trim() };
-    const idEditando = elBarrioIdEditando.value;
-    if (idEditando) {
-      await setDoc(doc(db, "barrios", idEditando), datos);
-    } else {
-      await addDoc(collection(db, "barrios"), datos);
-    }
-    await cargarPanelBarrios();
-    mostrarListaBarriosPanel();
-  } catch (error) {
-    elBarrioError.textContent =
-      error.code === "permission-denied"
-        ? "No tenés permiso para administrar barrios."
-        : "No se pudo guardar el barrio.";
-    elBarrioError.classList.remove("oculto");
-  }
-});
-
-// Borrar un barrio del catálogo no le toca el dato a los lotes que ya lo
-// tenían asignado (mismo criterio que borrarSector) — solo dejan de
-// poder elegirlo de nuevo para otro lote.
-async function borrarBarrio(barrio, boton) {
-  if (!window.confirm(`¿Borrar el barrio "${barrio.nombre}"? Los lotes que ya lo tienen asignado no se ven afectados.`)) return;
-  boton.disabled = true;
-  try {
-    await deleteDoc(doc(db, "barrios", barrio.id));
-    await cargarPanelBarrios();
-  } catch (error) {
-    window.alert(
-      error.code === "permission-denied"
-        ? "No tenés permiso para borrar barrios."
-        : "No se pudo borrar el barrio."
-    );
-  } finally {
-    boton.disabled = false;
-  }
-}
-
-elBtnAbrirBarrios.addEventListener("click", async () => {
-  elVistaLista.classList.add("oculto"); // no superponer con "Ver como lista"
-  elBtnVerLista.classList.remove("activo");
-  elPanelAdmin.classList.add("oculto"); // ni con "Seguridad"
-  elPanelSectores.classList.add("oculto"); // ni con "Zonas"
-  document.getElementById("panel-dashboard").classList.add("oculto"); // ni con "Dashboard"
-  mostrarListaBarriosPanel();
-  elPanelBarrios.classList.remove("oculto");
-  await cargarPanelBarrios();
-});
-
-document.getElementById("cerrar-panel-barrios").addEventListener("click", () => {
-  elPanelBarrios.classList.add("oculto");
-});
