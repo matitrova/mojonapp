@@ -36,6 +36,31 @@ import {
   manzanaDesdeNomenclaturaDeParcela
 } from "./catastro-normalizacion.js";
 import {
+  getLoteSeleccionado,
+  setLoteSeleccionado,
+  setCorredorLogueado,
+  getMiPerfil,
+  setMiPerfil,
+  getLotesActuales,
+  setLotesActuales,
+  getDeepLinkAbierto,
+  setDeepLinkAbierto,
+  getSectoresActuales,
+  setSectoresActuales,
+  getBarriosActuales,
+  setBarriosActuales,
+  getWatchId,
+  setWatchId,
+  getListenerOrientacion,
+  setListenerOrientacion,
+  getModoCaptura,
+  setModoCaptura,
+  getLoteEditadoDesdeFicha,
+  setLoteEditadoDesdeFicha,
+  emitirSesionCerrada,
+  onSesionCerrada
+} from "./estado.js";
+import {
   initializeApp,
   deleteApp
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
@@ -114,20 +139,6 @@ function renderServiciosHTML(servicios) {
   }).join("");
 }
 
-let lotePolyLayerSeleccionado = null; // feature GeoJSON del lote actualmente en la ficha
-let corredorLogueado = false; // se actualiza en onAuthStateChanged; true con cualquier perfil logueado
-// Perfil de seguridad del usuario logueado ({ es_root, permisos: {...} }),
-// o null sin sesión. Se resuelve en onAuthStateChanged leyendo
-// usuarios/{uid} -> perfiles/{perfil_id}. Root tiene vía libre en
-// tienePermiso() sin necesidad de tildar cada permiso a mano.
-let miPerfilActual = null;
-let lotesActuales = []; // último resultado de cargarLotesDesdeFirestore, lo reusa la vista en lista
-let deepLinkDeLoteAbierto = false; // el "?lote=" de la URL solo se abre una vez, en la primera carga
-let sectoresActuales = []; // catálogo de zonas (colección "sectores"), alimenta los combos
-let barriosActuales = []; // catálogo de barrios (colección "barrios") — misma idea, categoría independiente de zona
-let watchId = null; // id de navigator.geolocation.watchPosition, para poder cancelarlo
-let listenerOrientacion = null; // referencia al handler de deviceorientation, para poder sacarlo
-
 // ---------------------------------------------------------------------------
 // Catálogo de sectores/zonas: antes "Sector" era texto libre en cada
 // lote, y cada corredor terminaba escribiendo su propia variante del
@@ -141,14 +152,14 @@ let listenerOrientacion = null; // referencia al handler de deviceorientation, p
 async function cargarSectores() {
   try {
     const snapshot = await getDocs(collection(db, "sectores"));
-    sectoresActuales = snapshot.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    setSectoresActuales(
+      snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.nombre.localeCompare(b.nombre))
+    );
   } catch {
     // Si falla (reglas viejas sin esta colección, sin conexión, etc.) el
     // combo queda con "Sin zona" nomás — no puede tirar abajo el login
     // ni el resto de la carga de lotes.
-    sectoresActuales = [];
+    setSectoresActuales([]);
   }
 }
 
@@ -157,11 +168,11 @@ async function cargarSectores() {
 async function cargarBarrios() {
   try {
     const snapshot = await getDocs(collection(db, "barrios"));
-    barriosActuales = snapshot.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    setBarriosActuales(
+      snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.nombre.localeCompare(b.nombre))
+    );
   } catch {
-    barriosActuales = [];
+    setBarriosActuales([]);
   }
 }
 
@@ -180,11 +191,11 @@ function poblarSelectCatalogo(elSelect, valorActual, catalogo, textoVacio) {
 }
 
 function poblarSelectSector(elSelect, valorActual) {
-  poblarSelectCatalogo(elSelect, valorActual, sectoresActuales, "Sin zona");
+  poblarSelectCatalogo(elSelect, valorActual, getSectoresActuales(), "Sin zona");
 }
 
 function poblarSelectBarrio(elSelect, valorActual) {
-  poblarSelectCatalogo(elSelect, valorActual, barriosActuales, "Sin barrio");
+  poblarSelectCatalogo(elSelect, valorActual, getBarriosActuales(), "Sin barrio");
 }
 
 // ---------------------------------------------------------------------------
@@ -196,13 +207,15 @@ function poblarSelectBarrio(elSelect, valorActual) {
 // ---------------------------------------------------------------------------
 
 function esRootActual() {
-  return !!miPerfilActual && miPerfilActual.es_root === true;
+  const perfil = getMiPerfil();
+  return !!perfil && perfil.es_root === true;
 }
 
 function tienePermiso(clave) {
-  if (!miPerfilActual) return false;
-  if (miPerfilActual.es_root) return true;
-  return miPerfilActual.permisos?.[clave] === true;
+  const perfil = getMiPerfil();
+  if (!perfil) return false;
+  if (perfil.es_root) return true;
+  return perfil.permisos?.[clave] === true;
 }
 
 function esDuenoDelLote(feature) {
@@ -366,13 +379,13 @@ async function cargarLotesDesdeFirestore() {
 
   // Un corredor sin "ver_todos_los_lotes" solo trae lo suyo — root, y
   // cualquiera sin sesión (el catálogo público), siguen viendo todo.
-  const restringirAPropios = !!miPerfilActual && !esRootActual() && !tienePermiso("ver_todos_los_lotes");
+  const restringirAPropios = !!getMiPerfil() && !esRootActual() && !tienePermiso("ver_todos_los_lotes");
   const consulta = restringirAPropios
     ? query(collection(db, COLECCION_LOTES), where("creado_por", "==", auth.currentUser.uid))
     : collection(db, COLECCION_LOTES);
   const snapshot = await getDocs(consulta);
   const features = snapshot.docs.map(docALoteFeature);
-  lotesActuales = features; // la vista en grilla reusa esto, no vuelve a pedirle nada a Firestore
+  setLotesActuales(features); // la vista en grilla reusa esto, no vuelve a pedirle nada a Firestore
   actualizarVistaLista();
 
   // Reconstruir capaLotes con "Ver catastro cercano" prendido (600+
@@ -411,7 +424,7 @@ async function cargarLotesDesdeFirestore() {
           // pisar lo que se venía marcando — se ignora el click acá y,
           // en el caso de "dibujar en el mapa", sigue de largo hasta el
           // listener del mapa para agregarlo como vértice.
-          if (modoCaptura !== null) return;
+          if (getModoCaptura() !== null) return;
           mostrarFicha(feature);
         });
         // Pasar el mouse por encima adelanta un resumen sin tener que
@@ -629,17 +642,17 @@ async function borrarFoto(feature, foto) {
 
 elInputFotoLote.addEventListener("change", async () => {
   const archivo = elInputFotoLote.files[0];
-  if (!archivo || !lotePolyLayerSeleccionado) return;
+  if (!archivo || !getLoteSeleccionado()) return;
 
   elFichaFotoError.classList.add("oculto");
   elFichaFotoCargando.classList.remove("oculto");
   elInputFotoLote.disabled = true;
   try {
     const foto = await subirFotoACloudinary(archivo);
-    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { fotos: arrayUnion(foto) });
-    if (!lotePolyLayerSeleccionado.properties.fotos) lotePolyLayerSeleccionado.properties.fotos = [];
-    lotePolyLayerSeleccionado.properties.fotos.push(foto);
-    renderFotos(lotePolyLayerSeleccionado);
+    await updateDoc(doc(db, COLECCION_LOTES, getLoteSeleccionado().id), { fotos: arrayUnion(foto) });
+    if (!getLoteSeleccionado().properties.fotos) getLoteSeleccionado().properties.fotos = [];
+    getLoteSeleccionado().properties.fotos.push(foto);
+    renderFotos(getLoteSeleccionado());
   } catch (error) {
     elFichaFotoError.textContent =
       error.code === "permission-denied" ? "No tenés permiso para agregar fotos a este lote." : "No se pudo subir la foto. Probá de nuevo.";
@@ -703,7 +716,7 @@ async function borrarInteresado(feature, interesado) {
 
 formularioInteresado.addEventListener("submit", async (evento) => {
   evento.preventDefault();
-  if (!lotePolyLayerSeleccionado) return;
+  if (!getLoteSeleccionado()) return;
   elInteresadoError.classList.add("oculto");
 
   const nombre = elInteresadoNombre.value.trim();
@@ -718,14 +731,14 @@ formularioInteresado.addEventListener("submit", async (evento) => {
   const boton = document.getElementById("interesado-guardar-btn");
   boton.disabled = true;
   try {
-    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), {
+    await updateDoc(doc(db, COLECCION_LOTES, getLoteSeleccionado().id), {
       interesados: arrayUnion(interesado)
     });
-    if (!lotePolyLayerSeleccionado.properties.interesados) {
-      lotePolyLayerSeleccionado.properties.interesados = [];
+    if (!getLoteSeleccionado().properties.interesados) {
+      getLoteSeleccionado().properties.interesados = [];
     }
-    lotePolyLayerSeleccionado.properties.interesados.push(interesado);
-    renderInteresados(lotePolyLayerSeleccionado);
+    getLoteSeleccionado().properties.interesados.push(interesado);
+    renderInteresados(getLoteSeleccionado());
     formularioInteresado.reset();
   } catch (error) {
     elInteresadoError.textContent =
@@ -792,7 +805,7 @@ function contenidoTooltipLote(feature) {
 }
 
 function mostrarFicha(feature) {
-  lotePolyLayerSeleccionado = feature;
+  setLoteSeleccionado(feature);
   const p = feature.properties;
 
   elTitulo.textContent = tituloLote(p);
@@ -850,15 +863,15 @@ document.getElementById("cerrar-ficha").addEventListener("click", () => {
 // Reusa mostrarEditarLoteDesdeGrilla tal cual para no duplicar la
 // validación de nomenclatura ni el guardado.
 document.getElementById("btn-editar-lote-completo").addEventListener("click", () => {
-  if (!lotePolyLayerSeleccionado) return;
+  if (!getLoteSeleccionado()) return;
   elFicha.classList.add("oculto");
   document.getElementById("panel-admin").classList.add("oculto");
   document.getElementById("panel-sectores").classList.add("oculto");
   document.getElementById("panel-barrios").classList.add("oculto");
   elVistaLista.classList.remove("oculto");
   elBtnVerLista.classList.add("activo");
-  loteEditadoDesdeFicha = true;
-  mostrarEditarLoteDesdeGrilla(lotePolyLayerSeleccionado);
+  setLoteEditadoDesdeFicha(true);
+  mostrarEditarLoteDesdeGrilla(getLoteSeleccionado());
 });
 
 // ---------------------------------------------------------------------------
@@ -1013,7 +1026,7 @@ function terminarEdicionPoligono() {
   capaResaltadoLado = null;
   ladoSeleccionado = null;
   edicionPoligono = null;
-  modoCaptura = null;
+  setModoCaptura(null);
   elEditorPoligonoBarra.classList.add("oculto");
   elEditorPoligonoError.classList.add("oculto");
 }
@@ -1021,7 +1034,7 @@ function terminarEdicionPoligono() {
 // Si se cierra sesión con el editor de forma abierto (mismo criterio que
 // desactivarCatastroCercano/limpiarCaptura), no se queda a mitad de
 // camino con marcadores sueltos sobre el mapa.
-window.addEventListener("mojonapp:sesion-cerrada", terminarEdicionPoligono);
+onSesionCerrada(terminarEdicionPoligono);
 
 // Crea un marcador arrastrable de vértice y lo cablea contra el estado
 // ACTUAL de edicionPoligono (no contra un array cerrado por closure).
@@ -1044,7 +1057,7 @@ function iniciarEdicionPoligono(feature) {
   // edita — un valor que no es "mapa" ni "gps", así que no dispara nada
   // de esa lógica, solo aprovecha los "if (modoCaptura !== null) return"
   // que ya protegen los clicks sobre lotes/catastro en el resto de la app.
-  modoCaptura = "editando-poligono";
+  setModoCaptura("editando-poligono");
 
   const anillo = verticesUnicos(feature.geometry.coordinates[0]);
   const latlngs = anillo.map(([lon, lat]) => [lat, lon]);
@@ -1079,8 +1092,8 @@ function iniciarEdicionPoligono(feature) {
 }
 
 document.getElementById("btn-editar-forma-lote").addEventListener("click", () => {
-  if (!lotePolyLayerSeleccionado) return;
-  iniciarEdicionPoligono(lotePolyLayerSeleccionado);
+  if (!getLoteSeleccionado()) return;
+  iniciarEdicionPoligono(getLoteSeleccionado());
 });
 
 elBtnSimplificarForma.addEventListener("click", () => {
@@ -1192,13 +1205,13 @@ function cerrarEditorServicios() {
   elServicios.classList.remove("oculto");
   elBtnEditarServicios.classList.toggle(
     "oculto",
-    !lotePolyLayerSeleccionado || !puedeEditarLote(lotePolyLayerSeleccionado)
+    !getLoteSeleccionado() || !puedeEditarLote(getLoteSeleccionado())
   );
   elEditorServiciosError.classList.add("oculto");
 }
 
 elBtnEditarServicios.addEventListener("click", () => {
-  const servicios = lotePolyLayerSeleccionado?.properties?.servicios || {};
+  const servicios = getLoteSeleccionado()?.properties?.servicios || {};
   elEditarServicioLuz.checked = !!servicios.luz;
   elEditarServicioAgua.checked = !!servicios.agua;
   elEditarServicioGas.checked = !!servicios.gas;
@@ -1211,7 +1224,7 @@ elBtnEditarServicios.addEventListener("click", () => {
 elBtnCancelarServicios.addEventListener("click", cerrarEditorServicios);
 
 elBtnGuardarServicios.addEventListener("click", async () => {
-  if (!lotePolyLayerSeleccionado) return;
+  if (!getLoteSeleccionado()) return;
   const servicios = {
     luz: elEditarServicioLuz.checked,
     agua: elEditarServicioAgua.checked,
@@ -1222,8 +1235,8 @@ elBtnGuardarServicios.addEventListener("click", async () => {
   elBtnGuardarServicios.disabled = true;
   elEditorServiciosError.classList.add("oculto");
   try {
-    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { servicios });
-    lotePolyLayerSeleccionado.properties.servicios = servicios;
+    await updateDoc(doc(db, COLECCION_LOTES, getLoteSeleccionado().id), { servicios });
+    getLoteSeleccionado().properties.servicios = servicios;
     elServicios.innerHTML = renderServiciosHTML(servicios);
     cerrarEditorServicios();
     cargarLotesDesdeFirestore(); // refresca mapa y grilla; la ficha ya se actualizó sola arriba
@@ -1247,13 +1260,13 @@ function cerrarEditorSector() {
   elSector.classList.remove("oculto");
   elBtnEditarSector.classList.toggle(
     "oculto",
-    !lotePolyLayerSeleccionado || !puedeEditarLote(lotePolyLayerSeleccionado)
+    !getLoteSeleccionado() || !puedeEditarLote(getLoteSeleccionado())
   );
   elEditorSectorError.classList.add("oculto");
 }
 
 elBtnEditarSector.addEventListener("click", () => {
-  poblarSelectSector(elEditarSectorValor, lotePolyLayerSeleccionado?.properties?.sector);
+  poblarSelectSector(elEditarSectorValor, getLoteSeleccionado()?.properties?.sector);
   elSector.classList.add("oculto");
   elBtnEditarSector.classList.add("oculto");
   elEditorSector.classList.remove("oculto");
@@ -1263,14 +1276,14 @@ elBtnEditarSector.addEventListener("click", () => {
 elBtnCancelarSector.addEventListener("click", cerrarEditorSector);
 
 elBtnGuardarSector.addEventListener("click", async () => {
-  if (!lotePolyLayerSeleccionado) return;
+  if (!getLoteSeleccionado()) return;
   const sector = elEditarSectorValor.value.trim() || null;
 
   elBtnGuardarSector.disabled = true;
   elEditorSectorError.classList.add("oculto");
   try {
-    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { sector });
-    lotePolyLayerSeleccionado.properties.sector = sector;
+    await updateDoc(doc(db, COLECCION_LOTES, getLoteSeleccionado().id), { sector });
+    getLoteSeleccionado().properties.sector = sector;
     elSector.textContent = sector || "Sin datos";
     cerrarEditorSector();
     cargarLotesDesdeFirestore(); // refresca mapa y grilla; la ficha ya se actualizó sola arriba
@@ -1292,13 +1305,13 @@ function cerrarEditorBarrio() {
   elBarrio.classList.remove("oculto");
   elBtnEditarBarrio.classList.toggle(
     "oculto",
-    !lotePolyLayerSeleccionado || !puedeEditarLote(lotePolyLayerSeleccionado)
+    !getLoteSeleccionado() || !puedeEditarLote(getLoteSeleccionado())
   );
   elEditorBarrioError.classList.add("oculto");
 }
 
 elBtnEditarBarrio.addEventListener("click", () => {
-  poblarSelectBarrio(elEditarBarrioValor, lotePolyLayerSeleccionado?.properties?.barrio);
+  poblarSelectBarrio(elEditarBarrioValor, getLoteSeleccionado()?.properties?.barrio);
   elBarrio.classList.add("oculto");
   elBtnEditarBarrio.classList.add("oculto");
   elEditorBarrio.classList.remove("oculto");
@@ -1308,14 +1321,14 @@ elBtnEditarBarrio.addEventListener("click", () => {
 elBtnCancelarBarrio.addEventListener("click", cerrarEditorBarrio);
 
 elBtnGuardarBarrio.addEventListener("click", async () => {
-  if (!lotePolyLayerSeleccionado) return;
+  if (!getLoteSeleccionado()) return;
   const barrio = elEditarBarrioValor.value.trim() || null;
 
   elBtnGuardarBarrio.disabled = true;
   elEditorBarrioError.classList.add("oculto");
   try {
-    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { barrio });
-    lotePolyLayerSeleccionado.properties.barrio = barrio;
+    await updateDoc(doc(db, COLECCION_LOTES, getLoteSeleccionado().id), { barrio });
+    getLoteSeleccionado().properties.barrio = barrio;
     elBarrio.textContent = barrio || "Sin datos";
     cerrarEditorBarrio();
     cargarLotesDesdeFirestore(); // refresca mapa y grilla; la ficha ya se actualizó sola arriba
@@ -1356,8 +1369,8 @@ async function borrarLote(feature, elBoton) {
 
 const elBtnBorrarLote = document.getElementById("btn-borrar-lote");
 elBtnBorrarLote.addEventListener("click", () => {
-  if (!lotePolyLayerSeleccionado) return;
-  borrarLote(lotePolyLayerSeleccionado, elBtnBorrarLote);
+  if (!getLoteSeleccionado()) return;
+  borrarLote(getLoteSeleccionado(), elBtnBorrarLote);
 });
 
 // ---------------------------------------------------------------------------
@@ -1406,18 +1419,13 @@ const elEditarLoteServicioCloaca = document.getElementById("editar-lote-servicio
 const elEditarLoteObservaciones = document.getElementById("editar-lote-observaciones");
 const elEditarLoteError = document.getElementById("editar-lote-error");
 let loteEditandoDesdeGrilla = null; // feature actual del formulario de edición
-// true si se entró a este formulario desde "Editar lote" en la ficha del
-// mapa, false si se entró desde "Editar" en la grilla — al guardar,
-// determina si hay que volver al mapa (con la ficha actualizada) o a la
-// lista, para no sacar al corredor de donde ya estaba.
-let loteEditadoDesdeFicha = false;
 
 // El filtro se arma con lo que ya se cargó, no con el catálogo entero —
 // no tiene sentido ofrecer para filtrar una zona que ningún lote tiene
 // puesto todavía. Misma lógica para zona y barrio.
 function actualizarOpcionesFiltroSector() {
   const seleccionPrevia = elFiltroSector.value;
-  const sectores = [...new Set(lotesActuales.map((f) => f.properties.sector).filter(Boolean))].sort();
+  const sectores = [...new Set(getLotesActuales().map((f) => f.properties.sector).filter(Boolean))].sort();
   elFiltroSector.innerHTML =
     '<option value="">Todas las zonas</option>' +
     sectores.map((s) => `<option value="${s}">${s}</option>`).join("");
@@ -1426,7 +1434,7 @@ function actualizarOpcionesFiltroSector() {
 
 function actualizarOpcionesFiltroBarrio() {
   const seleccionPrevia = elFiltroBarrio.value;
-  const barrios = [...new Set(lotesActuales.map((f) => f.properties.barrio).filter(Boolean))].sort();
+  const barrios = [...new Set(getLotesActuales().map((f) => f.properties.barrio).filter(Boolean))].sort();
   elFiltroBarrio.innerHTML =
     '<option value="">Todos los barrios</option>' +
     barrios.map((b) => `<option value="${b}">${b}</option>`).join("");
@@ -1434,7 +1442,7 @@ function actualizarOpcionesFiltroBarrio() {
 }
 
 function lotesFiltrados() {
-  return lotesActuales.filter((feature) => {
+  return getLotesActuales().filter((feature) => {
     const p = feature.properties;
     if (elFiltroSector.value && p.sector !== elFiltroSector.value) return false;
     if (elFiltroBarrio.value && p.barrio !== elFiltroBarrio.value) return false;
@@ -1449,11 +1457,11 @@ function actualizarVistaLista() {
   const lotes = lotesFiltrados();
 
   elTablaLotesCuerpo.innerHTML = "";
-  elVistaListaVacio.classList.toggle("oculto", lotesActuales.length > 0);
+  elVistaListaVacio.classList.toggle("oculto", getLotesActuales().length > 0);
   // Distinto de "no hay lotes cargados": acá SÍ hay lotes, pero ninguno
   // coincide con el sector/estado elegido — un mensaje genérico de
   // "vacío" hubiera hecho pensar que se perdió todo lo cargado.
-  elVistaListaSinResultados.classList.toggle("oculto", lotesActuales.length === 0 || lotes.length > 0);
+  elVistaListaSinResultados.classList.toggle("oculto", getLotesActuales().length === 0 || lotes.length > 0);
   elTablaLotes.classList.toggle("oculto", lotes.length === 0);
 
   lotes.forEach((feature) => {
@@ -1490,7 +1498,7 @@ function actualizarVistaLista() {
       botonEditar.textContent = "Editar";
       botonEditar.addEventListener("click", (evento) => {
         evento.stopPropagation(); // no abrir la ficha al tocar "Editar"
-        loteEditadoDesdeFicha = false;
+        setLoteEditadoDesdeFicha(false);
         mostrarEditarLoteDesdeGrilla(feature);
       });
       celdaAcciones.appendChild(botonEditar);
@@ -1607,7 +1615,7 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
     await updateDoc(doc(db, COLECCION_LOTES, loteEditandoDesdeGrilla.id), datos);
     Object.assign(loteEditandoDesdeGrilla.properties, datos);
 
-    if (loteEditadoDesdeFicha) {
+    if (getLoteEditadoDesdeFicha()) {
       // Se entró desde "Editar lote" en el mapa: volver ahí (con la
       // ficha ya actualizada), no a la lista — el mapa nunca se tocó
       // durante la edición, así que sigue centrado en la misma zona de
@@ -1701,7 +1709,7 @@ function irAFichaDesdeDashboard(feature) {
 }
 
 function calcularMetricasDashboard() {
-  const lotes = lotesActuales;
+  const lotes = getLotesActuales();
 
   const inventario = { disponible: 0, reservado: 0, vendido: 0 };
   lotes.forEach((f) => {
@@ -1757,7 +1765,7 @@ function renderDashboard() {
 
   const elInventario = document.getElementById("dashboard-inventario");
   elInventario.innerHTML = `
-    <div class="dashboard-tarjeta"><strong>${lotesActuales.length}</strong><span>Total</span></div>
+    <div class="dashboard-tarjeta"><strong>${getLotesActuales().length}</strong><span>Total</span></div>
     <div class="dashboard-tarjeta"><strong>${m.inventario.disponible}</strong><span>Disponible</span></div>
     <div class="dashboard-tarjeta"><strong>${m.inventario.reservado}</strong><span>Reservado</span></div>
     <div class="dashboard-tarjeta"><strong>${m.inventario.vendido}</strong><span>Vendido</span></div>
@@ -1845,8 +1853,8 @@ function construirUrlComoLlegar(feature) {
 }
 
 document.getElementById("btn-como-llegar").addEventListener("click", () => {
-  if (!lotePolyLayerSeleccionado) return;
-  const url = construirUrlComoLlegar(lotePolyLayerSeleccionado);
+  if (!getLoteSeleccionado()) return;
+  const url = construirUrlComoLlegar(getLoteSeleccionado());
   window.open(url, "_blank", "noopener");
 });
 
@@ -1859,9 +1867,9 @@ document.getElementById("btn-como-llegar").addEventListener("click", () => {
 const elCompartirLoteMensaje = document.getElementById("compartir-lote-mensaje");
 
 document.getElementById("btn-compartir-lote").addEventListener("click", async () => {
-  if (!lotePolyLayerSeleccionado) return;
-  const url = `${location.origin}${location.pathname}?lote=${lotePolyLayerSeleccionado.id}`;
-  const titulo = tituloLote(lotePolyLayerSeleccionado.properties);
+  if (!getLoteSeleccionado()) return;
+  const url = `${location.origin}${location.pathname}?lote=${getLoteSeleccionado().id}`;
+  const titulo = tituloLote(getLoteSeleccionado().properties);
 
   if (navigator.share) {
     try {
@@ -1908,9 +1916,9 @@ function actualizarFlecha() {
 }
 
 function manejarPosicion(posicion) {
-  if (!lotePolyLayerSeleccionado) return;
+  if (!getLoteSeleccionado()) return;
   const { latitude: latUsuario, longitude: lonUsuario } = posicion.coords;
-  const anillo = lotePolyLayerSeleccionado.geometry.coordinates[0];
+  const anillo = getLoteSeleccionado().geometry.coordinates[0];
 
   if (puntoDentroDePoligono(latUsuario, lonUsuario, anillo)) {
     elNavMensaje.textContent = "Estás dentro del lote.";
@@ -1954,27 +1962,27 @@ function iniciarBrujulaDispositivo() {
   const EventoOrientacion = window.DeviceOrientationEvent;
   if (!EventoOrientacion) return;
 
-  listenerOrientacion = manejarOrientacion;
+  setListenerOrientacion(manejarOrientacion);
 
   if (typeof EventoOrientacion.requestPermission === "function") {
     // iOS 13+: pedir permiso explícito, solo se puede llamar desde un gesto del usuario.
     EventoOrientacion.requestPermission()
       .then((estado) => {
         if (estado === "granted") {
-          window.addEventListener("deviceorientation", listenerOrientacion);
+          window.addEventListener("deviceorientation", getListenerOrientacion());
         }
       })
       .catch(() => {
         // Sin brújula del dispositivo: la flecha sigue funcionando con rumbo absoluto.
       });
   } else {
-    window.addEventListener("deviceorientationabsolute", listenerOrientacion);
-    window.addEventListener("deviceorientation", listenerOrientacion);
+    window.addEventListener("deviceorientationabsolute", getListenerOrientacion());
+    window.addEventListener("deviceorientation", getListenerOrientacion());
   }
 }
 
 function iniciarModoEstoyYendo() {
-  if (!lotePolyLayerSeleccionado) return;
+  if (!getLoteSeleccionado()) return;
 
   elPanelNav.classList.remove("oculto");
   elNavMensaje.textContent = "Buscando tu ubicación…";
@@ -1985,25 +1993,27 @@ function iniciarModoEstoyYendo() {
     return;
   }
 
-  watchId = navigator.geolocation.watchPosition(manejarPosicion, manejarErrorGeolocalizacion, {
-    enableHighAccuracy: true,
-    maximumAge: 2000,
-    timeout: 10000
-  });
+  setWatchId(
+    navigator.geolocation.watchPosition(manejarPosicion, manejarErrorGeolocalizacion, {
+      enableHighAccuracy: true,
+      maximumAge: 2000,
+      timeout: 10000
+    })
+  );
 
   iniciarBrujulaDispositivo();
 }
 
 function detenerModoEstoyYendo() {
   elPanelNav.classList.add("oculto");
-  if (watchId !== null) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
+  if (getWatchId() !== null) {
+    navigator.geolocation.clearWatch(getWatchId());
+    setWatchId(null);
   }
-  if (listenerOrientacion) {
-    window.removeEventListener("deviceorientation", listenerOrientacion);
-    window.removeEventListener("deviceorientationabsolute", listenerOrientacion);
-    listenerOrientacion = null;
+  if (getListenerOrientacion()) {
+    window.removeEventListener("deviceorientation", getListenerOrientacion());
+    window.removeEventListener("deviceorientationabsolute", getListenerOrientacion());
+    setListenerOrientacion(null);
   }
 }
 
@@ -2088,8 +2098,8 @@ function actualizarUIPorPermisos() {
 }
 
 onAuthStateChanged(auth, async (usuario) => {
-  corredorLogueado = !!usuario;
-  miPerfilActual = usuario ? await resolverMiPerfil(usuario) : null;
+  setCorredorLogueado(!!usuario);
+  setMiPerfil(usuario ? await resolverMiPerfil(usuario) : null);
 
   if (usuario) {
     elBtnAbrirLogin.classList.add("oculto");
@@ -2107,26 +2117,26 @@ onAuthStateChanged(auth, async (usuario) => {
     elBtnAbrirLogin.classList.remove("oculto");
     elSesionActiva.classList.add("oculto");
     document.getElementById("drawer-sesion-activa").classList.add("oculto");
-    sectoresActuales = [];
-    barriosActuales = [];
+    setSectoresActuales([]);
+    setBarriosActuales([]);
     // Cerrar sesión apaga todas las herramientas de corredor, no solo
     // "+ Lote": sin esto, si alguien cerraba sesión con "Ver catastro
     // cercano" prendido (o cualquier otro panel abierto), el botón para
     // apagarlo desaparecía junto con el resto de la barra, pero la capa
     // seguía activa y pidiéndole datos al catastro en cada movimiento del
     // mapa, visible para cualquiera que mirara la app después.
-    window.dispatchEvent(new Event("mojonapp:sesion-cerrada"));
+    emitirSesionCerrada();
   }
 
   // Si la ficha de un lote está abierta al cambiar de sesión (login,
   // logout, o root reasignando el perfil de alguien), "Borrar lote" y
   // "Editar servicios"/"Editar sector" tienen que reflejar el permiso
   // nuevo sin esperar a que se cierre y se vuelva a abrir.
-  if (lotePolyLayerSeleccionado) {
-    document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(lotePolyLayerSeleccionado));
-    document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
-    document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
-    elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(lotePolyLayerSeleccionado));
+  if (getLoteSeleccionado()) {
+    document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(getLoteSeleccionado()));
+    document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(getLoteSeleccionado()));
+    document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(getLoteSeleccionado()));
+    elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(getLoteSeleccionado()));
     cerrarEditorServicios();
     cerrarEditorSector();
     cerrarEditorBarrio();
@@ -2153,11 +2163,11 @@ onAuthStateChanged(auth, async (usuario) => {
 // disparan cargarLotesDesdeFirestore, y no hay que reabrir el deep link
 // en medio de que alguien esté usando la app).
 function abrirLoteDesdeUrlSiCorresponde() {
-  if (deepLinkDeLoteAbierto) return;
-  deepLinkDeLoteAbierto = true;
+  if (getDeepLinkAbierto()) return;
+  setDeepLinkAbierto(true);
   const idDesdeUrl = new URLSearchParams(location.search).get("lote");
   if (!idDesdeUrl) return;
-  const feature = lotesActuales.find((f) => f.id === idDesdeUrl);
+  const feature = getLotesActuales().find((f) => f.id === idDesdeUrl);
   if (!feature) return;
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
@@ -2207,7 +2217,7 @@ document.getElementById("cerrar-form-lote").addEventListener("click", () => {
   elFormLote.classList.add("oculto");
   limpiarFormLote();
 });
-window.addEventListener("mojonapp:sesion-cerrada", () => {
+onSesionCerrada(() => {
   elFormLote.classList.add("oculto");
   limpiarFormLote();
 });
@@ -2354,7 +2364,7 @@ document.getElementById("cerrar-form-manzana").addEventListener("click", () => {
   elFormManzana.classList.add("oculto");
   limpiarFormManzana();
 });
-window.addEventListener("mojonapp:sesion-cerrada", () => {
+onSesionCerrada(() => {
   elFormManzana.classList.add("oculto");
   limpiarFormManzana();
 });
@@ -2579,7 +2589,7 @@ function resaltarCandidatasEnMapa(candidatas) {
           // Mismo cuidado que en la capa de lotes cargados: no pisar una
           // captura de vértices en curso (ver el comentario en
           // cargarLotesDesdeFirestore).
-          if (modoCaptura !== null) return;
+          if (getModoCaptura() !== null) return;
           L.DomEvent.stopPropagation(evento);
           limpiarResaltadoParcelas();
           cargarParcelaEnFormLote(feature);
@@ -2597,7 +2607,7 @@ document.getElementById("cerrar-form-parcela").addEventListener("click", () => {
   elParcelaResultado.innerHTML = "";
   elParcelaError.classList.add("oculto");
 });
-window.addEventListener("mojonapp:sesion-cerrada", () => {
+onSesionCerrada(() => {
   elFormParcela.classList.add("oculto");
   limpiarResaltadoParcelas();
   elParcelaResultado.innerHTML = "";
@@ -2824,7 +2834,7 @@ async function actualizarCatastroCercano() {
           // Mismo cuidado que en la capa de lotes cargados: no pisar una
           // captura de vértices en curso (ver el comentario en
           // cargarLotesDesdeFirestore).
-          if (modoCaptura !== null) return;
+          if (getModoCaptura() !== null) return;
           L.DomEvent.stopPropagation(evento);
           cargarParcelaEnFormLote(feature);
         });
@@ -2890,7 +2900,7 @@ elBtnVerCatastroCercano.addEventListener("click", () => {
 
 elBtnFlotanteCatastro.addEventListener("click", desactivarCatastroCercano);
 
-window.addEventListener("mojonapp:sesion-cerrada", desactivarCatastroCercano);
+onSesionCerrada(desactivarCatastroCercano);
 
 // Debounce: paneando/haciendo zoom rápido, "moveend" puede disparar
 // varias veces seguidas — sin esto, cada una lanzaba su propio par de
@@ -2922,7 +2932,6 @@ const elBtnCapturaAgregar = document.getElementById("btn-captura-agregar");
 const elBtnCapturaDeshacer = document.getElementById("btn-captura-deshacer");
 const elBtnCapturaTerminar = document.getElementById("btn-captura-terminar");
 
-let modoCaptura = null; // "gps" | "mapa"
 let puntosCaptura = []; // [[lat, lon], ...]
 let marcadoresCaptura = [];
 let listenerClickMapaCaptura = null;
@@ -2939,7 +2948,7 @@ function actualizarContadorCaptura() {
 
 function agregarPuntoCaptura(lat, lon) {
   puntosCaptura.push([lat, lon]);
-  if (modoCaptura === "mapa") {
+  if (getModoCaptura() === "mapa") {
     const marcador = L.circleMarker([lat, lon], {
       radius: 7,
       color: "#fff",
@@ -2968,13 +2977,13 @@ function limpiarCaptura() {
     mapa.off("click", listenerClickMapaCaptura);
     listenerClickMapaCaptura = null;
   }
-  modoCaptura = null;
+  setModoCaptura(null);
   elPanelCaptura.classList.add("oculto");
   elCapturaError.classList.add("oculto");
 }
 
 function iniciarCapturaGps() {
-  modoCaptura = "gps";
+  setModoCaptura("gps");
   puntosCaptura = [];
   elCapturaMensaje.textContent = 'Parate en cada esquina del lote y tocá "Marcar acá".';
   elBtnCapturaAgregar.classList.remove("oculto");
@@ -2984,7 +2993,7 @@ function iniciarCapturaGps() {
 }
 
 function iniciarCapturaMapa() {
-  modoCaptura = "mapa";
+  setModoCaptura("mapa");
   puntosCaptura = [];
   elCapturaMensaje.textContent = "Tocá cada esquina del lote directo sobre el mapa.";
   elBtnCapturaAgregar.classList.add("oculto");
@@ -3027,11 +3036,11 @@ elBtnCapturaTerminar.addEventListener("click", () => {
 });
 
 document.getElementById("cerrar-captura-vertices").addEventListener("click", () => {
-  const habiaEmpezado = modoCaptura !== null;
+  const habiaEmpezado = getModoCaptura() !== null;
   limpiarCaptura();
   if (habiaEmpezado) elFormLote.classList.remove("oculto");
 });
-window.addEventListener("mojonapp:sesion-cerrada", limpiarCaptura);
+onSesionCerrada(limpiarCaptura);
 
 document.getElementById("btn-vertices-gps").addEventListener("click", iniciarCapturaGps);
 document.getElementById("btn-vertices-mapa").addEventListener("click", iniciarCapturaMapa);
@@ -3480,7 +3489,7 @@ async function cargarPanelSectores() {
   await cargarSectores();
 
   elTablaSectoresCuerpo.innerHTML = "";
-  sectoresActuales.forEach((sector) => {
+  getSectoresActuales().forEach((sector) => {
     const fila = document.createElement("tr");
     const celdaNombre = document.createElement("td");
     celdaNombre.textContent = sector.nombre;
@@ -3610,7 +3619,7 @@ async function cargarPanelBarrios() {
   await cargarBarrios();
 
   elTablaBarriosCuerpo.innerHTML = "";
-  barriosActuales.forEach((barrio) => {
+  getBarriosActuales().forEach((barrio) => {
     const fila = document.createElement("tr");
     const celdaNombre = document.createElement("td");
     celdaNombre.textContent = barrio.nombre;
