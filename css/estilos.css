@@ -671,6 +671,75 @@ button:active {
   user-select: text;
 }
 
+/* Fotos del lote (Cloudinary) — mismo look de "caja" que
+   #ficha-interesados, ver renderFotos en app.js. */
+#ficha-fotos {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: var(--color-fondo-alterno);
+  padding: 10px 12px 12px;
+  margin-bottom: 12px;
+}
+
+.ficha-fotos-titulo {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+#galeria-fotos-lote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#galeria-fotos-lote:empty {
+  margin-bottom: 0;
+}
+
+.foto-lote {
+  position: relative;
+  width: 76px;
+  height: 76px;
+}
+
+.foto-lote img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radio-chico);
+  cursor: pointer;
+  display: block;
+}
+
+.btn-borrar-foto {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-vendido);
+  color: #fff;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#subir-foto-label {
+  display: inline-block;
+  cursor: pointer;
+}
+
+#ficha-foto-cargando {
+  font-size: 0.8rem;
+  color: var(--color-texto-secundario);
+  margin: 6px 0 0;
+}
+
 /* Lista de interesados por lote (mini-CRM liviano) — mismo look de
    "caja" que .fieldset-servicios/.permisos-seccion, para que se sienta
    consistente con el resto de la ficha. */

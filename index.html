@@ -11,7 +11,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-08-29-1" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-08-31-1" />
 </head>
 <body>
 
@@ -130,6 +130,21 @@
       </dd>
       <dt>Observaciones</dt><dd id="ficha-observaciones" data-testid="ficha-observaciones"></dd>
     </dl>
+    <!-- Fotos del lote (Cloudinary, ver subirFotoACloudinary en app.js) —
+         la galería la ve cualquiera (comprador incluido, es justo lo que
+         más ayuda a evaluar un lote a distancia); subir/borrar una foto
+         solo quien puede editar el lote. Toda la sección se oculta si no
+         hay fotos Y tampoco se puede editar (nada que mostrar). -->
+    <div id="ficha-fotos" class="oculto" data-testid="ficha-fotos">
+      <p class="ficha-fotos-titulo">Fotos</p>
+      <div id="galeria-fotos-lote" data-testid="galeria-fotos-lote"></div>
+      <label id="subir-foto-label" class="oculto btn-secundario" data-testid="subir-foto-label">
+        + Agregar foto
+        <input type="file" id="input-foto-lote" accept="image/*" data-testid="input-foto-lote" hidden />
+      </label>
+      <p id="ficha-foto-cargando" class="oculto" data-testid="ficha-foto-cargando">Subiendo foto…</p>
+      <p id="ficha-foto-error" class="mensaje-error oculto" data-testid="ficha-foto-error"></p>
+    </div>
     <div id="editor-servicios" class="oculto" data-testid="editor-servicios">
       <fieldset class="fieldset-servicios">
         <legend>Editar servicios</legend>
@@ -676,6 +691,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-08-29-1"></script>
+  <script type="module" src="js/app.js?v=2026-08-31-1"></script>
 </body>
 </html>

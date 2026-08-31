@@ -750,6 +750,134 @@ const elPrecio = document.getElementById("ficha-precio");
 const elServicios = document.getElementById("ficha-servicios");
 const elObservaciones = document.getElementById("ficha-observaciones");
 
+// ---------------------------------------------------------------------------
+// Fotos del lote: se suben directo desde el navegador a Cloudinary (plan
+// gratis, sin tarjeta — a diferencia de Firebase Storage o Cloudflare R2,
+// que piden tarjeta cargada aunque el uso se mantenga gratis, ver charla
+// con el usuario) usando un "upload preset" sin firmar (unsigned) — el
+// modo pensado por Cloudinary para subir directo desde el cliente sin
+// exponer ninguna clave secreta ni necesitar un servidor propio. Firestore
+// solo guarda la URL resultante (y el public_id, por si en el futuro hace
+// falta) en un array "fotos" del lote, mismo patrón que "interesados"
+// (arrayUnion/arrayRemove) más abajo.
+//
+// Cloud name y upload preset de la cuenta de Cloudinary del usuario —
+// ninguno de los dos es secreto (a diferencia del API key/secret, que
+// jamás deben viajar al navegador): son justamente los dos únicos datos
+// que Cloudinary espera ver embebidos en código de cliente para el modo
+// "unsigned". El preset está configurado como Unsigned + carpeta
+// "mojonapp-lotes" en el panel de Cloudinary.
+const CLOUDINARY_CLOUD_NAME = "ipuyvn4v";
+const CLOUDINARY_UPLOAD_PRESET = "mojonapp_lotes";
+
+const elFichaFotos = document.getElementById("ficha-fotos");
+const elGaleriaFotos = document.getElementById("galeria-fotos-lote");
+const elSubirFotoLabel = document.getElementById("subir-foto-label");
+const elInputFotoLote = document.getElementById("input-foto-lote");
+const elFichaFotoCargando = document.getElementById("ficha-foto-cargando");
+const elFichaFotoError = document.getElementById("ficha-foto-error");
+
+async function subirFotoACloudinary(archivo) {
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+    throw new Error("Cloudinary todavía no está configurado en la app (falta CLOUDINARY_CLOUD_NAME/CLOUDINARY_UPLOAD_PRESET).");
+  }
+  const formData = new FormData();
+  formData.append("file", archivo);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  const respuesta = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+    method: "POST",
+    body: formData
+  });
+  if (!respuesta.ok) {
+    throw new Error("Cloudinary rechazó la subida.");
+  }
+  const datos = await respuesta.json();
+  // Un objeto chico y estable a propósito: arrayRemove (ver borrarFoto)
+  // necesita coincidir EXACTO con lo que ya está guardado para poder
+  // sacarlo, así que cuantos menos campos variables, mejor.
+  return { url: datos.secure_url, id: datos.public_id };
+}
+
+function renderFotos(feature) {
+  const fotos = feature.properties.fotos || [];
+  const puedeSubir = puedeEditarLote(feature);
+
+  elFichaFotos.classList.toggle("oculto", fotos.length === 0 && !puedeSubir);
+  elSubirFotoLabel.classList.toggle("oculto", !puedeSubir);
+
+  elGaleriaFotos.innerHTML = "";
+  fotos.forEach((foto) => {
+    const contenedor = document.createElement("div");
+    contenedor.className = "foto-lote";
+
+    const img = document.createElement("img");
+    img.src = foto.url;
+    img.loading = "lazy";
+    img.alt = "Foto del lote";
+    // Ver más grande en una pestaña aparte — más simple que armar un
+    // visor propio para una sola imagen a la vez.
+    img.addEventListener("click", () => window.open(foto.url, "_blank"));
+    contenedor.appendChild(img);
+
+    if (puedeSubir) {
+      const botonBorrar = document.createElement("button");
+      botonBorrar.type = "button";
+      botonBorrar.className = "btn-borrar-foto";
+      botonBorrar.textContent = "×";
+      botonBorrar.setAttribute("aria-label", "Borrar foto");
+      botonBorrar.addEventListener("click", (evento) => {
+        evento.stopPropagation();
+        borrarFoto(feature, foto);
+      });
+      contenedor.appendChild(botonBorrar);
+    }
+
+    elGaleriaFotos.appendChild(contenedor);
+  });
+}
+
+async function borrarFoto(feature, foto) {
+  if (!window.confirm("¿Borrar esta foto del lote?")) return;
+  try {
+    // Solo saca la referencia en Firestore — el archivo en sí sigue
+    // ocupando espacio en Cloudinary. Borrarlo de ahí también necesita
+    // una llamada FIRMADA (con la clave secreta), que no puede hacerse
+    // con seguridad desde el navegador — queda fuera de alcance por
+    // ahora, la cuota gratis (25GB) da para mucho antes de que importe.
+    await updateDoc(doc(db, COLECCION_LOTES, feature.id), { fotos: arrayRemove(foto) });
+    feature.properties.fotos = (feature.properties.fotos || []).filter((f) => f !== foto);
+    renderFotos(feature);
+  } catch (error) {
+    window.alert(
+      error.code === "permission-denied" ? "No tenés permiso para borrar fotos de este lote." : "No se pudo borrar la foto."
+    );
+  }
+}
+
+elInputFotoLote.addEventListener("change", async () => {
+  const archivo = elInputFotoLote.files[0];
+  if (!archivo || !lotePolyLayerSeleccionado) return;
+
+  elFichaFotoError.classList.add("oculto");
+  elFichaFotoCargando.classList.remove("oculto");
+  elInputFotoLote.disabled = true;
+  try {
+    const foto = await subirFotoACloudinary(archivo);
+    await updateDoc(doc(db, COLECCION_LOTES, lotePolyLayerSeleccionado.id), { fotos: arrayUnion(foto) });
+    if (!lotePolyLayerSeleccionado.properties.fotos) lotePolyLayerSeleccionado.properties.fotos = [];
+    lotePolyLayerSeleccionado.properties.fotos.push(foto);
+    renderFotos(lotePolyLayerSeleccionado);
+  } catch (error) {
+    elFichaFotoError.textContent =
+      error.code === "permission-denied" ? "No tenés permiso para agregar fotos a este lote." : "No se pudo subir la foto. Probá de nuevo.";
+    elFichaFotoError.classList.remove("oculto");
+  } finally {
+    elFichaFotoCargando.classList.add("oculto");
+    elInputFotoLote.disabled = false;
+    elInputFotoLote.value = "";
+  }
+});
+
 // Interesados: mini-CRM liviano, solo para quien puede editar el lote.
 const elFichaInteresados = document.getElementById("ficha-interesados");
 const elListaInteresados = document.getElementById("lista-interesados");
@@ -907,6 +1035,7 @@ function mostrarFicha(feature) {
   elPrecio.textContent = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   elServicios.innerHTML = renderServiciosHTML(p.servicios);
   elObservaciones.textContent = p.observaciones || "Sin datos";
+  renderFotos(feature);
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
   document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
