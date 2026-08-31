@@ -36,6 +36,12 @@ def _loguearse(page):
     page.locator("#login-password").fill(TEST_USER_PASSWORD)
     page.locator("[data-testid='login-submit']").click()
     expect(page.locator("#sesion-activa")).to_be_visible()
+    # El login abre el dashboard automático (ver formularioLogin en
+    # app.js) — como cualquier panel de pantalla completa de esta app,
+    # tapa hasta el botón de menú, así que hay que cerrarlo antes de
+    # poder seguir navegando.
+    page.locator("#cerrar-panel-dashboard").click()
+    expect(page.locator("#panel-dashboard")).to_be_hidden()
 
 
 def test_ficha_muestra_frente_y_largo_correctos(page, base_url, lote_sembrado):

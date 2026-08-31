@@ -109,6 +109,10 @@ def test_corredor_logueado_puede_cargar_un_lote(page, base_url):
         page.locator("#login-password").fill(TEST_USER_PASSWORD)
         page.locator("[data-testid='login-submit']").click()
         expect(page.locator("#sesion-activa")).to_be_visible()
+        # El login abre el dashboard automático (ver formularioLogin en
+        # app.js) — tapa hasta el botón de menú, como cualquier panel de
+        # pantalla completa de esta app; hay que cerrarlo primero.
+        page.locator("#cerrar-panel-dashboard").click()
 
         page.locator("#btn-menu").click()
         page.locator('[data-testid="drawer-grupo-cargar-lotes"]').click()

@@ -23,6 +23,18 @@ service cloud.firestore {
       return request.auth != null && resource.data.creado_por == request.auth.uid;
     }
 
+    // "Más consultados" del dashboard: cualquiera que abra la ficha de un
+    // lote suma una vista, CON o SIN sesión — el interés de un comprador
+    // anónimo cuenta igual que el de un corredor mirando su propia
+    // cartera (ver registrarVistaDeLote en js/app.js). A propósito muy
+    // acotado: solo deja tocar el campo "vistas" (nada más del lote) y
+    // solo sumarle exactamente 1 por pedido — no alcanza para poner
+    // cualquier otro dato ni para "saltar" el contador de golpe.
+    function soloSumaUnaVista() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vistas'])
+        && request.resource.data.vistas == (resource.data.vistas is number ? resource.data.vistas : 0) + 1;
+    }
+
     // Solo root da de alta corredores y arma perfiles (ver panel
     // "Administrar" en la app) — cualquier logueado puede LEER estas dos
     // colecciones porque necesita resolver su propio perfil.
@@ -79,7 +91,8 @@ service cloud.firestore {
       // dueño: cae directo en la rama "ajeno", nunca en la de "propio".
       allow update: if esRoot()
         || (esDueno() && tienePermiso('editar_lote_propio'))
-        || (!esDueno() && tienePermiso('editar_lote_ajeno'));
+        || (!esDueno() && tienePermiso('editar_lote_ajeno'))
+        || soloSumaUnaVista();
 
       allow delete: if esRoot()
         || (esDueno() && tienePermiso('borrar_lote_propio'))

@@ -1502,3 +1502,101 @@ button:active {
 #btn-agregar-sector:hover {
   background: var(--color-fondo-alterno);
 }
+
+/* Dashboard — ver renderDashboard en app.js */
+.dashboard-seccion {
+  margin-bottom: 22px;
+}
+
+.dashboard-seccion h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: var(--color-primario-oscuro);
+}
+
+.dashboard-ayuda {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: var(--color-texto-secundario);
+}
+
+.dashboard-vacio {
+  font-size: 0.82rem;
+  color: var(--color-texto-secundario);
+  margin: 0;
+}
+
+.dashboard-tarjetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-tarjeta {
+  flex: 1 1 100px;
+  background: var(--color-fondo-alterno);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.dashboard-tarjeta strong {
+  display: block;
+  font-size: 1.4rem;
+  color: var(--color-primario-oscuro);
+}
+
+.dashboard-tarjeta span {
+  font-size: 0.75rem;
+  color: var(--color-texto-secundario);
+}
+
+.dashboard-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-ranking {
+  list-style: decimal;
+  padding-left: 20px;
+}
+
+.dashboard-lista li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--color-fondo-alterno);
+  border-radius: var(--radio-chico);
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.dashboard-ranking li {
+  padding: 4px 8px 4px 2px;
+  background: none;
+}
+
+.dashboard-lista li:hover {
+  background: var(--color-borde);
+}
+
+.dashboard-lista .dashboard-lote-titulo {
+  color: var(--color-texto);
+  font-weight: 600;
+}
+
+.dashboard-lista .dashboard-lote-dato {
+  color: var(--color-texto-secundario);
+  flex-shrink: 0;
+}
+
+.dashboard-lista .dashboard-lote-dato.texto-vencido {
+  color: var(--color-vendido);
+  font-weight: 600;
+}

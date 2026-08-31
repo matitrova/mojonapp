@@ -11,7 +11,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-08-31-1" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-08-31-2" />
 </head>
 <body>
 
@@ -40,6 +40,8 @@
     <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista">Ver como lista</button>
 
     <div id="drawer-sesion-activa" class="oculto">
+      <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard">Dashboard</button>
+
       <div class="drawer-grupo">
         <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-cargar-lotes">
           Cargar lotes
@@ -571,6 +573,63 @@
     </div>
   </div>
 
+  <!-- Dashboard: aterrizaje al iniciar sesión (ver formularioLogin en
+       app.js) — pensado para responder "qué necesito hacer hoy con esta
+       cartera", no solo mostrar el mapa. Todo se calcula en el momento
+       a partir de los lotes ya cargados en memoria (lotesActuales), sin
+       pedirle nada nuevo a Firestore. -->
+  <div id="panel-dashboard" class="oculto panel-pantalla-completa" data-testid="panel-dashboard">
+    <div class="panel-header">
+      <h2>Dashboard</h2>
+      <button id="cerrar-panel-dashboard" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div id="dashboard-contenido">
+      <section class="dashboard-seccion">
+        <h3>Inventario</h3>
+        <div id="dashboard-inventario" class="dashboard-tarjetas" data-testid="dashboard-inventario"></div>
+      </section>
+
+      <section class="dashboard-seccion">
+        <h3>Reservas por vencer</h3>
+        <ul id="dashboard-reservas" class="dashboard-lista" data-testid="dashboard-reservas"></ul>
+        <p id="dashboard-reservas-vacio" class="dashboard-vacio oculto">No hay reservas activas.</p>
+      </section>
+
+      <section class="dashboard-seccion">
+        <h3>Lotes incompletos</h3>
+        <p class="dashboard-ayuda">Sin foto y/o sin precio cargado — completarlos ayuda a que se consulten más.</p>
+        <ul id="dashboard-incompletos" class="dashboard-lista" data-testid="dashboard-incompletos"></ul>
+        <p id="dashboard-incompletos-vacio" class="dashboard-vacio oculto">Todos los lotes tienen foto y precio cargados.</p>
+      </section>
+
+      <section class="dashboard-seccion">
+        <h3>Más consultados</h3>
+        <ol id="dashboard-consultados" class="dashboard-lista dashboard-ranking" data-testid="dashboard-consultados"></ol>
+        <p id="dashboard-consultados-vacio" class="dashboard-vacio oculto">Todavía no hay vistas registradas.</p>
+      </section>
+
+      <section class="dashboard-seccion">
+        <h3>Con más interesados anotados</h3>
+        <ol id="dashboard-interesados" class="dashboard-lista dashboard-ranking" data-testid="dashboard-interesados"></ol>
+        <p id="dashboard-interesados-vacio" class="dashboard-vacio oculto">Todavía no hay interesados anotados en ningún lote.</p>
+      </section>
+
+      <section class="dashboard-seccion">
+        <h3>Precio promedio por zona</h3>
+        <div class="tabla-scroll">
+          <table class="tabla-panel" data-testid="dashboard-precios-zona">
+            <thead>
+              <tr><th>Zona</th><th>Lotes con precio</th><th>Precio promedio</th></tr>
+            </thead>
+            <tbody id="dashboard-precios-zona-cuerpo"></tbody>
+          </table>
+        </div>
+        <p id="dashboard-precios-zona-vacio" class="dashboard-vacio oculto">Todavía no hay lotes con precio cargado.</p>
+      </section>
+    </div>
+  </div>
+
   <!-- Vista en lista/grilla de los lotes cargados, alternativa al mapa -->
   <div id="vista-lista" class="oculto panel-pantalla-completa" data-testid="vista-lista">
     <div id="vista-lista-header" class="panel-header">
@@ -691,6 +750,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-08-31-1"></script>
+  <script type="module" src="js/app.js?v=2026-08-31-2"></script>
 </body>
 </html>
