@@ -24,7 +24,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-01-11" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-01-12" />
 </head>
 <body>
 
@@ -696,6 +696,17 @@
             <option value="vendido">Vendido</option>
           </select>
         </label>
+        <label>Mostrar
+          <select id="filtro-cantidad" data-testid="filtro-cantidad">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="0">Todos</option>
+          </select>
+        </label>
       </div>
       <p id="vista-lista-vacio" class="oculto">Todavía no hay lotes cargados.</p>
       <p id="vista-lista-sin-resultados" class="oculto">Ningún lote coincide con el filtro.</p>
@@ -715,6 +726,13 @@
           </thead>
           <tbody id="tabla-lotes-cuerpo"></tbody>
         </table>
+      </div>
+      <!-- Solo se muestra cuando hay más de una página (ver actualizarVistaLista
+           en vista-lista.js) — con "Todos" u pocos lotes no hace falta. -->
+      <div id="vista-lista-paginacion" class="oculto" data-testid="vista-lista-paginacion">
+        <button type="button" id="pagina-anterior" data-testid="pagina-anterior">&larr; Anterior</button>
+        <span id="pagina-info" data-testid="pagina-info"></span>
+        <button type="button" id="pagina-siguiente" data-testid="pagina-siguiente">Siguiente &rarr;</button>
       </div>
     </div>
 
@@ -789,6 +807,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-01-11"></script>
+  <script type="module" src="js/app.js?v=2026-09-01-12"></script>
 </body>
 </html>

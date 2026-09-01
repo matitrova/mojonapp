@@ -1406,6 +1406,37 @@ button:active {
   font-size: 0.9rem;
 }
 
+#vista-lista-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 0.82rem;
+  color: var(--color-texto-secundario);
+}
+
+#vista-lista-paginacion button {
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primario);
+  background: var(--color-fondo-alterno);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+#vista-lista-paginacion button:disabled {
+  color: var(--color-texto-secundario);
+  cursor: default;
+  opacity: 0.5;
+}
+
+#vista-lista-paginacion button:not(:disabled):hover {
+  background: var(--color-borde);
+}
+
 #vista-lista-vacio {
   color: var(--color-texto-secundario);
   font-size: 0.9rem;

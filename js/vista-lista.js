@@ -67,6 +67,11 @@ const elTablaLotesCuerpo = document.getElementById("tabla-lotes-cuerpo");
 const elFiltroSector = document.getElementById("filtro-sector");
 const elFiltroBarrio = document.getElementById("filtro-barrio");
 const elFiltroEstado = document.getElementById("filtro-estado");
+const elFiltroCantidad = document.getElementById("filtro-cantidad");
+const elPaginacion = document.getElementById("vista-lista-paginacion");
+const elPaginaAnterior = document.getElementById("pagina-anterior");
+const elPaginaSiguiente = document.getElementById("pagina-siguiente");
+const elPaginaInfo = document.getElementById("pagina-info");
 
 const elLoteVistaLista = document.getElementById("lote-vista-lista");
 const elLoteVistaEditar = document.getElementById("lote-vista-editar");
@@ -129,10 +134,38 @@ function lotesFiltrados() {
   });
 }
 
+// Paginación: sin techo, una cartera grande (o el catálogo público con
+// muchos lotes) terminaba en una sola tabla larguísima — "Mostrar" deja
+// elegir cuántas filas por página (5/10/15/20/50/100, o "Todos" con
+// value="0" para volver al comportamiento de siempre). Se reinicia a la
+// página 1 cada vez que cambia un filtro o la cantidad — quedarse en,
+// por ejemplo, la página 4 después de aplicar un filtro que deja solo 2
+// páginas mostraría una tabla vacía sin que se entienda por qué.
+let paginaActual = 1;
+
+function cambiarPagina(delta) {
+  paginaActual += delta;
+  actualizarVistaLista();
+}
+
+elPaginaAnterior.addEventListener("click", () => cambiarPagina(-1));
+elPaginaSiguiente.addEventListener("click", () => cambiarPagina(1));
+
 export function actualizarVistaLista() {
   actualizarOpcionesFiltroSector();
   actualizarOpcionesFiltroBarrio();
   const lotes = lotesFiltrados();
+
+  const porPagina = Number(elFiltroCantidad.value) || Infinity; // "Todos" = value 0
+  const totalPaginas = Number.isFinite(porPagina) ? Math.max(1, Math.ceil(lotes.length / porPagina)) : 1;
+  paginaActual = Math.min(Math.max(1, paginaActual), totalPaginas);
+  const inicio = Number.isFinite(porPagina) ? (paginaActual - 1) * porPagina : 0;
+  const lotesPagina = Number.isFinite(porPagina) ? lotes.slice(inicio, inicio + porPagina) : lotes;
+
+  elPaginacion.classList.toggle("oculto", totalPaginas <= 1);
+  elPaginaAnterior.disabled = paginaActual <= 1;
+  elPaginaSiguiente.disabled = paginaActual >= totalPaginas;
+  elPaginaInfo.textContent = `Página ${paginaActual} de ${totalPaginas} (${lotes.length} lotes)`;
 
   elTablaLotesCuerpo.innerHTML = "";
   elVistaListaVacio.classList.toggle("oculto", getLotesActuales().length > 0);
@@ -142,7 +175,7 @@ export function actualizarVistaLista() {
   elVistaListaSinResultados.classList.toggle("oculto", getLotesActuales().length === 0 || lotes.length > 0);
   elTablaLotes.classList.toggle("oculto", lotes.length === 0);
 
-  lotes.forEach((feature) => {
+  lotesPagina.forEach((feature) => {
     const p = feature.properties;
     const fila = document.createElement("tr");
     fila.className = "fila-lote";
@@ -198,9 +231,14 @@ export function actualizarVistaLista() {
   });
 }
 
-elFiltroSector.addEventListener("change", actualizarVistaLista);
-elFiltroBarrio.addEventListener("change", actualizarVistaLista);
-elFiltroEstado.addEventListener("change", actualizarVistaLista);
+function reiniciarPaginaYActualizar() {
+  paginaActual = 1;
+  actualizarVistaLista();
+}
+elFiltroSector.addEventListener("change", reiniciarPaginaYActualizar);
+elFiltroBarrio.addEventListener("change", reiniciarPaginaYActualizar);
+elFiltroEstado.addEventListener("change", reiniciarPaginaYActualizar);
+elFiltroCantidad.addEventListener("change", reiniciarPaginaYActualizar);
 
 // Editar un lote directo desde la grilla (sin pasar por el mapa/ficha):
 // pedido explícito, ya que la grilla es la herramienta de trabajo del
