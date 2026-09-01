@@ -134,74 +134,124 @@ function calcularMetricasDashboard() {
   return { inventario, reservas, incompletos, consultados, conInteresados, precioPorZona };
 }
 
+// Actualiza el contador de una sección ("Reservas por vencer  3") — se
+// oculta con 0, un contador en cero no suma nada que el texto de
+// "vacío" de esa lista no diga ya.
+function actualizarContador(id, cantidad) {
+  const el = document.getElementById(id);
+  el.textContent = cantidad;
+  el.classList.toggle("oculto", cantidad === 0);
+}
+
+// Fila de lista clickeable, con el título del lote y lo que sea que va
+// del lado derecho (badge, chips, texto) — mismo armado en las 5 listas
+// del dashboard, con o sin medalla de ranking.
+function filaLote(feature, contenidoDerecha, { rango } = {}) {
+  const li = document.createElement("li");
+  const grupo = document.createElement("span");
+  grupo.className = "dashboard-lote-titulo-grupo";
+  if (rango != null) {
+    const elRango = document.createElement("span");
+    elRango.className = "dashboard-rango";
+    elRango.textContent = rango;
+    grupo.appendChild(elRango);
+  }
+  const elTitulo = document.createElement("span");
+  elTitulo.className = "dashboard-lote-titulo";
+  elTitulo.textContent = tituloLote(feature.properties);
+  grupo.appendChild(elTitulo);
+  li.appendChild(grupo);
+  li.appendChild(contenidoDerecha);
+  li.addEventListener("click", () => irAFichaDesdeDashboard(feature));
+  return li;
+}
+
 export function renderDashboard() {
   const m = calcularMetricasDashboard();
+  const total = getLotesActuales().length;
 
   const elInventario = document.getElementById("dashboard-inventario");
   elInventario.innerHTML = `
-    <div class="dashboard-tarjeta"><strong>${getLotesActuales().length}</strong><span>Total</span></div>
-    <div class="dashboard-tarjeta"><strong>${m.inventario.disponible}</strong><span>Disponible</span></div>
-    <div class="dashboard-tarjeta"><strong>${m.inventario.reservado}</strong><span>Reservado</span></div>
-    <div class="dashboard-tarjeta"><strong>${m.inventario.vendido}</strong><span>Vendido</span></div>
+    <div class="dashboard-tarjeta total"><strong>${total}</strong><span>Total</span></div>
+    <div class="dashboard-tarjeta disponible"><strong>${m.inventario.disponible}</strong><span>Disponible</span></div>
+    <div class="dashboard-tarjeta reservado"><strong>${m.inventario.reservado}</strong><span>Reservado</span></div>
+    <div class="dashboard-tarjeta vendido"><strong>${m.inventario.vendido}</strong><span>Vendido</span></div>
   `;
+
+  // Barra de composición: mismo dato que las tarjetas de arriba, en
+  // proporción. Sin lotes cargados no hay nada que proporcionar — se
+  // deja vacía en vez de dividir por cero.
+  const elComposicion = document.getElementById("dashboard-composicion");
+  elComposicion.innerHTML =
+    total === 0
+      ? ""
+      : ["disponible", "reservado", "vendido"]
+          .filter((estado) => m.inventario[estado] > 0)
+          .map((estado) => `<span class="${estado}" style="width:${(m.inventario[estado] / total) * 100}%"></span>`)
+          .join("");
 
   const elReservas = document.getElementById("dashboard-reservas");
   elReservas.innerHTML = "";
   m.reservas.forEach(({ feature, dias }) => {
-    const li = document.createElement("li");
     const vencida = dias < 0;
-    li.innerHTML = `<span class="dashboard-lote-titulo">${tituloLote(feature.properties)}</span><span class="dashboard-lote-dato${
-      vencida ? " texto-vencido" : ""
-    }">${vencida ? `vencida hace ${Math.abs(dias)} d.` : dias === 0 ? "vence hoy" : `vence en ${dias} d.`}</span>`;
-    li.addEventListener("click", () => irAFichaDesdeDashboard(feature));
-    elReservas.appendChild(li);
+    const urgente = !vencida && dias <= 3;
+    const badge = document.createElement("span");
+    badge.className = `dashboard-badge${vencida ? " vencida" : urgente ? " urgente" : ""}`;
+    badge.textContent = vencida ? `vencida hace ${Math.abs(dias)} d.` : dias === 0 ? "vence hoy" : `vence en ${dias} d.`;
+    elReservas.appendChild(filaLote(feature, badge));
   });
   document.getElementById("dashboard-reservas-vacio").classList.toggle("oculto", m.reservas.length > 0);
+  actualizarContador("dashboard-reservas-contador", m.reservas.length);
 
   const elIncompletos = document.getElementById("dashboard-incompletos");
   elIncompletos.innerHTML = "";
   m.incompletos.forEach((feature) => {
-    const faltantes = [];
-    if (!(feature.properties.fotos && feature.properties.fotos.length > 0)) faltantes.push("sin foto");
-    if (feature.properties.precio_usd == null) faltantes.push("sin precio");
-    const li = document.createElement("li");
-    li.innerHTML = `<span class="dashboard-lote-titulo">${tituloLote(feature.properties)}</span><span class="dashboard-lote-dato">${faltantes.join(
-      ", "
-    )}</span>`;
-    li.addEventListener("click", () => irAFichaDesdeDashboard(feature));
-    elIncompletos.appendChild(li);
+    const chips = document.createElement("span");
+    chips.className = "dashboard-chips";
+    if (!(feature.properties.fotos && feature.properties.fotos.length > 0)) {
+      chips.innerHTML += `<span class="dashboard-chip-falta">Sin foto</span>`;
+    }
+    if (feature.properties.precio_usd == null) {
+      chips.innerHTML += `<span class="dashboard-chip-falta">Sin precio</span>`;
+    }
+    elIncompletos.appendChild(filaLote(feature, chips));
   });
   document.getElementById("dashboard-incompletos-vacio").classList.toggle("oculto", m.incompletos.length > 0);
+  actualizarContador("dashboard-incompletos-contador", m.incompletos.length);
 
   const elConsultados = document.getElementById("dashboard-consultados");
   elConsultados.innerHTML = "";
-  m.consultados.forEach((feature) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<span class="dashboard-lote-titulo">${tituloLote(feature.properties)}</span><span class="dashboard-lote-dato">${
-      feature.properties.vistas
-    } vistas</span>`;
-    li.addEventListener("click", () => irAFichaDesdeDashboard(feature));
-    elConsultados.appendChild(li);
+  m.consultados.forEach((feature, i) => {
+    const dato = document.createElement("span");
+    dato.className = "dashboard-lote-dato";
+    dato.textContent = `${feature.properties.vistas} vistas`;
+    elConsultados.appendChild(filaLote(feature, dato, { rango: i + 1 }));
   });
   document.getElementById("dashboard-consultados-vacio").classList.toggle("oculto", m.consultados.length > 0);
 
   const elInteresados = document.getElementById("dashboard-interesados");
   elInteresados.innerHTML = "";
-  m.conInteresados.forEach((feature) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<span class="dashboard-lote-titulo">${tituloLote(feature.properties)}</span><span class="dashboard-lote-dato">${
-      feature.properties.interesados.length
-    } interesado${feature.properties.interesados.length === 1 ? "" : "s"}</span>`;
-    li.addEventListener("click", () => irAFichaDesdeDashboard(feature));
-    elInteresados.appendChild(li);
+  m.conInteresados.forEach((feature, i) => {
+    const cantidad = feature.properties.interesados.length;
+    const dato = document.createElement("span");
+    dato.className = "dashboard-lote-dato";
+    dato.textContent = `${cantidad} interesado${cantidad === 1 ? "" : "s"}`;
+    elInteresados.appendChild(filaLote(feature, dato, { rango: i + 1 }));
   });
   document.getElementById("dashboard-interesados-vacio").classList.toggle("oculto", m.conInteresados.length > 0);
 
+  // Barra comparativa de precio por zona, en proporción a la zona más
+  // cara de la tabla (no a un techo fijo) — así siempre hay al menos
+  // una barra llena del todo, sea cual sea el rango de precios real.
   const elPreciosCuerpo = document.getElementById("dashboard-precios-zona-cuerpo");
   elPreciosCuerpo.innerHTML = "";
+  const promedioMaximo = Math.max(0, ...m.precioPorZona.map((z) => z.promedio));
   m.precioPorZona.forEach(({ zona, cantidad, promedio }) => {
     const fila = document.createElement("tr");
-    fila.innerHTML = `<td>${zona}</td><td>${cantidad}</td><td>USD ${Math.round(promedio).toLocaleString("es-AR")}</td>`;
+    const ancho = promedioMaximo > 0 ? (promedio / promedioMaximo) * 100 : 0;
+    fila.innerHTML = `<td>${zona}</td><td>${cantidad}</td><td><div class="dashboard-precio-celda"><div class="dashboard-precio-bar-track"><div class="dashboard-precio-bar-fill" style="width:${ancho}%"></div></div><span>USD ${Math.round(
+      promedio
+    ).toLocaleString("es-AR")}</span></div></td>`;
     elPreciosCuerpo.appendChild(fila);
   });
   document.getElementById("dashboard-precios-zona-vacio").classList.toggle("oculto", m.precioPorZona.length > 0);

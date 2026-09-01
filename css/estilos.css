@@ -1503,15 +1503,43 @@ button:active {
   background: var(--color-fondo-alterno);
 }
 
-/* Dashboard — ver renderDashboard en app.js */
+/* Dashboard — ver dashboard.js. Reusa colores/chips/sombras que ya
+   existen en el resto de la app (estados del mapa, chip-servicio,
+   sombra-calida-suave) en vez de inventar un lenguaje visual nuevo. */
 .dashboard-seccion {
   margin-bottom: 22px;
+}
+
+.dashboard-seccion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.dashboard-seccion-titulo h3 {
+  margin: 0;
 }
 
 .dashboard-seccion h3 {
   margin: 0 0 8px;
   font-size: 0.95rem;
   color: var(--color-primario-oscuro);
+}
+
+/* Cuántos hay en la lista, a simple vista sin tener que contar filas
+   (ej. "Reservas por vencer  3"). Se oculta con 0 — un contador en cero
+   al lado del título no suma nada que el texto de "vacío" no diga ya. */
+.dashboard-contador {
+  display: inline-block;
+  background: var(--color-primario);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 999px;
 }
 
 .dashboard-ayuda {
@@ -1536,10 +1564,19 @@ button:active {
   flex: 1 1 100px;
   background: var(--color-fondo-alterno);
   border: 1px solid var(--color-borde);
+  border-top: 3px solid var(--color-borde);
   border-radius: var(--radio-mediano);
   padding: 10px 12px;
   text-align: center;
+  box-shadow: var(--sombra-calida-suave);
 }
+
+/* Mismo color por estado que ya usa el mapa (leyenda-estados) y la
+   ficha del lote — el dashboard no inventa una paleta de estado propia. */
+.dashboard-tarjeta.total { border-top-color: var(--color-primario); }
+.dashboard-tarjeta.disponible { border-top-color: var(--color-disponible); }
+.dashboard-tarjeta.reservado { border-top-color: var(--color-reservado); }
+.dashboard-tarjeta.vendido { border-top-color: var(--color-vendido); }
 
 .dashboard-tarjeta strong {
   display: block;
@@ -1552,6 +1589,26 @@ button:active {
   color: var(--color-texto-secundario);
 }
 
+/* Barra de composición del inventario: mismo dato que las 3 tarjetas de
+   estado, pero de un vistazo se ve la proporción sin sumar mentalmente.
+   Ancho de cada segmento puesto inline desde dashboard.js (% real). */
+.dashboard-composicion {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-borde);
+  margin-top: 10px;
+}
+
+.dashboard-composicion span {
+  height: 100%;
+}
+
+.dashboard-composicion .disponible { background: var(--color-disponible); }
+.dashboard-composicion .reservado { background: var(--color-reservado); }
+.dashboard-composicion .vendido { background: var(--color-vendido); }
+
 .dashboard-lista {
   list-style: none;
   margin: 0;
@@ -1562,12 +1619,12 @@ button:active {
 }
 
 .dashboard-ranking {
-  list-style: decimal;
-  padding-left: 20px;
+  padding-left: 0;
 }
 
 .dashboard-lista li {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   background: var(--color-fondo-alterno);
@@ -1575,20 +1632,26 @@ button:active {
   padding: 7px 10px;
   font-size: 0.82rem;
   cursor: pointer;
-}
-
-.dashboard-ranking li {
-  padding: 4px 8px 4px 2px;
-  background: none;
+  box-shadow: var(--sombra-calida-suave);
 }
 
 .dashboard-lista li:hover {
   background: var(--color-borde);
 }
 
+.dashboard-lista .dashboard-lote-titulo-grupo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .dashboard-lista .dashboard-lote-titulo {
   color: var(--color-texto);
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dashboard-lista .dashboard-lote-dato {
@@ -1599,4 +1662,107 @@ button:active {
 .dashboard-lista .dashboard-lote-dato.texto-vencido {
   color: var(--color-vendido);
   font-weight: 600;
+}
+
+/* Medallero de los rankings ("Más consultados"/"Con más interesados"):
+   el top 3 se distingue por color en vez de depender solo del orden en
+   la lista, útil para leer rápido en una pantalla chica de celular. */
+.dashboard-rango {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-borde);
+  color: var(--color-texto-secundario);
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.dashboard-ranking li:nth-child(1) .dashboard-rango {
+  background: var(--color-acento);
+  color: #fff;
+}
+
+.dashboard-ranking li:nth-child(2) .dashboard-rango {
+  background: var(--color-primario);
+  color: #fff;
+}
+
+.dashboard-ranking li:nth-child(3) .dashboard-rango {
+  background: var(--color-primario-oscuro);
+  color: #fff;
+}
+
+/* Pill de urgencia de "Reservas por vencer" — mismo criterio de color
+   que ya usa texto-vencido, pero como fondo lleno pesa más a simple
+   vista que un texto rojo suelto. */
+.dashboard-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-fondo);
+  color: var(--color-texto-secundario);
+  border: 1px solid var(--color-borde);
+  white-space: nowrap;
+}
+
+.dashboard-badge.urgente {
+  background: var(--color-acento-suave);
+  color: var(--color-acento);
+  border-color: var(--color-acento);
+}
+
+.dashboard-badge.vencida {
+  background: var(--color-vendido);
+  color: #fff;
+  border-color: var(--color-vendido);
+}
+
+/* Chips de "Lotes incompletos" — mismo lenguaje visual que chip-servicio
+   (ficha/grilla), en tono acento en vez de verde: acá "sin foto"/"sin
+   precio" es una falta a resolver, no un servicio disponible. */
+.dashboard-chips {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dashboard-chip-falta {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: var(--radio-chico);
+  background: var(--color-acento-suave);
+  color: var(--color-acento);
+  white-space: nowrap;
+}
+
+/* Mini barra comparativa en "Precio promedio por zona" — mismo dato que
+   la columna de texto, pero deja ver de un vistazo qué zona está más
+   cara sin tener que leer cada número. Ancho puesto inline desde
+   dashboard.js (% relativo a la zona más cara de la tabla). */
+.dashboard-precio-celda {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-precio-bar-track {
+  flex: 1 1 50px;
+  min-width: 36px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-borde);
+  overflow: hidden;
+}
+
+.dashboard-precio-bar-fill {
+  height: 100%;
+  background: var(--color-acento);
+  border-radius: 999px;
 }

@@ -11,7 +11,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-08-31-2" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-01-6" />
 </head>
 <body>
 
@@ -588,16 +588,23 @@
       <section class="dashboard-seccion">
         <h3>Inventario</h3>
         <div id="dashboard-inventario" class="dashboard-tarjetas" data-testid="dashboard-inventario"></div>
+        <div id="dashboard-composicion" class="dashboard-composicion" data-testid="dashboard-composicion"></div>
       </section>
 
       <section class="dashboard-seccion">
-        <h3>Reservas por vencer</h3>
+        <div class="dashboard-seccion-titulo">
+          <h3>Reservas por vencer</h3>
+          <span id="dashboard-reservas-contador" class="dashboard-contador oculto"></span>
+        </div>
         <ul id="dashboard-reservas" class="dashboard-lista" data-testid="dashboard-reservas"></ul>
         <p id="dashboard-reservas-vacio" class="dashboard-vacio oculto">No hay reservas activas.</p>
       </section>
 
       <section class="dashboard-seccion">
-        <h3>Lotes incompletos</h3>
+        <div class="dashboard-seccion-titulo">
+          <h3>Lotes incompletos</h3>
+          <span id="dashboard-incompletos-contador" class="dashboard-contador oculto"></span>
+        </div>
         <p class="dashboard-ayuda">Sin foto y/o sin precio cargado — completarlos ayuda a que se consulten más.</p>
         <ul id="dashboard-incompletos" class="dashboard-lista" data-testid="dashboard-incompletos"></ul>
         <p id="dashboard-incompletos-vacio" class="dashboard-vacio oculto">Todos los lotes tienen foto y precio cargados.</p>
@@ -750,6 +757,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-01-5"></script>
+  <script type="module" src="js/app.js?v=2026-09-01-6"></script>
 </body>
 </html>
