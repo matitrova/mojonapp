@@ -1,0 +1,26 @@
+# Cloudflare Pages: reglas de cache-control por ruta.
+#
+# Por qué existe este archivo: `js/app.js` y `css/estilos.css` llevan un
+# "?v=" a mano en index.html (ver comentario ahí) que fuerza una URL
+# nueva en cada deploy — pero los módulos que esos dos importan entre sí
+# (dashboard.js, mapa.js, ficha.js, etc., 12 archivos en total desde la
+# modularización) se piden con `import "./archivo.js"` SIN ningún "?v=".
+# Sin esta regla, Cloudflare Pages los servía con
+# "Cache-Control: public, max-age=14400" por default — un navegador que
+# ya los tenía en caché no volvía a preguntarle al server nada durante
+# HASTA 4 HORAS, así que un corredor con la app ya abierta podía seguir
+# viendo la versión vieja de una sección recién arreglada/mejorada, y
+# entrar de nuevo o refrescar no alcanzaba para notarlo (confirmado en
+# vivo: index.html sí llegaba fresco, pero dashboard.js quedaba viejo).
+#
+# max-age=0 + must-revalidate iguala el criterio que Cloudflare Pages ya
+# usa por default para index.html: el navegador SIGUE cacheando el
+# archivo, pero antes de usarlo valida con el server por ETag (pedido
+# liviano, respuesta 304 si no cambió nada) en vez de confiar en el
+# reloj. Mismo criterio para /functions/*.js por si algún día se sirve
+# algo estático desde ahí.
+/js/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/css/*
+  Cache-Control: public, max-age=0, must-revalidate
