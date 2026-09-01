@@ -16,6 +16,18 @@ import { centroideDePoligono } from "./geometria.js";
 
 const COLECCION_LOTES = "lotes";
 
+// Techo de filas que se renderizan en "Reservas por vencer" y "Lotes
+// incompletos" — a diferencia de "Más consultados"/"Con más interesados"
+// (rankings, un top 5 tiene sentido de por sí), estas dos listas antes
+// mostraban TODO sin límite: con una cartera grande (probado con ~120
+// lotes de prueba) el panel terminaba con cientos de filas y varios
+// miles de píxeles de scroll — deja de ser un resumen "de un vistazo"
+// para pasar a ser, en la práctica, la misma lista completa de "Ver como
+// lista" pero sin filtros. El contador del título sigue mostrando el
+// total real (no el techo), y de acá para abajo del techo se linkea a
+// "Ver como lista" en vez de intentar mostrar todo acá.
+const MAX_FILAS_LISTA = 5;
+
 let db, doc, updateDoc, increment, mapa, mostrarFicha, tituloLote;
 
 // app.js llama esto una sola vez, antes de usar cualquier otra función de
@@ -80,6 +92,28 @@ function irAFichaDesdeDashboard(feature) {
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
   mostrarFicha(feature);
+}
+
+// "y N más" al pie de una lista recortada por MAX_FILAS_LISTA — lleva a
+// "Ver como lista" (con el filtro de estado ya aplicado si corresponde,
+// ej. "reservado") en vez de intentar mostrar cientos de filas acá
+// mismo. Reusa el botón/select que ya existen en vez de importar nada
+// de vista-lista.js — mismo criterio que el resto del dashboard, que
+// manipula esos ids de forma directa para cerrar/abrir paneles.
+function filaVerTodos(cantidad, estadoFiltro) {
+  const li = document.createElement("li");
+  li.className = "dashboard-ver-todos";
+  li.textContent = `Ver los ${cantidad} en la lista completa →`;
+  li.addEventListener("click", () => {
+    elPanelDashboard.classList.add("oculto");
+    if (estadoFiltro) {
+      const elFiltroEstado = document.getElementById("filtro-estado");
+      elFiltroEstado.value = estadoFiltro;
+      elFiltroEstado.dispatchEvent(new Event("change"));
+    }
+    document.getElementById("btn-ver-lista").click();
+  });
+  return li;
 }
 
 function calcularMetricasDashboard() {
@@ -192,7 +226,7 @@ export function renderDashboard() {
 
   const elReservas = document.getElementById("dashboard-reservas");
   elReservas.innerHTML = "";
-  m.reservas.forEach(({ feature, dias }) => {
+  m.reservas.slice(0, MAX_FILAS_LISTA).forEach(({ feature, dias }) => {
     const vencida = dias < 0;
     const urgente = !vencida && dias <= 3;
     const badge = document.createElement("span");
@@ -200,12 +234,13 @@ export function renderDashboard() {
     badge.textContent = vencida ? `vencida hace ${Math.abs(dias)} d.` : dias === 0 ? "vence hoy" : `vence en ${dias} d.`;
     elReservas.appendChild(filaLote(feature, badge));
   });
+  if (m.reservas.length > MAX_FILAS_LISTA) elReservas.appendChild(filaVerTodos(m.reservas.length, "reservado"));
   document.getElementById("dashboard-reservas-vacio").classList.toggle("oculto", m.reservas.length > 0);
   actualizarContador("dashboard-reservas-contador", m.reservas.length);
 
   const elIncompletos = document.getElementById("dashboard-incompletos");
   elIncompletos.innerHTML = "";
-  m.incompletos.forEach((feature) => {
+  m.incompletos.slice(0, MAX_FILAS_LISTA).forEach((feature) => {
     const chips = document.createElement("span");
     chips.className = "dashboard-chips";
     if (!(feature.properties.fotos && feature.properties.fotos.length > 0)) {
@@ -216,6 +251,7 @@ export function renderDashboard() {
     }
     elIncompletos.appendChild(filaLote(feature, chips));
   });
+  if (m.incompletos.length > MAX_FILAS_LISTA) elIncompletos.appendChild(filaVerTodos(m.incompletos.length, null));
   document.getElementById("dashboard-incompletos-vacio").classList.toggle("oculto", m.incompletos.length > 0);
   actualizarContador("dashboard-incompletos-contador", m.incompletos.length);
 

@@ -1695,6 +1695,23 @@ button:active {
   font-weight: 600;
 }
 
+/* Fila "Ver los N en la lista completa" al pie de una lista recortada
+   por MAX_FILAS_LISTA (dashboard.js) — mismo look que dashboard-lista
+   li, pero centrada y en el color de acento para que se note que es
+   una acción, no otro lote más. */
+.dashboard-lista .dashboard-ver-todos {
+  justify-content: center;
+  color: var(--color-acento);
+  font-weight: 600;
+  font-size: 0.8rem;
+  background: var(--color-acento-suave);
+}
+
+.dashboard-lista .dashboard-ver-todos:hover {
+  background: var(--color-acento);
+  color: #fff;
+}
+
 /* Medallero de los rankings ("Más consultados"/"Con más interesados"):
    el top 3 se distingue por color en vez de depender solo del orden en
    la lista, útil para leer rápido en una pantalla chica de celular. */
