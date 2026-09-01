@@ -1,8 +1,9 @@
 // ---------------------------------------------------------------------------
 // Auditoría: quién cargó/editó/borró un lote, quién reservó o quitó una
 // reserva, y quién dio de alta/editó/borró una zona o un barrio. Colección
-// Firestore "auditoria", append-only por diseño (ver firestore.rules — ni
-// siquiera root puede editar o borrar un evento ya escrito).
+// Firestore "auditoria" — un evento nunca se EDITA, pero root sí puede
+// BORRARLO desde acá mismo (para limpiar ruido, ej. datos de prueba del
+// test suite/CI corriendo contra este mismo Firestore), ver firestore.rules.
 //
 // registrarAuditoria() la llaman, "fire and forget" (mismo criterio que
 // registrarVistaDeLote en dashboard.js), cargar-lote.js, ficha.js,
@@ -27,7 +28,9 @@ import {
   query,
   orderBy,
   limit,
-  serverTimestamp
+  serverTimestamp,
+  doc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const COLECCION_AUDITORIA = "auditoria";
@@ -123,6 +126,30 @@ async function cargarAuditoria() {
         elDetalle.textContent = ev.detalle;
         li.appendChild(elDetalle);
       }
+
+      // Un evento nunca se edita, pero root sí lo puede borrar acá — para
+      // limpiar ruido (datos de prueba, corridas del test suite/CI) sin
+      // depender de entrar a Firebase Console cada vez. Saca la fila del
+      // DOM directo en vez de recargar todo el panel (más liviano, y no
+      // hay que volver a pedirle a Firestore el resto de la lista).
+      const botonBorrar = document.createElement("button");
+      botonBorrar.type = "button";
+      botonBorrar.className = "btn-link auditoria-borrar";
+      botonBorrar.textContent = "Borrar";
+      botonBorrar.addEventListener("click", async () => {
+        if (!window.confirm("¿Borrar este evento de la auditoría? No se puede deshacer.")) return;
+        botonBorrar.disabled = true;
+        try {
+          await deleteDoc(doc(db, COLECCION_AUDITORIA, d.id));
+          li.remove();
+          if (!elLista.children.length) elVacio.classList.remove("oculto");
+        } catch (error) {
+          window.alert(error.code === "permission-denied" ? "No tenés permiso para borrar eventos." : "No se pudo borrar el evento.");
+          botonBorrar.disabled = false;
+        }
+      });
+      li.appendChild(botonBorrar);
+
       elLista.appendChild(li);
     });
   } catch (error) {

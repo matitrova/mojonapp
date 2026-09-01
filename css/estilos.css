@@ -1829,3 +1829,9 @@ button:active {
   font-size: 0.78rem;
   margin-top: 2px;
 }
+
+.auditoria-borrar {
+  display: block;
+  width: max-content;
+  margin: 4px 0 0 auto;
+}
