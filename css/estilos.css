@@ -57,6 +57,14 @@ button:active {
   gap: 8px;
 }
 
+/* Sin encabezado no hay forma de llegar al menú (el ☰ vive ahí adentro),
+   así que ocultarlo alcanza para dejar "modo embed" en solo mapa/catálogo
+   público — cargar/editar/administrar sigue existiendo, pero solo desde
+   la URL real de la app, nunca desde el iframe embebido. */
+.modo-embed #encabezado {
+  display: none;
+}
+
 #encabezado h1 {
   margin: 0;
   font-size: 1.05rem;
@@ -482,6 +490,15 @@ button:active {
   bottom: 34px;
   left: 0;
   right: 0;
+}
+
+/* "Modo embed" (?embed=1, la clase la pone un script inline en <head> —
+   ver index.html): sin encabezado, el mapa arranca desde arriba del
+   todo. Ver .modo-embed #encabezado más abajo, junto al resto de las
+   reglas de layout — se mantiene acá para que quede junto a #mapa, no
+   por orden alfabético del archivo. */
+.modo-embed #mapa {
+  top: 0;
 }
 
 /* Leaflet hace los polígonos enfocables por accesibilidad (tabindex),

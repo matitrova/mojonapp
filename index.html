@@ -4,6 +4,19 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>MojonApp</title>
+<!-- "Modo embed" (?embed=1): para insertar el mapa en la página propia de
+     una inmobiliaria vía <iframe> — esconde el encabezado (menú e
+     "Ingresar"), dejando solo el mapa/catálogo público. Sincrónico y ANTES
+     del <link> de estilos a propósito: agrega la clase al <html> antes de
+     que se aplique el CSS, así no hay flash del encabezado apareciendo y
+     desapareciendo. Como cada cliente tiene su propio deploy (un Firebase
+     por inmobiliaria — ver memoria del proyecto), el embed ya muestra solo
+     SUS lotes de por sí, no hace falta filtrar nada acá. -->
+<script>
+  if (new URLSearchParams(location.search).get("embed") === "1") {
+    document.documentElement.classList.add("modo-embed");
+  }
+</script>
 <!-- El "?v=" de estilos.css y app.js más abajo es cache-busting manual —
      no hay build step en este proyecto (decisión deliberada, ver
      CLAUDE.md/memoria), así que no hay forma de generarlo solo. Bumpear
@@ -11,7 +24,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-01-9" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-01-10" />
 </head>
 <body>
 
@@ -776,6 +789,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-01-9"></script>
+  <script type="module" src="js/app.js?v=2026-09-01-10"></script>
 </body>
 </html>
