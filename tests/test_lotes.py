@@ -39,9 +39,16 @@ def abrir_ficha_desde_lista(page, doc_id):
     píxel y Playwright no lo puede clickear. La fila de la grilla, en
     cambio, siempre existe y hace su propio setView al lote antes de
     abrir la ficha (ver actualizarVistaLista en js/app.js). "Ver como
-    lista" vive en el menú lateral (drawer), hay que abrirlo primero."""
+    lista" vive en el menú lateral (drawer), hay que abrirlo primero.
+
+    "Mostrar" (paginación, ver vista-lista.js) se pone en "Todos" antes
+    de buscar la fila: con una cartera real grande cargada (más de la
+    página por default), el lote recién sembrado por el test puede caer
+    en cualquier página según el orden que devuelva Firestore — "Todos"
+    saca esa dependencia del orden."""
     page.locator("#btn-menu").click()
     page.locator("#btn-ver-lista").click()
+    page.locator("#filtro-cantidad").select_option("0")
     page.locator(f'tr[data-lote-id="{doc_id}"]').click()
 
 
