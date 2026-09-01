@@ -11,7 +11,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-01-7" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-01-8" />
 </head>
 <body>
 
@@ -72,6 +72,11 @@
         <div class="drawer-grupo-items oculto">
           <button type="button" class="drawer-item" id="menu-seguridad-usuarios" data-testid="menu-seguridad-usuarios">Usuarios</button>
           <button type="button" class="drawer-item" id="menu-seguridad-perfiles" data-testid="menu-seguridad-perfiles">Perfiles de seguridad</button>
+          <!-- A diferencia de "Usuarios"/"Perfiles de seguridad" (visibles con
+               el permiso administrar_usuarios), esta entrada se oculta/muestra
+               aparte con esRootActual() directo — quién hizo qué es algo que
+               solo root ve, ni siquiera un corredor con administrar_usuarios. -->
+          <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria">Auditoría</button>
         </div>
       </div>
 
@@ -503,6 +508,20 @@
     </section>
   </div>
 
+  <!-- Panel "Auditoría" (solo root): quién hizo qué sobre lotes, reservas
+       y catálogos — ver js/auditoria.js. Read-only, no tiene alta/edición
+       propia como los otros paneles de esta sección. -->
+  <div id="panel-auditoria" class="oculto panel-pantalla-completa" data-testid="panel-auditoria">
+    <div class="panel-header">
+      <h2>Auditoría</h2>
+      <button id="cerrar-panel-auditoria" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <p class="dashboard-ayuda">Quién cargó, editó o borró cada lote, y los cambios en zonas/barrios.</p>
+    <ul id="auditoria-lista" class="auditoria-lista" data-testid="auditoria-lista"></ul>
+    <p id="auditoria-vacio" class="dashboard-vacio oculto">Todavía no hay eventos registrados.</p>
+    <p id="auditoria-error" class="mensaje-error oculto" data-testid="auditoria-error"></p>
+  </div>
+
   <!-- Panel "Sectores": el catálogo de nombres que ofrece el combo de
        Sector/zona al cargar o editar un lote — para que no cada
        corredor invente su propia variante del mismo nombre a mano. -->
@@ -757,6 +776,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-01-7"></script>
+  <script type="module" src="js/app.js?v=2026-09-01-8"></script>
 </body>
 </html>

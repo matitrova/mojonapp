@@ -34,6 +34,7 @@ import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
 import { mapa, cargarLotesDesdeFirestore } from "./mapa.js";
 import { mostrarEditarLoteDesdeGrilla } from "./vista-lista.js";
 import { registrarVistaDeLote } from "./dashboard.js";
+import { registrarAuditoria } from "./auditoria.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -463,6 +464,12 @@ elBtnGuardarServicios.addEventListener("click", async () => {
   elEditorServiciosError.classList.add("oculto");
   try {
     await updateDoc(doc(db, COLECCION_LOTES, getLoteSeleccionado().id), { servicios });
+    registrarAuditoria({
+      accion: "editar_lote",
+      objetoId: getLoteSeleccionado().id,
+      objetoTitulo: tituloLote(getLoteSeleccionado().properties),
+      detalle: "Editó servicios"
+    });
     getLoteSeleccionado().properties.servicios = servicios;
     elServicios.innerHTML = renderServiciosHTML(servicios);
     cerrarEditorServicios();
@@ -510,6 +517,12 @@ elBtnGuardarSector.addEventListener("click", async () => {
   elEditorSectorError.classList.add("oculto");
   try {
     await updateDoc(doc(db, COLECCION_LOTES, getLoteSeleccionado().id), { sector });
+    registrarAuditoria({
+      accion: "editar_lote",
+      objetoId: getLoteSeleccionado().id,
+      objetoTitulo: tituloLote(getLoteSeleccionado().properties),
+      detalle: `Zona: ${getLoteSeleccionado().properties.sector || "Sin datos"} → ${sector || "Sin datos"}`
+    });
     getLoteSeleccionado().properties.sector = sector;
     elSector.textContent = sector || "Sin datos";
     cerrarEditorSector();
@@ -555,6 +568,12 @@ elBtnGuardarBarrio.addEventListener("click", async () => {
   elEditorBarrioError.classList.add("oculto");
   try {
     await updateDoc(doc(db, COLECCION_LOTES, getLoteSeleccionado().id), { barrio });
+    registrarAuditoria({
+      accion: "editar_lote",
+      objetoId: getLoteSeleccionado().id,
+      objetoTitulo: tituloLote(getLoteSeleccionado().properties),
+      detalle: `Barrio: ${getLoteSeleccionado().properties.barrio || "Sin datos"} → ${barrio || "Sin datos"}`
+    });
     getLoteSeleccionado().properties.barrio = barrio;
     elBarrio.textContent = barrio || "Sin datos";
     cerrarEditorBarrio();
@@ -581,6 +600,7 @@ export async function borrarLote(feature, elBoton) {
   if (elBoton) elBoton.disabled = true;
   try {
     await deleteDoc(doc(db, COLECCION_LOTES, feature.id));
+    registrarAuditoria({ accion: "borrar_lote", objetoId: feature.id, objetoTitulo: titulo });
     elFicha.classList.add("oculto");
     await cargarLotesDesdeFirestore();
   } catch (error) {

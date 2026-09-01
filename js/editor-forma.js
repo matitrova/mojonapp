@@ -23,15 +23,16 @@ import {
   aRadianes
 } from "./geometria.js";
 import { getLoteSeleccionado, setModoCaptura, onSesionCerrada } from "./estado.js";
+import { registrarAuditoria } from "./auditoria.js";
 
 const COLECCION_LOTES = "lotes";
 
-let db, doc, updateDoc, mapa, mostrarFicha, cargarLotesDesdeFirestore, anilloAGeometryFirestore;
+let db, doc, updateDoc, mapa, mostrarFicha, tituloLote, cargarLotesDesdeFirestore, anilloAGeometryFirestore;
 
 // app.js llama esto una sola vez, antes de usar cualquier otra función de
 // este módulo.
 export function configurarEditorForma(deps) {
-  ({ db, doc, updateDoc, mapa, mostrarFicha, cargarLotesDesdeFirestore, anilloAGeometryFirestore } = deps);
+  ({ db, doc, updateDoc, mapa, mostrarFicha, tituloLote, cargarLotesDesdeFirestore, anilloAGeometryFirestore } = deps);
 }
 
 const elEditorPoligonoBarra = document.getElementById("editor-poligono-barra");
@@ -325,9 +326,16 @@ elBtnGuardarPoligono.addEventListener("click", async () => {
   elBtnGuardarPoligono.disabled = true;
   elEditorPoligonoError.classList.add("oculto");
   try {
+    const superficieAnterior = edicionPoligono.feature.properties.superficie_m2;
     await updateDoc(doc(db, COLECCION_LOTES, edicionPoligono.feature.id), {
       geometry: anilloAGeometryFirestore(anillo),
       superficie_m2: superficie
+    });
+    registrarAuditoria({
+      accion: "editar_lote",
+      objetoId: edicionPoligono.feature.id,
+      objetoTitulo: tituloLote(edicionPoligono.feature.properties),
+      detalle: `Ajustó la forma (superficie: ${superficieAnterior ?? "?"} → ${superficie} m²)`
     });
     const feature = edicionPoligono.feature;
     feature.properties.superficie_m2 = superficie;

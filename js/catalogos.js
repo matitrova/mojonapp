@@ -16,6 +16,7 @@ import {
   getBarriosActuales,
   setBarriosActuales
 } from "./estado.js";
+import { registrarAuditoria } from "./auditoria.js";
 
 let db, getDocs, addDoc, setDoc, deleteDoc, collection, doc;
 
@@ -178,8 +179,10 @@ function crearPanelCatalogo({
       const idEditando = elIdEditando.value;
       if (idEditando) {
         await setDoc(doc(db, coleccion, idEditando), datos);
+        registrarAuditoria({ accion: `editar_${entidad}`, objetoId: idEditando, objetoTitulo: datos.nombre });
       } else {
-        await addDoc(collection(db, coleccion), datos);
+        const nuevoRef = await addDoc(collection(db, coleccion), datos);
+        registrarAuditoria({ accion: `crear_${entidad}`, objetoId: nuevoRef.id, objetoTitulo: datos.nombre });
       }
       await cargarPanel();
       mostrarLista();
@@ -204,6 +207,7 @@ function crearPanelCatalogo({
     boton.disabled = true;
     try {
       await deleteDoc(doc(db, coleccion, item.id));
+      registrarAuditoria({ accion: `borrar_${entidad}`, objetoId: item.id, objetoTitulo: item.nombre });
       await cargarPanel();
     } catch (error) {
       window.alert(

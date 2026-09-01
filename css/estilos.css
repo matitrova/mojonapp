@@ -1780,3 +1780,52 @@ button:active {
   background: var(--color-acento);
   border-radius: 999px;
 }
+
+/* Panel "Auditoría" — ver js/auditoria.js. Mismo lenguaje visual que las
+   filas de dashboard-lista (tarjeta con sombra suave), pero sin ser
+   clickeable — es un registro de solo lectura, no navega a ningún lado. */
+.auditoria-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auditoria-lista li {
+  background: var(--color-fondo-alterno);
+  border-radius: var(--radio-chico);
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  box-shadow: var(--sombra-calida-suave);
+}
+
+.auditoria-linea {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.auditoria-usuario {
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.auditoria-fecha {
+  color: var(--color-texto-secundario);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.auditoria-accion {
+  color: var(--color-texto);
+}
+
+.auditoria-detalle {
+  color: var(--color-texto-secundario);
+  font-size: 0.78rem;
+  margin-top: 2px;
+}

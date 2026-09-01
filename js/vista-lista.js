@@ -14,6 +14,7 @@
 import { getLotesActuales, getLoteEditadoDesdeFicha, setLoteEditadoDesdeFicha } from "./estado.js";
 import { centroideDePoligono } from "./geometria.js";
 import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
+import { registrarAuditoria } from "./auditoria.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -289,8 +290,24 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
       observaciones: elEditarLoteObservaciones.value.trim() || null
     };
 
+    // Para la auditoría: si el estado entra o sale de "reservado" en este
+    // mismo guardado, eso es lo que se registra (reservar_lote/quitar_
+    // reserva) en vez de un "editar_lote" genérico — es el dato más
+    // sensible comercialmente de todo lo que puede cambiar acá. Si no
+    // hubo ese cruce puntual, es una edición común.
+    const estadoAnterior = loteEditandoDesdeGrilla.properties.estado;
+    let accionAuditoria = "editar_lote";
+    if (estadoAnterior !== "reservado" && datos.estado === "reservado") accionAuditoria = "reservar_lote";
+    else if (estadoAnterior === "reservado" && datos.estado !== "reservado") accionAuditoria = "quitar_reserva";
+
     await updateDoc(doc(db, COLECCION_LOTES, loteEditandoDesdeGrilla.id), datos);
     Object.assign(loteEditandoDesdeGrilla.properties, datos);
+    registrarAuditoria({
+      accion: accionAuditoria,
+      objetoId: loteEditandoDesdeGrilla.id,
+      objetoTitulo: tituloLote(datos),
+      detalle: accionAuditoria === "reservar_lote" && datos.reservado_hasta ? `Hasta ${datos.reservado_hasta}` : null
+    });
 
     if (getLoteEditadoDesdeFicha()) {
       // Se entró desde "Editar lote" en el mapa: volver ahí (con la

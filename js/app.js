@@ -14,7 +14,7 @@ import {
   setLoteEditadoDesdeFicha,
   emitirSesionCerrada
 } from "./estado.js";
-import { tienePermiso, puedeEditarLote, puedeBorrarLote } from "./permisos.js";
+import { tienePermiso, puedeEditarLote, puedeBorrarLote, esRootActual } from "./permisos.js";
 import { iniciarEstoyYendo } from "./estoy-yendo.js";
 import {
   configurarCatalogos,
@@ -46,6 +46,7 @@ import {
   abrirLoteDesdeUrlSiCorresponde
 } from "./ficha.js";
 import "./admin.js";
+import "./auditoria.js";
 import {
   collection,
   getDocs,
@@ -180,6 +181,7 @@ configurarEditorForma({
   updateDoc,
   mapa,
   mostrarFicha,
+  tituloLote,
   cargarLotesDesdeFirestore,
   anilloAGeometryFirestore
 });
@@ -280,6 +282,11 @@ function actualizarUIPorPermisos() {
   document.getElementById("btn-abrir-parcela").classList.toggle("oculto", !tienePermiso("cargar_lote"));
   elBtnCargarLote.classList.toggle("oculto", !tienePermiso("cargar_lote"));
   document.getElementById("drawer-grupo-seguridad").classList.toggle("oculto", !tienePermiso("administrar_usuarios"));
+  // A diferencia de "Usuarios"/"Perfiles de seguridad" (permiso
+  // administrar_usuarios, que un corredor no-root puede tener), "quién
+  // hizo qué" es exclusivamente de root — esRootActual() directo, no
+  // tienePermiso().
+  document.getElementById("btn-abrir-auditoria").classList.toggle("oculto", !esRootActual());
   // Sectores es un permiso propio, distinto de "administrar_usuarios": un
   // corredor puede organizar su propia cartera en zonas sin depender de
   // root, y root puede sacarle ese permiso puntual sin tocarle el resto.

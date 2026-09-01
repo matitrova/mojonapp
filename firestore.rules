@@ -98,5 +98,20 @@ service cloud.firestore {
         || (esDueno() && tienePermiso('borrar_lote_propio'))
         || (!esDueno() && tienePermiso('borrar_lote_ajeno'));
     }
+
+    // Registro de auditoría ("quién hizo qué", ver js/auditoria.js):
+    // append-only por diseño — ni siquiera root puede editar o borrar un
+    // evento ya escrito, para que el registro sea confiable. Cualquier
+    // logueado puede CREAR su propio evento (mismo criterio que
+    // "creado_por" en lotes: el uid tiene que ser el de quien realmente
+    // está escribiendo, no algo que el cliente pueda falsificar) — la app
+    // decide cuándo registrar uno, esta regla solo evita que alguien
+    // firme un evento a nombre de otro. Solo root puede LEER el listado
+    // completo (panel "Auditoría").
+    match /auditoria/{eventoId} {
+      allow read: if esRoot();
+      allow create: if request.auth != null && request.resource.data.usuario_uid == request.auth.uid;
+      allow update, delete: if false;
+    }
   }
 }

@@ -35,8 +35,18 @@ import {
 } from "./catastro-normalizacion.js";
 import { getModoCaptura, setModoCaptura, onSesionCerrada } from "./estado.js";
 import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
+import { registrarAuditoria } from "./auditoria.js";
 
 const COLECCION_LOTES = "lotes";
+
+// Mismo criterio que tituloLote() en ficha.js (duplicado a propósito acá
+// — importarlo de ficha.js crearía un ciclo: mapa.js ya importa de este
+// archivo, y ficha.js importa de mapa.js).
+function tituloLoteParaAuditoria({ nomenclatura, manzana, lote }) {
+  if (nomenclatura) return nomenclatura;
+  if (manzana != null && lote != null) return `Manzana ${manzana} — Lote ${lote}`;
+  return "Lote sin nomenclatura catastral";
+}
 
 let mapa, cargarLotesDesdeFirestore, anilloAGeometryFirestore;
 
@@ -187,10 +197,12 @@ formularioLote.addEventListener("submit", async (evento) => {
     }
 
     const vertices = parsearVertices(elLoteVertices.value);
-    await addDoc(collection(db, COLECCION_LOTES), {
+    const manzana = elLoteManzana.value.trim() || null;
+    const lote = elLoteNumero.value.trim() || null;
+    const nuevoLoteRef = await addDoc(collection(db, COLECCION_LOTES), {
       creado_por: auth.currentUser.uid,
-      manzana: elLoteManzana.value.trim() || null,
-      lote: elLoteNumero.value.trim() || null,
+      manzana,
+      lote,
       nomenclatura,
       sector: elLoteSector.value.trim() || null,
       barrio: elLoteBarrio.value.trim() || null,
@@ -205,6 +217,11 @@ formularioLote.addEventListener("submit", async (evento) => {
       },
       observaciones: elLoteObservaciones.value.trim() || null,
       geometry: anilloAGeometryFirestore(vertices)
+    });
+    registrarAuditoria({
+      accion: "crear_lote",
+      objetoId: nuevoLoteRef.id,
+      objetoTitulo: tituloLoteParaAuditoria({ nomenclatura, manzana, lote })
     });
 
     limpiarFormLote();
@@ -371,7 +388,7 @@ elManzanaConfirmar.addEventListener("click", async () => {
         }
       }
 
-      await addDoc(collection(db, COLECCION_LOTES), {
+      const nuevoLoteRef = await addDoc(collection(db, COLECCION_LOTES), {
         creado_por: auth.currentUser.uid,
         manzana: numeroManzana,
         lote: parcela.lote,
@@ -381,6 +398,12 @@ elManzanaConfirmar.addEventListener("click", async () => {
         precio_usd: null,
         observaciones: "Importado automáticamente del catastro de San Luis.",
         geometry: anilloAGeometryFirestore(parcela.anillo)
+      });
+      registrarAuditoria({
+        accion: "crear_lote",
+        objetoId: nuevoLoteRef.id,
+        objetoTitulo: tituloLoteParaAuditoria({ nomenclatura: parcela.nomenclatura, manzana: numeroManzana, lote: parcela.lote }),
+        detalle: "Importado del catastro de San Luis (+ Manzana)."
       });
       importados++;
     }
