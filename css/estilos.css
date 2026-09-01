@@ -1325,11 +1325,24 @@ button:active {
   overflow-y: auto;
 }
 
+/* Sticky en vez de static: estos 5 paneles pueden tener bastante para
+   scrollear (grilla de lotes, tabla de usuarios, el Dashboard) y el
+   header (con el botón de cerrar) se quedaba arriba del todo — para
+   cerrar había que volver a scrollear hasta el principio primero.
+   El margen/padding negativo cancela el padding del panel para que la
+   franja pegajosa llegue de punta a punta con su propio fondo (si no,
+   el contenido se veía pasar por abajo/al costado del header al
+   scrollear). */
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: -16px -12px 12px;
+  padding: 16px 12px 12px;
+  background: var(--color-fondo);
 }
 
 .panel-header h2 {
@@ -1340,6 +1353,7 @@ button:active {
 
 .panel-header .btn-cerrar {
   position: static;
+  flex-shrink: 0;
 }
 
 /* Filtros de la vista en grilla: sector/estado, para encontrar un lote
