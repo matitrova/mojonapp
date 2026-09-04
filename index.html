@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-14" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-15" />
 </head>
 <body>
 
@@ -722,6 +722,20 @@
         <div id="dashboard-composicion" class="dashboard-composicion" data-testid="dashboard-composicion"></div>
       </section>
 
+      <!-- Idea #11: mismo criterio de "pendiente" que la sección
+           "Seguimientos" del propio CRM (contactosParaSeguimiento en
+           crm.js) — vencidos o a 3 días o menos, sin contar
+           cerrado/perdido. Solo aparece con sesión iniciada (el CRM
+           entero requiere login) — ver dashboard.js. -->
+      <section id="dashboard-seguimientos-seccion" class="dashboard-seccion oculto">
+        <div class="dashboard-seccion-titulo">
+          <h3>Seguimientos pendientes (CRM)</h3>
+          <span id="dashboard-seguimientos-contador" class="dashboard-contador oculto"></span>
+        </div>
+        <ul id="dashboard-seguimientos" class="dashboard-lista" data-testid="dashboard-seguimientos"></ul>
+        <p id="dashboard-seguimientos-vacio" class="dashboard-vacio oculto">No tenés seguimientos pendientes.</p>
+      </section>
+
       <section class="dashboard-seccion">
         <div class="dashboard-seccion-titulo">
           <h3>Reservas por vencer</h3>
@@ -1143,6 +1157,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-14"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-15"></script>
 </body>
 </html>

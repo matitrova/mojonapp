@@ -11,8 +11,14 @@
 // una dependencia circular mientras tanto.
 // ---------------------------------------------------------------------------
 
-import { getLotesActuales } from "./estado.js";
+import { getLotesActuales, getContactosActuales } from "./estado.js";
 import { centroideDePoligono } from "./geometria.js";
+// Idea #11: "Seguimientos pendientes (CRM)" reusa el mismo criterio de
+// "qué cuenta como pendiente" que la sección propia del CRM (evita que
+// las dos pantallas se desincronicen), y abre el CRM directo en el
+// contacto tocado. Sin dependencia circular: crm.js no importa nada de
+// acá.
+import { cargarContactos, contactosParaSeguimiento, abrirContactoEnCrm } from "./crm.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -63,6 +69,19 @@ export function abrirPanelDashboard() {
   document.getElementById("ficha-lote").classList.add("oculto");
   renderDashboard();
   elPanelDashboard.classList.remove("oculto");
+
+  // A diferencia de getLotesActuales() (ya en memoria desde que arrancó
+  // la app), los contactos del CRM recién se piden la primera vez que
+  // hace falta acá — si el corredor todavía no abrió el panel CRM en
+  // esta sesión, getContactosActuales() está vacío y "Seguimientos
+  // pendientes" se vería vacío aunque sí tenga pendientes reales. Se
+  // pide en paralelo (no bloquea el resto del dashboard, que no depende
+  // de esto) y se vuelve a renderizar solo esa sección cuando llega —
+  // mismo criterio que el refresco de renderDashboard() al terminar
+  // cargarLotesDesdeFirestore() en app.js.
+  cargarContactos().then(() => {
+    if (!elPanelDashboard.classList.contains("oculto")) renderSeguimientosCrm();
+  });
 }
 
 elBtnAbrirDashboard.addEventListener("click", abrirPanelDashboard);
@@ -200,9 +219,61 @@ function filaLote(feature, contenidoDerecha, { rango } = {}) {
   return li;
 }
 
+// "Seguimientos pendientes (CRM)" (idea #11) — separada de
+// renderDashboard() porque se refresca en un momento distinto: llega
+// después de un pedido propio a Firestore (cargarContactos, ver
+// abrirPanelDashboard), no junto con el resto de las métricas que ya
+// están en memoria desde el arranque.
+function renderSeguimientosCrm() {
+  const pendientes = contactosParaSeguimiento(getContactosActuales());
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  const elSeguimientos = document.getElementById("dashboard-seguimientos");
+  elSeguimientos.innerHTML = "";
+  pendientes.slice(0, MAX_FILAS_LISTA).forEach((contacto) => {
+    const dias = Math.round(
+      (new Date(`${contacto.proximo_seguimiento}T00:00:00`) - new Date(`${hoy}T00:00:00`)) / 86400000
+    );
+    const vencido = dias < 0;
+    const urgente = !vencido && dias <= 1;
+
+    const li = document.createElement("li");
+    const grupo = document.createElement("span");
+    grupo.className = "dashboard-lote-titulo-grupo";
+    const titulo = document.createElement("span");
+    titulo.className = "dashboard-lote-titulo";
+    titulo.textContent = contacto.nombre;
+    grupo.appendChild(titulo);
+    li.appendChild(grupo);
+
+    const badge = document.createElement("span");
+    badge.className = `dashboard-badge${vencido ? " vencida" : urgente ? " urgente" : ""}`;
+    badge.textContent = vencido
+      ? `vencido hace ${Math.abs(dias)} d.`
+      : dias === 0
+        ? "hoy"
+        : `en ${dias} d.`;
+    li.appendChild(badge);
+
+    li.addEventListener("click", () => abrirContactoEnCrm(contacto.id));
+    elSeguimientos.appendChild(li);
+  });
+  if (pendientes.length > MAX_FILAS_LISTA) {
+    const li = document.createElement("li");
+    li.className = "dashboard-ver-todos";
+    li.textContent = `Ver los ${pendientes.length} en el CRM →`;
+    li.addEventListener("click", () => abrirContactoEnCrm(pendientes[0].id));
+    elSeguimientos.appendChild(li);
+  }
+  document.getElementById("dashboard-seguimientos-vacio").classList.toggle("oculto", pendientes.length > 0);
+  actualizarContador("dashboard-seguimientos-contador", pendientes.length);
+}
+
 export function renderDashboard() {
   const m = calcularMetricasDashboard();
   const total = getLotesActuales().length;
+
+  renderSeguimientosCrm();
 
   const elInventario = document.getElementById("dashboard-inventario");
   elInventario.innerHTML = `

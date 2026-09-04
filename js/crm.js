@@ -590,7 +590,11 @@ function renderStats() {
 // .dashboard-badge).
 // ---------------------------------------------------------------------------
 
-function contactosParaSeguimiento(contactos) {
+// Exportada: dashboard.js reusa exactamente el mismo criterio de "qué
+// cuenta como pendiente" para su resumen — evita que las dos pantallas
+// se desincronicen si el criterio cambia (por ejemplo, el techo de
+// DIAS_SEGUIMIENTO_PROXIMO) y una queda vieja.
+export function contactosParaSeguimiento(contactos) {
   const limiteFuturo = new Date(Date.now() + DIAS_SEGUIMIENTO_PROXIMO * 86400000).toISOString().slice(0, 10);
   return contactos
     .filter(
@@ -1011,7 +1015,10 @@ elBtnExportar.addEventListener("click", exportarCsv);
 // Apertura/cierre del panel.
 // ---------------------------------------------------------------------------
 
-elBtnAbrir.addEventListener("click", async () => {
+// Factoreado del click de "CRM" en el drawer para poder abrir el panel
+// también desde otro lado (dashboard.js, "Seguimientos pendientes") sin
+// duplicar el cierre de los otros paneles + reset a "Mis contactos".
+async function abrirPanelCrm() {
   document.getElementById("vista-lista").classList.add("oculto"); // no superponer con "Ver como lista"
   document.getElementById("btn-ver-lista").classList.remove("activo");
   document.getElementById("panel-admin").classList.add("oculto"); // ni con "Seguridad"
@@ -1040,7 +1047,21 @@ elBtnAbrir.addEventListener("click", async () => {
 
   await cargarContactos();
   renderTodo();
-});
+}
+
+elBtnAbrir.addEventListener("click", abrirPanelCrm);
+
+// dashboard.js llama esto al tocar una fila de "Seguimientos pendientes"
+// — abre el CRM directo en el formulario de ESE contacto, en vez de
+// dejar que lo busque a mano en el kanban. Si el contacto ya no está en
+// el modo de vista actual ("Mis contactos" pero es de otro corredor, por
+// ejemplo un caso raro de reasignación reciente) se abre igual el panel,
+// sin el formulario — mejor eso que romper.
+export async function abrirContactoEnCrm(contactoId) {
+  await abrirPanelCrm();
+  const contacto = getContactosActuales().find((c) => c.id === contactoId);
+  if (contacto) mostrarForm(contacto);
+}
 
 document.getElementById("cerrar-panel-crm").addEventListener("click", () => {
   elPanel.classList.add("oculto");

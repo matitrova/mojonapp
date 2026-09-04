@@ -308,6 +308,11 @@ function actualizarUIPorPermisos() {
   // (ej. "Agregar interesado" en la ficha) no depende de este permiso,
   // ver firestore.rules.
   document.getElementById("btn-abrir-crm").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
+  // Idea #11: el resumen de seguimientos del Dashboard abre el CRM al
+  // tocar una fila (abrirContactoEnCrm en crm.js) — mismo permiso que el
+  // botón "CRM" del drawer, para no mostrar un resumen que apunta a una
+  // pantalla a la que ese corredor no puede entrar.
+  document.getElementById("dashboard-seguimientos-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
 }
 
 onAuthStateChanged(auth, async (usuario) => {
