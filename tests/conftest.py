@@ -158,7 +158,7 @@ def borrar_lote_de_prueba(doc_id):
     )
 
 
-def _con_reintento(intentar, intentos=5, espera=0.4):
+def _con_reintento(intentar, intentos=8, espera=0.5):
     """La UI ya confirmó que el dato se guardó (el guardado por el SDK del
     navegador ya resolvió antes de que la UI reaccione), pero cada
     "buscar_..._por_..." de acá abajo lee por una vía completamente
@@ -228,6 +228,30 @@ def borrar_contacto_de_prueba(doc_id):
         headers={"Authorization": f"Bearer {id_token}"},
         timeout=10,
     )
+
+
+def crear_contacto_de_prueba(datos):
+    """Crea un documento en "contactos" directo por REST (sin pasar por
+    la UI) y devuelve su id — para tests que necesitan un contacto con
+    datos puntuales difíciles de armar clickeando (ej. "asignado_a" de
+    OTRO corredor, para probar la vista "Todos"). "creado_por" tiene que
+    ser el uid real de la cuenta de prueba (la regla de creación en
+    firestore.rules lo exige, igual que en lotes) aunque "asignado_a" sea
+    distinto — en la app real los dos siempre coinciden al crear un
+    contacto, esto es solo para poder simular la cartera de "otro
+    corredor" sin una segunda cuenta."""
+    id_token = _id_token_de_prueba()
+    if "creado_por" not in datos:
+        datos = {**datos, "creado_por": _uid_de_prueba()}
+    campos = {clave: _a_valor_firestore(valor) for clave, valor in datos.items()}
+    respuesta = requests.post(
+        FIRESTORE_URL_BASE_CONTACTOS,
+        headers={"Authorization": f"Bearer {id_token}"},
+        json={"fields": campos},
+        timeout=10,
+    )
+    respuesta.raise_for_status()
+    return respuesta.json()["name"].rsplit("/", 1)[-1]
 
 
 LOTE_PRUEBA_DATOS = {

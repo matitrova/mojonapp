@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-02" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-03" />
 </head>
 <body>
 
@@ -748,6 +748,10 @@
     <div id="crm-vista-form" class="oculto" data-testid="crm-vista-form">
       <button type="button" id="crm-volver" class="btn-link" data-testid="crm-volver">&larr; Volver al pipeline</button>
       <h3 id="crm-form-titulo" data-testid="crm-form-titulo"></h3>
+      <!-- Solo visible cuando el contacto es de OTRO corredor (visto desde
+           "Todos", ver textoAsignado en js/crm.js) — de los propios no
+           hace falta aclarar nada, es obvio de quién son. -->
+      <p id="crm-asignado-a" class="oculto crm-asignado-a" data-testid="crm-asignado-a"></p>
       <form id="formulario-contacto">
         <input type="hidden" id="contacto-id-editando" />
         <label class="crm-campo">
@@ -975,6 +979,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-02"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-03"></script>
 </body>
 </html>

@@ -9,8 +9,9 @@ moverlo de etapa con el selector de la tarjeta (y que quede reflejado tanto
 en el pipeline como en Firestore), que "Agregar interesado" en la ficha de
 un lote (js/ficha.js) alimente el CRM automáticamente, registrar una
 actividad y un seguimiento, pedir el motivo al perder un contacto desde el
-kanban, que el toggle "Mis contactos"/"Todos" esté visible para root, y que
-"Exportar CSV" dispare una descarga real.
+kanban, que el toggle "Mis contactos"/"Todos" esté visible para root, que
+"Exportar CSV" dispare una descarga real, y que un contacto de otro
+corredor se identifique como tal (y solo aparezca) en la vista "Todos".
 """
 
 import uuid
@@ -24,6 +25,7 @@ from conftest import (
     TEST_USER_PASSWORD,
     borrar_contacto_de_prueba,
     buscar_contacto_doc_id_por_nombre,
+    crear_contacto_de_prueba,
 )
 
 
@@ -229,3 +231,45 @@ def test_exportar_csv_dispara_descarga(page, base_url):
         page.locator("#btn-exportar-contactos").click()
     descarga = descarga_info.value
     assert descarga.suggested_filename.startswith("contactos-mojonapp-")
+
+
+def test_contacto_de_otro_corredor_solo_aparece_en_todos(page, base_url):
+    # "asignado_a" de un uid que no es el de la cuenta de prueba: simula
+    # la cartera de OTRO corredor sin necesitar una segunda cuenta real
+    # (ver crear_contacto_de_prueba en conftest.py).
+    nombre = f"TEST-{uuid.uuid4().hex[:8]}"
+    doc_id = crear_contacto_de_prueba(
+        {
+            "nombre": nombre,
+            "telefono": None,
+            "email": None,
+            "estado": "nuevo",
+            "motivo_perdido": None,
+            "proximo_seguimiento": None,
+            "lotes_interes": [],
+            "actividades": [],
+            "asignado_a": "uid-de-otro-corredor-inexistente",
+            "fecha_creacion": "2026-01-01T00:00:00.000Z",
+            "fecha_actualizacion": "2026-01-01T00:00:00.000Z",
+        }
+    )
+    try:
+        _loguearse(page, base_url)
+        _abrir_crm(page)
+
+        # "Mis contactos" (default al abrir el panel): no es mío, no
+        # tiene que aparecer.
+        expect(page.locator(".crm-tarjeta", has_text=nombre)).to_have_count(0)
+
+        page.locator("#btn-crm-vista-todas").click()
+        tarjeta = page.locator(f'[data-testid="crm-tarjeta-{doc_id}"]')
+        expect(tarjeta).to_be_visible()
+        # Uid inexistente en "usuarios" → cae al texto genérico
+        # (textoAsignado en js/crm.js), no revienta ni lo deja en blanco.
+        expect(tarjeta).to_contain_text("Otro corredor")
+
+        tarjeta.click()
+        expect(page.locator("#crm-asignado-a")).to_be_visible()
+        expect(page.locator("#crm-asignado-a")).to_contain_text("Otro corredor")
+    finally:
+        borrar_contacto_de_prueba(doc_id)

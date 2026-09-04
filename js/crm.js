@@ -219,6 +219,39 @@ export async function cargarContactos() {
   }
 }
 
+// Uid → email de cada corredor, para poder mostrar "de quién es" un
+// contacto en la vista "Todos" — sin esto, "Todos" mezcla la cartera de
+// todo el equipo sin forma de distinguir una tarjeta de otra más que por
+// contenido. Se resuelve una sola vez por sesión (lazy, recién la primera
+// vez que hace falta) y se cachea: la lista de corredores de una
+// inmobiliaria chica cambia muy de vez en cuando, no vale la pena
+// releerla en cada toggle. "usuarios" es de lectura abierta a cualquier
+// logueado (ver firestore.rules), mismo permiso que ya usa admin.js para
+// resolver el propio perfil.
+let usuariosPorUid = null;
+
+async function obtenerUsuariosPorUid() {
+  if (usuariosPorUid) return usuariosPorUid;
+  try {
+    const snapshot = await getDocs(collection(db, "usuarios"));
+    usuariosPorUid = Object.fromEntries(snapshot.docs.map((d) => [d.id, d.data().email || d.id]));
+  } catch {
+    usuariosPorUid = {};
+  }
+  return usuariosPorUid;
+}
+
+// "Vos" para lo propio, el email real para lo ajeno, o un texto genérico
+// si por lo que sea no se pudo resolver (corredor borrado después, cache
+// todavía sin poblar). Solo tiene sentido llamarlo con el cache ya
+// poblado (ver cambiarModoVista) — sin eso, cualquier contacto ajeno
+// mostraría el genérico hasta el próximo render.
+function textoAsignado(contacto) {
+  if (!contacto.asignado_a) return "Sin asignar";
+  if (contacto.asignado_a === auth.currentUser?.uid) return "Vos";
+  return usuariosPorUid?.[contacto.asignado_a] || "Otro corredor";
+}
+
 // ---------------------------------------------------------------------------
 // Panel: métricas + seguimientos + barra de herramientas + kanban (vista
 // principal), y el formulario de alta/edición (reemplaza al kanban, mismo
@@ -245,6 +278,7 @@ const elBtnAgregarContacto = document.getElementById("btn-agregar-contacto");
 const elBtnExportar = document.getElementById("btn-exportar-contactos");
 const elVolver = document.getElementById("crm-volver");
 const elFormTitulo = document.getElementById("crm-form-titulo");
+const elAsignadoA = document.getElementById("crm-asignado-a");
 const formulario = document.getElementById("formulario-contacto");
 const elIdEditando = document.getElementById("contacto-id-editando");
 const elNombre = document.getElementById("contacto-nombre");
@@ -378,6 +412,15 @@ function tarjetaContacto(contacto) {
   lotes.className = "crm-tarjeta-lotes";
   lotes.textContent = textoLotesResumen(contacto.lotes_interes || []);
   tarjeta.appendChild(lotes);
+
+  // Solo en "Todos": en "Mis contactos" siempre serías vos, no aporta
+  // nada aclararlo tarjeta por tarjeta.
+  if (modoVista === "todas") {
+    const asignado = document.createElement("p");
+    asignado.className = "crm-tarjeta-asignado";
+    asignado.textContent = `👤 ${textoAsignado(contacto)}`;
+    tarjeta.appendChild(asignado);
+  }
 
   const fecha = document.createElement("p");
   fecha.className = "crm-tarjeta-fecha";
@@ -714,6 +757,12 @@ function mostrarForm(contacto) {
     elMotivoPerdido.value = contacto.motivo_perdido || "";
     elSeguimientoInput.value = contacto.proximo_seguimiento || "";
     elBtnBorrarContacto.classList.remove("oculto");
+    // Solo se llega a un contacto ajeno pasando por "Todos" primero (en
+    // "Mis contactos" la propia consulta ya lo excluye), así que el cache
+    // de usuarios ya está poblado a esta altura — ver cambiarModoVista.
+    const esAjeno = contacto.asignado_a && contacto.asignado_a !== auth.currentUser?.uid;
+    elAsignadoA.textContent = esAjeno ? `👤 Asignado a ${textoAsignado(contacto)}` : "";
+    elAsignadoA.classList.toggle("oculto", !esAjeno);
   } else {
     elIdEditando.value = "";
     elFormTitulo.textContent = "Nuevo contacto";
@@ -721,6 +770,7 @@ function mostrarForm(contacto) {
     elMotivoPerdido.value = "";
     elSeguimientoInput.value = "";
     elBtnBorrarContacto.classList.add("oculto");
+    elAsignadoA.classList.add("oculto");
   }
   actualizarVisibilidadMotivoPerdido();
   actualizarBotonWhatsapp();
@@ -809,6 +859,11 @@ async function cambiarModoVista(nuevoModo) {
   modoVista = nuevoModo;
   elBtnVistaMias.classList.toggle("activo", modoVista === "mias");
   elBtnVistaTodas.classList.toggle("activo", modoVista === "todas");
+  // Se resuelve ANTES de renderizar (no en paralelo): renderKanban() ya
+  // llama a textoAsignado() por cada tarjeta en "Todos", y sin el cache
+  // poblado a tiempo todas mostrarían "Otro corredor" hasta el próximo
+  // render.
+  if (modoVista === "todas") await obtenerUsuariosPorUid();
   await cargarContactos();
   renderTodo();
 }
