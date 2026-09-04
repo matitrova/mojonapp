@@ -104,6 +104,45 @@ const elServicios = document.getElementById("ficha-servicios");
 const elObservaciones = document.getElementById("ficha-observaciones");
 
 // ---------------------------------------------------------------------------
+// Calculadora de cuotas (idea propia, investigada en el simulador de
+// financiación de REPLUS antes de armarla — ver
+// feedback_buscar_inspiracion_real). A diferencia de un crédito
+// hipotecario, acá NO hay tasa de interés: un lote en estos loteos se
+// paga directo a la inmobiliaria en cuotas fijas ("anticipo y 12
+// cuotas" es el texto típico en Zonaprop/MercadoLibre para este tipo de
+// terreno) — por eso el cálculo es una simple resta y división, sin
+// interés compuesto de por medio.
+// ---------------------------------------------------------------------------
+
+const elCalculadoraCuotas = document.getElementById("ficha-calculadora-cuotas");
+const elCalcAnticipoPct = document.getElementById("calc-anticipo-pct");
+const elCalcCantidadCuotas = document.getElementById("calc-cantidad-cuotas");
+const elCalcResultado = document.getElementById("calc-resultado");
+
+function recalcularCuotas() {
+  const feature = getLoteSeleccionado();
+  if (!feature || feature.properties.precio_usd == null) return;
+  const precio = Number(feature.properties.precio_usd);
+  const anticipoPct = Math.min(100, Math.max(0, Number(elCalcAnticipoPct.value) || 0));
+  const cantidadCuotas = Math.max(1, Math.round(Number(elCalcCantidadCuotas.value) || 1));
+  const anticipo = precio * (anticipoPct / 100);
+  const cuota = (precio - anticipo) / cantidadCuotas;
+  const formatear = (n) => Math.round(n).toLocaleString("es-AR");
+  elCalcResultado.innerHTML = `Anticipo: <strong>USD ${formatear(anticipo)}</strong> + <strong>${cantidadCuotas}</strong> cuota${cantidadCuotas === 1 ? "" : "s"} de <strong>USD ${formatear(cuota)}</strong>`;
+}
+
+// Solo tiene sentido con precio cargado — sin eso no hay nada que
+// calcular (mismo criterio que "Sin datos" en el resto de la ficha).
+function actualizarCalculadoraCuotas(feature) {
+  const visible = feature.properties.precio_usd != null;
+  elCalculadoraCuotas.classList.toggle("oculto", !visible);
+  if (visible) recalcularCuotas();
+}
+
+elCalcAnticipoPct.addEventListener("input", recalcularCuotas);
+elCalcCantidadCuotas.addEventListener("input", recalcularCuotas);
+
+// ---------------------------------------------------------------------------
 // Fotos del lote: se suben directo desde el navegador a Cloudinary (plan
 // gratis, sin tarjeta — a diferencia de Firebase Storage o Cloudflare R2,
 // que piden tarjeta cargada aunque el uso se mantenga gratis, ver charla
@@ -398,6 +437,7 @@ export function mostrarFicha(feature) {
   elPrecio.textContent = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   elServicios.innerHTML = renderServiciosHTML(p.servicios);
   elObservaciones.textContent = p.observaciones || "Sin datos";
+  actualizarCalculadoraCuotas(feature);
   renderFotos(feature);
   actualizarBotonFavorito(feature.id);
   renderLotesSimilares(feature);

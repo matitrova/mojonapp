@@ -651,6 +651,57 @@ button:active {
   margin: 0;
 }
 
+/* Calculadora de cuotas (idea propia) — misma "caja" que #ficha-fotos,
+   para no inventar un tercer estilo de contenedor en la ficha. */
+#ficha-calculadora-cuotas {
+  background: var(--color-fondo-alterno);
+  border-radius: var(--radio-mediano);
+  padding: 12px 14px;
+  margin: 0 0 16px;
+}
+
+.ficha-calculadora-titulo {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.ficha-calculadora-campos {
+  display: flex;
+  gap: 12px;
+}
+
+.ficha-calculadora-campos label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.ficha-calculadora-campos input {
+  font: inherit;
+  width: 100%;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 7px 9px;
+  background: #fff;
+  color: var(--color-texto);
+}
+
+#calc-resultado {
+  margin: 10px 0 4px;
+  font-size: 0.92rem;
+}
+
+.ficha-calculadora-nota {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--color-texto-secundario);
+}
+
 .ficha-botones {
   display: flex;
   gap: 10px;

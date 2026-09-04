@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-17" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-18" />
 </head>
 <body>
 
@@ -220,6 +220,28 @@
       <dt id="ficha-cercanias-dt" class="oculto">Cercanías</dt>
       <dd id="ficha-cercanias" class="oculto" data-testid="ficha-cercanias"></dd>
     </dl>
+    <!-- Idea propia, investigada en el simulador de financiación de
+         REPLUS antes de armarla (ver feedback_buscar_inspiracion_real):
+         a diferencia de un crédito hipotecario, un lote en estos loteos
+         se paga directo a la inmobiliaria en cuotas fijas SIN interés
+         ("anticipo y 12 cuotas" es el texto típico en Zonaprop/
+         MercadoLibre para este tipo de terreno) — por eso la
+         calculadora es más simple que la de un banco, sin tasa de
+         interés. Solo tiene sentido con precio cargado — ver
+         actualizarCalculadoraCuotas en js/ficha.js. -->
+    <div id="ficha-calculadora-cuotas" class="oculto" data-testid="ficha-calculadora-cuotas">
+      <p class="ficha-calculadora-titulo">Simular cuotas</p>
+      <div class="ficha-calculadora-campos">
+        <label>Anticipo (%)
+          <input type="number" id="calc-anticipo-pct" min="0" max="100" value="20" data-testid="calc-anticipo-pct" />
+        </label>
+        <label>Cantidad de cuotas
+          <input type="number" id="calc-cantidad-cuotas" min="1" value="12" data-testid="calc-cantidad-cuotas" />
+        </label>
+      </div>
+      <p id="calc-resultado" data-testid="calc-resultado"></p>
+      <p class="ficha-calculadora-nota">Simulación estimada, sin intereses — consultá al corredor las condiciones reales de financiación.</p>
+    </div>
     <!-- Fotos del lote (Cloudinary, ver subirFotoACloudinary en app.js) —
          la galería la ve cualquiera (comprador incluido, es justo lo que
          más ayuda a evaluar un lote a distancia); subir/borrar una foto
@@ -1186,6 +1208,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-17"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-18"></script>
 </body>
 </html>
