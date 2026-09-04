@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-03-03" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-01" />
 </head>
 <body>
 
@@ -70,6 +70,10 @@
 
     <div id="drawer-sesion-activa" class="oculto">
       <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard">Dashboard</button>
+      <!-- Oculto por defecto: se muestra con el permiso "gestionar_contactos"
+           (o root), mismo criterio que btn-abrir-auditoria — ver
+           actualizarUIPorPermisos() en app.js. -->
+      <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm">CRM</button>
 
       <div class="drawer-grupo">
         <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-cargar-lotes">
@@ -529,6 +533,15 @@
                 <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_usuarios" data-testid="perfil-permiso-administrar_usuarios" /> Administrar usuarios</label>
               </div>
             </div>
+
+            <div class="permisos-seccion">
+              <label class="permisos-seccion-titulo">
+                <input type="checkbox" id="perfil-seccion-crm" data-testid="perfil-seccion-crm" /> CRM
+              </label>
+              <div class="permisos-seccion-items">
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-gestionar_contactos" data-testid="perfil-permiso-gestionar_contactos" /> Gestionar contactos (CRM)</label>
+              </div>
+            </div>
           </div>
           <button type="submit" id="perfil-guardar-btn" data-testid="perfil-guardar">Guardar perfil</button>
           <p id="perfil-error" class="mensaje-error oculto" data-testid="perfil-error"></p>
@@ -685,6 +698,75 @@
     </div>
   </div>
 
+  <!-- CRM: contactos + pipeline visual (ver js/crm.js). "Agregar interesado"
+       en la ficha de un lote (arriba) sigue funcionando igual para
+       cualquier corredor logueado y, además, crea un contacto acá — este
+       panel es para GESTIONAR el pipeline entero, requiere el permiso
+       "gestionar_contactos" (o root). -->
+  <div id="panel-crm" class="oculto panel-pantalla-completa" data-testid="panel-crm">
+    <div class="panel-header">
+      <h2>CRM</h2>
+      <button id="cerrar-panel-crm" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div id="crm-vista-kanban" data-testid="crm-vista-kanban">
+      <button type="button" id="btn-agregar-contacto" class="btn-secundario" data-testid="btn-agregar-contacto">+ Nuevo contacto</button>
+      <div id="crm-kanban" data-testid="crm-kanban"></div>
+      <p id="crm-vacio" class="oculto" data-testid="crm-vacio">Todavía no hay contactos cargados.</p>
+    </div>
+
+    <div id="crm-vista-form" class="oculto" data-testid="crm-vista-form">
+      <button type="button" id="crm-volver" class="btn-link" data-testid="crm-volver">&larr; Volver al pipeline</button>
+      <h3 id="crm-form-titulo" data-testid="crm-form-titulo"></h3>
+      <form id="formulario-contacto">
+        <input type="hidden" id="contacto-id-editando" />
+        <label class="crm-campo">
+          Nombre
+          <input type="text" id="contacto-nombre" required data-testid="contacto-nombre" />
+        </label>
+        <label class="crm-campo">
+          Teléfono
+          <input type="text" id="contacto-telefono" data-testid="contacto-telefono" />
+        </label>
+        <label class="crm-campo">
+          Email
+          <input type="email" id="contacto-email" data-testid="contacto-email" />
+        </label>
+        <label class="crm-campo">
+          Estado
+          <select id="contacto-estado" data-testid="contacto-estado">
+            <option value="nuevo">Nuevo</option>
+            <option value="contactado">Contactado</option>
+            <option value="visita">Visita agendada</option>
+            <option value="oferta">Oferta</option>
+            <option value="cerrado">Cerrado</option>
+            <option value="perdido">Perdido</option>
+          </select>
+        </label>
+        <label class="crm-campo">
+          Nota
+          <textarea id="contacto-nota" data-testid="contacto-nota"></textarea>
+        </label>
+
+        <div id="crm-lotes-interes" data-testid="crm-lotes-interes">
+          <p class="crm-subtitulo">Lotes de interés</p>
+          <ul id="crm-lista-lotes-interes" data-testid="crm-lista-lotes-interes"></ul>
+          <p id="crm-lotes-interes-vacio" class="dashboard-vacio oculto">Ninguno todavía.</p>
+          <div class="crm-agregar-lote">
+            <select id="crm-select-lote" data-testid="crm-select-lote"></select>
+            <button type="button" id="btn-agregar-lote-interes" data-testid="btn-agregar-lote-interes">+ Agregar</button>
+          </div>
+        </div>
+
+        <div class="crm-form-botones">
+          <button type="submit" id="contacto-guardar-btn" data-testid="contacto-guardar">Guardar</button>
+          <button type="button" id="btn-borrar-contacto" class="oculto btn-peligro" data-testid="btn-borrar-contacto">Borrar contacto</button>
+        </div>
+        <p id="contacto-error" class="mensaje-error oculto" data-testid="contacto-error"></p>
+      </form>
+    </div>
+  </div>
+
   <!-- Vista en lista/grilla de los lotes cargados, alternativa al mapa -->
   <div id="vista-lista" class="oculto panel-pantalla-completa" data-testid="vista-lista">
     <div id="vista-lista-header" class="panel-header">
@@ -823,6 +905,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-03-03"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-01"></script>
 </body>
 </html>

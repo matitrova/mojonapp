@@ -69,19 +69,35 @@ def base_url():
 # ---------------------------------------------------------------------------
 
 
+_sesion_de_prueba_cacheada = None  # ver _sesion_de_prueba()
+
+
 def _sesion_de_prueba():
-    respuesta = requests.post(
-        "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
-        params={"key": FIREBASE_API_KEY},
-        json={
-            "email": TEST_USER_EMAIL,
-            "password": TEST_USER_PASSWORD,
-            "returnSecureToken": True,
-        },
-        timeout=10,
-    )
-    respuesta.raise_for_status()
-    return respuesta.json()
+    """Cacheada a nivel de módulo: cada helper de este archivo (crear/
+    borrar lote, crear/borrar contacto, buscar por nombre/observaciones...)
+    llama esto para autenticarse, y con retries de por medio (ver
+    _buscar_contacto_con_reintento en test_crm.py) una corrida completa de
+    la suite puede pedir un token muchas veces. signInWithPassword vía
+    REST tiene rate limit propio (independiente del login real que hacen
+    los tests contra la UI) — sin cachear, se vio la suite entera fallar
+    con "TOO_MANY_ATTEMPTS_TRY_LATER" / "Email o contraseña incorrectos"
+    en la UI. El idToken dura 1 hora, muchísimo más que cualquier corrida
+    de tests, así que un solo login por sesión de pytest alcanza."""
+    global _sesion_de_prueba_cacheada
+    if _sesion_de_prueba_cacheada is None:
+        respuesta = requests.post(
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
+            params={"key": FIREBASE_API_KEY},
+            json={
+                "email": TEST_USER_EMAIL,
+                "password": TEST_USER_PASSWORD,
+                "returnSecureToken": True,
+            },
+            timeout=10,
+        )
+        respuesta.raise_for_status()
+        _sesion_de_prueba_cacheada = respuesta.json()
+    return _sesion_de_prueba_cacheada
 
 
 def _id_token_de_prueba():
@@ -142,18 +158,76 @@ def borrar_lote_de_prueba(doc_id):
     )
 
 
+def _con_reintento(intentar, intentos=5, espera=0.4):
+    """La UI ya confirmó que el dato se guardó (el guardado por el SDK del
+    navegador ya resolvió antes de que la UI reaccione), pero cada
+    "buscar_..._por_..." de acá abajo lee por una vía completamente
+    aparte (REST, desde Python) — un puñado de reintentos cortos evita un
+    falso negativo por una carrera de red entre ambas lecturas, sin
+    esconder un fallo real (agota los intentos y devuelve None)."""
+    for _ in range(intentos):
+        resultado = intentar()
+        if resultado:
+            return resultado
+        time.sleep(espera)
+    return None
+
+
 def buscar_doc_id_por_observaciones(texto):
     """Lectura pública (sin login): busca un lote por su texto de
     observaciones exacto. Se usa para encontrar y limpiar el lote que un
     test creó a través del formulario de la UI (que no expone el id del
     documento nuevo)."""
-    respuesta = requests.get(FIRESTORE_URL_BASE, timeout=10)
-    respuesta.raise_for_status()
-    for doc in respuesta.json().get("documents", []):
-        campos = doc.get("fields", {})
-        if campos.get("observaciones", {}).get("stringValue") == texto:
-            return doc["name"].rsplit("/", 1)[-1]
-    return None
+
+    def intentar():
+        respuesta = requests.get(FIRESTORE_URL_BASE, timeout=10)
+        respuesta.raise_for_status()
+        for doc in respuesta.json().get("documents", []):
+            campos = doc.get("fields", {})
+            if campos.get("observaciones", {}).get("stringValue") == texto:
+                return doc["name"].rsplit("/", 1)[-1]
+        return None
+
+    return _con_reintento(intentar)
+
+
+FIRESTORE_URL_BASE_CONTACTOS = (
+    f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}"
+    "/databases/(default)/documents/contactos"
+)
+
+
+def buscar_contacto_doc_id_por_nombre(nombre):
+    """Mismo criterio que buscar_doc_id_por_observaciones, para la
+    colección "contactos" (CRM, ver js/crm.js): encuentra el id del
+    contacto que un test creó a través de la UI (que no lo expone). A
+    diferencia de "lotes", leer "contactos" requiere sesión (ver
+    firestore.rules), así que este helper sí manda el token."""
+
+    def intentar():
+        id_token = _id_token_de_prueba()
+        respuesta = requests.get(
+            FIRESTORE_URL_BASE_CONTACTOS,
+            headers={"Authorization": f"Bearer {id_token}"},
+            timeout=10,
+        )
+        respuesta.raise_for_status()
+        for doc in respuesta.json().get("documents", []):
+            campos = doc.get("fields", {})
+            if campos.get("nombre", {}).get("stringValue") == nombre:
+                return doc["name"].rsplit("/", 1)[-1]
+        return None
+
+    return _con_reintento(intentar)
+
+
+def borrar_contacto_de_prueba(doc_id):
+    id_token = _id_token_de_prueba()
+    requests.delete(
+        f"{FIRESTORE_URL_BASE_CONTACTOS}/{doc_id}",
+        headers={"Authorization": f"Bearer {id_token}"},
+        timeout=10,
+    )
 
 
 LOTE_PRUEBA_DATOS = {

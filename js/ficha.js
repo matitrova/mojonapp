@@ -35,6 +35,7 @@ import { mapa, cargarLotesDesdeFirestore, abrirTooltipDeLote } from "./mapa.js";
 import { mostrarEditarLoteDesdeGrilla } from "./vista-lista.js";
 import { registrarVistaDeLote } from "./dashboard.js";
 import { registrarAuditoria } from "./auditoria.js";
+import { crearContactoDesdeInteresado } from "./crm.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -304,6 +305,16 @@ formularioInteresado.addEventListener("submit", async (evento) => {
     getLoteSeleccionado().properties.interesados.push(interesado);
     renderInteresados(getLoteSeleccionado());
     formularioInteresado.reset();
+    // Fire-and-forget: alimenta el CRM central (js/crm.js) además de
+    // guardarse acá en el lote — si esto falla (sin conexión, etc.) el
+    // interesado ya quedó guardado arriba, no se le avisa nada al
+    // corredor por algo que no le impide seguir su flujo.
+    crearContactoDesdeInteresado({
+      nombre: interesado.nombre,
+      telefono: interesado.telefono,
+      nota: interesado.nota,
+      feature: getLoteSeleccionado()
+    });
   } catch (error) {
     elInteresadoError.textContent =
       error.code === "permission-denied"

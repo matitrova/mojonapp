@@ -57,6 +57,18 @@ const PERMISOS_SECCIONES = [
       { clave: "administrar_sectores", etiqueta: "Administrar zonas/barrios" },
       { clave: "administrar_usuarios", etiqueta: "Administrar usuarios" }
     ]
+  },
+  {
+    id: "crm",
+    nombre: "CRM",
+    permisos: [
+      // Crear un contacto (ej. "Agregar interesado" en la ficha de un
+      // lote) NO depende de este permiso — cualquier corredor logueado
+      // puede seguir haciendo eso, ver firestore.rules. Este permiso es
+      // para GESTIONAR el pipeline entero (verlo armado en el panel CRM,
+      // mover contactos de estado, editarlos o borrarlos).
+      { clave: "gestionar_contactos", etiqueta: "Gestionar contactos (CRM)" }
+    ]
   }
 ];
 

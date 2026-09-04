@@ -86,6 +86,17 @@ export function setBarriosActuales(v) {
   barriosActuales = v;
 }
 
+// Contactos del CRM (colección "contactos", ver js/crm.js) — se cargan
+// una sola vez al abrir el panel, después el pipeline se pinta desde
+// esta copia en memoria (mismo criterio que lotesActuales con el mapa).
+let contactosActuales = [];
+export function getContactosActuales() {
+  return contactosActuales;
+}
+export function setContactosActuales(v) {
+  contactosActuales = v;
+}
+
 // Id de navigator.geolocation.watchPosition, para poder cancelarlo.
 let watchId = null;
 export function getWatchId() {

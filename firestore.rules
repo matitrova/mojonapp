@@ -116,5 +116,20 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if esRoot();
     }
+
+    // CRM: contactos + pipeline (ver js/crm.js). CREAR uno es la MISMA
+    // acción que ya existía como "Agregar interesado" en la ficha del
+    // lote (ver #ficha-interesados) — cualquier corredor logueado puede
+    // seguir haciendo eso sin depender de un permiso nuevo, así ese flujo
+    // no se rompe para nadie. Lo que sí es un permiso propio,
+    // "gestionar_contactos", es GESTIONAR el pipeline entero: verlo
+    // armado, moverlo de estado, editarlo o borrarlo — mismo criterio que
+    // "administrar_sectores" (una tarea de más alcance que la de cargar
+    // un dato puntual).
+    match /contactos/{contactoId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.creado_por == request.auth.uid;
+      allow update, delete: if esRoot() || tienePermiso('gestionar_contactos');
+    }
   }
 }

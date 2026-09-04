@@ -25,6 +25,7 @@ import {
   poblarSelectBarrio
 } from "./catalogos.js";
 import { configurarDashboard, abrirPanelDashboard, renderDashboard } from "./dashboard.js";
+import { configurarCrm } from "./crm.js";
 import { configurarVistaLista } from "./vista-lista.js";
 import { configurarEditorForma } from "./editor-forma.js";
 import { configurarCargarLote } from "./cargar-lote.js";
@@ -212,6 +213,7 @@ configurarVistaLista({
   renderServiciosHTML
 });
 configurarDashboard({ db, doc, updateDoc, increment, mapa, mostrarFicha, tituloLote });
+configurarCrm({ mapa, mostrarFicha, tituloLote });
 configurarCargarLote({ mapa, cargarLotesDesdeFirestore, anilloAGeometryFirestore });
 
 iniciarEstoyYendo();
@@ -296,6 +298,10 @@ function actualizarUIPorPermisos() {
   // root, y root puede sacarle ese permiso puntual sin tocarle el resto.
   // Mismo criterio en firestore.rules.
   document.getElementById("drawer-grupo-sectores").classList.toggle("oculto", !tienePermiso("administrar_sectores"));
+  // CRM: ver el panel/gestionar el pipeline entero. Crear un contacto
+  // (ej. "Agregar interesado" en la ficha) no depende de este permiso,
+  // ver firestore.rules.
+  document.getElementById("btn-abrir-crm").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
 }
 
 onAuthStateChanged(auth, async (usuario) => {
