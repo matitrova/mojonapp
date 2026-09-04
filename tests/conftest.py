@@ -149,13 +149,37 @@ def crear_lote_de_prueba(datos):
     return nombre_completo.rsplit("/", 1)[-1]
 
 
-def borrar_lote_de_prueba(doc_id):
+def _borrar_con_verificacion(url, nombre_para_avisos):
+    """Compartida por las 3 "borrar_*_de_prueba" de abajo. El bug real que
+    esto arregla: un DELETE por REST que devuelve 429 (u otro error
+    transitorio) no lanza excepción con requests si nadie llama
+    raise_for_status() — antes estas funciones ni siquiera miraban el
+    status code, así que un borrado fallido quedaba invisible: el test
+    seguía viéndose PASSED (la falla fue en el "finally" de limpieza, no
+    en el test en sí) y el lote/contacto de prueba quedaba sonando en
+    PRODUCCIÓN real sin que nada lo avisara. Pasó de verdad, repetidas
+    veces, la noche del 2026-09-03/04 con el 429 de Firestore agotado —
+    cada corrida del suite completo dejaba basura nueva sin que el
+    resultado en verde lo delatara.
+
+    No se propaga la excepción si falla incluso después de reintentar:
+    esto se llama casi siempre desde un "finally", y una excepción ahí
+    puede tapar el error real del test (Python reemplaza la excepción en
+    curso por la del finally). Mejor un aviso bien visible por stdout
+    (pytest lo muestra igual) que un traceback confuso."""
     id_token = _id_token_de_prueba()
-    requests.delete(
-        f"{FIRESTORE_URL_BASE}/{doc_id}",
-        headers={"Authorization": f"Bearer {id_token}"},
-        timeout=10,
-    )
+
+    def intentar():
+        respuesta = requests.delete(url, headers={"Authorization": f"Bearer {id_token}"}, timeout=10)
+        respuesta.raise_for_status()
+        return True
+
+    if not _con_reintento(intentar):
+        print(f"\n⚠️  No se pudo borrar {nombre_para_avisos} después de reintentar — revisar a mano en Firestore.")
+
+
+def borrar_lote_de_prueba(doc_id):
+    _borrar_con_verificacion(f"{FIRESTORE_URL_BASE}/{doc_id}", f"el lote de prueba {doc_id}")
 
 
 def _con_reintento(intentar, intentos=8, espera=0.5):
@@ -253,12 +277,7 @@ def buscar_contacto_doc_id_por_nombre(nombre):
 
 
 def borrar_contacto_de_prueba(doc_id):
-    id_token = _id_token_de_prueba()
-    requests.delete(
-        f"{FIRESTORE_URL_BASE_CONTACTOS}/{doc_id}",
-        headers={"Authorization": f"Bearer {id_token}"},
-        timeout=10,
-    )
+    _borrar_con_verificacion(f"{FIRESTORE_URL_BASE_CONTACTOS}/{doc_id}", f"el contacto de prueba {doc_id}")
 
 
 FIRESTORE_URL_BASE_USUARIOS = (
@@ -287,12 +306,7 @@ def crear_usuario_de_prueba(uid, email):
 
 
 def borrar_usuario_de_prueba(uid):
-    id_token = _id_token_de_prueba()
-    requests.delete(
-        f"{FIRESTORE_URL_BASE_USUARIOS}/{uid}",
-        headers={"Authorization": f"Bearer {id_token}"},
-        timeout=10,
-    )
+    _borrar_con_verificacion(f"{FIRESTORE_URL_BASE_USUARIOS}/{uid}", f"el usuario de prueba {uid}")
 
 
 def crear_contacto_de_prueba(datos):
