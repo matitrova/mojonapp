@@ -726,6 +726,80 @@ button:active {
   user-select: text;
 }
 
+/* Cartel con QR (idea #7) — pensado para que se vea bien tanto en
+   pantalla (mientras se revisa antes de imprimir) como en la hoja
+   impresa (ver @media print más abajo). */
+#cartel-qr-contenido {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 24px 16px;
+  margin: 0 auto;
+  max-width: 360px;
+}
+
+.cartel-qr-marca {
+  font-weight: 700;
+  color: var(--color-primario);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+#cartel-qr-titulo {
+  margin: 4px 0 0;
+  font-size: 1.4rem;
+}
+
+#cartel-qr-subtitulo {
+  margin: 0 0 12px;
+  color: var(--color-texto-secundario);
+}
+
+#cartel-qr-imagen {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  padding: 12px;
+  background: #fff;
+}
+
+.cartel-qr-instruccion {
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+
+#btn-imprimir-cartel {
+  margin: 20px auto 0;
+  display: block;
+}
+
+/* Al imprimir, ocultar TODO menos el contenido del cartel — el resto de
+   la app (mapa, drawer, header, botón de imprimir/cerrar) no tiene
+   sentido en una hoja pensada para clavar en el terreno. Con
+   `visibility` en vez de `display:none` el layout de #cartel-qr-contenido
+   no se rompe (display:none en un ancestro colapsaría todo su
+   contenido igual). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #cartel-qr-contenido,
+  #cartel-qr-contenido * {
+    visibility: visible;
+  }
+  #cartel-qr-contenido {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    padding-top: 40px;
+  }
+}
+
 /* Fotos del lote (Cloudinary) — mismo look de "caja" que
    #ficha-interesados, ver renderFotos en app.js. */
 #ficha-fotos {

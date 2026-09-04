@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-12" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-13" />
 </head>
 <body>
 
@@ -292,6 +292,11 @@
     </div>
     <button id="btn-compartir-lote" class="btn-editar-ficha" data-testid="btn-compartir-lote">Compartir este lote</button>
     <p id="compartir-lote-mensaje" class="oculto" data-testid="compartir-lote-mensaje">Link copiado.</p>
+    <!-- Idea #7: cartel con QR para imprimir y dejar en el terreno — el
+         código apunta al mismo link de "Compartir este lote" (?lote=id),
+         así que alguien que pasa caminando y lo escanea cae directo en
+         la ficha de ESE lote. -->
+    <button id="btn-cartel-qr" class="btn-editar-ficha" data-testid="btn-cartel-qr">Cartel con QR para imprimir</button>
 
     <!-- Otros lotes de la misma zona (o, si no tiene zona cargada, los
          más cercanos por geometría real) — ver lotesSimilares() en
@@ -763,6 +768,24 @@
     </p>
   </div>
 
+  <!-- Cartel con QR para imprimir y dejar en el terreno (idea #7) — ver
+       js/ficha.js. Al imprimir (Cmd/Ctrl+P), estilosicss.css oculta todo
+       lo demás y deja solo #cartel-qr-contenido ocupando la hoja. -->
+  <div id="panel-cartel-qr" class="oculto panel-pantalla-completa" data-testid="panel-cartel-qr">
+    <div class="panel-header">
+      <h2>Cartel para el terreno</h2>
+      <button id="cerrar-cartel-qr" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="cartel-qr-contenido">
+      <p class="cartel-qr-marca">MojonApp</p>
+      <h3 id="cartel-qr-titulo"></h3>
+      <p id="cartel-qr-subtitulo"></p>
+      <img id="cartel-qr-imagen" width="300" height="300" alt="Código QR para ver este lote en MojonApp" />
+      <p class="cartel-qr-instruccion">Escaneá el código para ver este lote</p>
+    </div>
+    <button type="button" id="btn-imprimir-cartel" class="crm-btn-primario" data-testid="btn-imprimir-cartel">Imprimir</button>
+  </div>
+
   <!-- CRM: contactos + pipeline visual (ver js/crm.js). "Agregar interesado"
        en la ficha de un lote (arriba) sigue funcionando igual para
        cualquier corredor logueado y, además, crea un contacto acá — este
@@ -1080,6 +1103,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-12"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-13"></script>
 </body>
 </html>

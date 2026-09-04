@@ -833,6 +833,40 @@ document.getElementById("btn-compartir-lote").addEventListener("click", async ()
   }
 });
 
+// "Cartel con QR para imprimir" (idea #7): mismo link que "Compartir
+// este lote" (?lote=<id>), pero como cartel para clavar físicamente en
+// el terreno — alguien que pasa caminando lo escanea y cae directo en
+// la ficha de ESE lote. El QR lo arma un servicio público gratis
+// (api.qrserver.com, sin API key) contra ese mismo link — no hace falta
+// vendorizar un generador de QR propio para un cartel que se imprime
+// una sola vez con conexión de por medio.
+const elPanelCartelQr = document.getElementById("panel-cartel-qr");
+const elCartelQrTitulo = document.getElementById("cartel-qr-titulo");
+const elCartelQrSubtitulo = document.getElementById("cartel-qr-subtitulo");
+const elCartelQrImagen = document.getElementById("cartel-qr-imagen");
+
+document.getElementById("btn-cartel-qr").addEventListener("click", () => {
+  const feature = getLoteSeleccionado();
+  if (!feature) return;
+  const p = feature.properties;
+  const url = `${location.origin}${location.pathname}?lote=${feature.id}`;
+
+  elCartelQrTitulo.textContent = tituloLote(p);
+  elCartelQrSubtitulo.textContent = [p.sector, p.superficie_m2 ? `${p.superficie_m2} m²` : null]
+    .filter(Boolean)
+    .join(" — ");
+  elCartelQrImagen.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&data=${encodeURIComponent(url)}`;
+  elPanelCartelQr.classList.remove("oculto");
+});
+
+document.getElementById("cerrar-cartel-qr").addEventListener("click", () => {
+  elPanelCartelQr.classList.add("oculto");
+});
+
+document.getElementById("btn-imprimir-cartel").addEventListener("click", () => {
+  window.print();
+});
+
 // Si la app se abrió con "?lote=<id>" (link armado por "Compartir este
 // lote"), abre esa ficha directo apenas hay datos para buscarla. Al
 // arrancar, la app dispara DOS cargas de lotes en paralelo — iniciarMapa()
