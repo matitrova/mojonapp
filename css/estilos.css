@@ -2119,6 +2119,22 @@ button:active {
   border-color: var(--color-vendido);
 }
 
+/* Badge "Nuevo" (idea propia) — junto al título en la ficha y en cada
+   fila de "Ver como lista", ver esLoteNuevo en ficha.js/vista-lista.js.
+   Relleno (no solo borde, a diferencia de .dashboard-badge) para que
+   destaque como una señal a favor, no una alerta. */
+.chip-nuevo {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-acento);
+  color: #fff;
+  white-space: nowrap;
+}
+
 /* Chips de "Lotes incompletos" — mismo lenguaje visual que chip-servicio
    (ficha/grilla), en tono acento en vez de verde: acá "sin foto"/"sin
    precio" es una falta a resolver, no un servicio disponible. */

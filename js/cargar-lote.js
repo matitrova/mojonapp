@@ -201,6 +201,12 @@ formularioLote.addEventListener("submit", async (evento) => {
     const lote = elLoteNumero.value.trim() || null;
     const nuevoLoteRef = await addDoc(collection(db, COLECCION_LOTES), {
       creado_por: auth.currentUser.uid,
+      // Idea propia: badge "Nuevo" en la lista/ficha (ver ESTA_SEMANA en
+      // vista-lista.js/ficha.js) — mismo criterio que LandWatch, que deja
+      // ordenar por "listing age". Los lotes cargados ANTES de este
+      // cambio no tienen el campo, y eso está bien: simplemente no
+      // muestran el badge, no hace falta completarlo a mano.
+      creado_en: new Date().toISOString(),
       manzana,
       lote,
       nomenclatura,
@@ -390,6 +396,7 @@ elManzanaConfirmar.addEventListener("click", async () => {
 
       const nuevoLoteRef = await addDoc(collection(db, COLECCION_LOTES), {
         creado_por: auth.currentUser.uid,
+        creado_en: new Date().toISOString(),
         manzana: numeroManzana,
         lote: parcela.lote,
         nomenclatura: parcela.nomenclatura,

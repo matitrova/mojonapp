@@ -47,6 +47,15 @@ const ETIQUETA_ESTADO = {
   vendido: "Vendido"
 };
 
+// Badge "Nuevo" (idea propia, mismo criterio y misma constante que
+// vista-lista.js — ver el comentario ahí y en cargar-lote.js).
+const DIAS_NUEVO = 7;
+function esLoteNuevo(p) {
+  if (!p.creado_en) return false;
+  const dias = (Date.now() - new Date(p.creado_en).getTime()) / 86400000;
+  return dias >= 0 && dias <= DIAS_NUEVO;
+}
+
 // Texto de estado listo para mostrar, con la fecha de vencimiento de la
 // reserva si corresponde ("Reservado (hasta 15/09/2026)" o "Reservado
 // (vencida desde 10/09/2026)" en rojo) — para que un lote reservado
@@ -424,7 +433,7 @@ export function mostrarFicha(feature) {
   setLoteSeleccionado(feature);
   const p = feature.properties;
 
-  elTitulo.textContent = tituloLote(p);
+  elTitulo.innerHTML = `${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}`;
   elSector.textContent = p.sector || "Sin datos";
   elBarrio.textContent = p.barrio || "Sin datos";
   // superficie_m2 puede venir en null: el catastro no siempre la declara

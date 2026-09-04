@@ -18,6 +18,19 @@ import { registrarAuditoria } from "./auditoria.js";
 
 const COLECCION_LOTES = "lotes";
 
+// Badge "Nuevo" (idea propia, mismo criterio que LandWatch, que deja
+// ordenar por "listing age" — un lote recién cargado es justo lo que un
+// comprador que ya miró el catálogo antes quiere ver primero). Un lote
+// cargado ANTES de que existiera el campo `creado_en` (ver
+// cargar-lote.js) simplemente no lo tiene — se trata igual que "no es
+// nuevo", no un error.
+const DIAS_NUEVO = 7;
+function esLoteNuevo(p) {
+  if (!p.creado_en) return false;
+  const dias = (Date.now() - new Date(p.creado_en).getTime()) / 86400000;
+  return dias >= 0 && dias <= DIAS_NUEVO;
+}
+
 let db,
   doc,
   updateDoc,
@@ -222,7 +235,7 @@ export function actualizarVistaLista() {
     fila.className = "fila-lote";
     fila.dataset.loteId = feature.id; // permite ubicar una fila puntual (tests, debug)
     fila.innerHTML = `
-      <td>${tituloLote(p)}</td>
+      <td>${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}</td>
       <td>${p.sector || "—"}</td>
       <td>${p.barrio || "—"}</td>
       <td>${p.superficie_m2 == null ? "—" : `${p.superficie_m2} m²`}</td>
