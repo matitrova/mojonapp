@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-06" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-07" />
 </head>
 <body>
 
@@ -67,6 +67,10 @@
     </div>
 
     <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista">Ver como lista</button>
+    <!-- Visible sin sesión (guarda en el propio navegador, no en
+         Firestore) — un comprador anónimo también puede armarse su
+         propia lista para volver a verla después. -->
+    <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos">🤍 Favoritos</button>
 
     <div id="drawer-sesion-activa" class="oculto">
       <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard">Dashboard</button>
@@ -147,6 +151,10 @@
   <!-- Ficha del lote: se muestra al tocar un polígono -->
   <div id="ficha-lote" class="oculto hoja-inferior" data-testid="ficha-lote">
     <button id="cerrar-ficha" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    <!-- Alterna 🤍/❤️ en vivo (ver js/favoritos.js) — guardado en
+         localStorage del propio navegador, no en Firestore: funciona
+         para cualquiera que mire el mapa, con o sin sesión. -->
+    <button id="btn-favorito" class="btn-favorito" aria-label="Guardar en favoritos" data-testid="btn-favorito">🤍</button>
     <h2 id="ficha-titulo" data-testid="ficha-titulo"></h2>
     <dl class="ficha-datos">
       <dt>Zona</dt>
@@ -699,6 +707,19 @@
     </div>
   </div>
 
+  <!-- Favoritos: lista personal del propio navegador (localStorage), sin
+       sesión — ver js/favoritos.js. -->
+  <div id="panel-favoritos" class="oculto panel-pantalla-completa" data-testid="panel-favoritos">
+    <div class="panel-header">
+      <h2>Favoritos</h2>
+      <button id="cerrar-panel-favoritos" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <ul id="lista-favoritos" class="dashboard-lista" data-testid="lista-favoritos"></ul>
+    <p id="favoritos-vacio" class="dashboard-vacio oculto" data-testid="favoritos-vacio">
+      Todavía no guardaste ningún lote. Tocá el 🤍 en la ficha de un lote para guardarlo acá.
+    </p>
+  </div>
+
   <!-- CRM: contactos + pipeline visual (ver js/crm.js). "Agregar interesado"
        en la ficha de un lote (arriba) sigue funcionando igual para
        cualquier corredor logueado y, además, crea un contacto acá — este
@@ -992,6 +1013,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-06"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-07"></script>
 </body>
 </html>

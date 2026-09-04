@@ -599,10 +599,38 @@ button:active {
 }
 
 #ficha-titulo {
-  margin: 0 46px 10px 0;
+  margin: 0 84px 10px 0;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--color-primario-oscuro);
+}
+
+/* Mismo círculo que .btn-cerrar, un poco más chico y a su izquierda —
+   alterna 🤍/❤️ en vivo (ver actualizarBotonFavorito en js/ficha.js). */
+.btn-favorito {
+  position: absolute;
+  top: 8px;
+  right: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--color-fondo-alterno);
+  border: 1px solid var(--color-borde);
+  border-radius: 50%;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.btn-favorito:hover {
+  background: var(--color-borde);
+}
+
+.btn-favorito.activo {
+  background: var(--color-acento-suave);
+  border-color: var(--color-acento);
 }
 
 .ficha-datos {
@@ -2525,4 +2553,24 @@ button:active {
   margin: 0;
   font-size: 0.72rem;
   color: var(--color-texto-secundario);
+}
+
+/* ---------------------------------------------------------------------
+   Favoritos (js/favoritos.js) — la lista reusa .dashboard-lista tal
+   cual, esto es solo el botón "quitar" de cada fila.
+   --------------------------------------------------------------------- */
+
+.favorito-quitar {
+  background: none;
+  border: none;
+  color: var(--color-texto-secundario);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.favorito-quitar:hover {
+  color: var(--color-vendido);
 }

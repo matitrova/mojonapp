@@ -26,6 +26,7 @@ import {
 } from "./catalogos.js";
 import { configurarDashboard, abrirPanelDashboard, renderDashboard } from "./dashboard.js";
 import { configurarCrm } from "./crm.js";
+import { configurarFavoritos } from "./favoritos.js";
 import { configurarVistaLista } from "./vista-lista.js";
 import { configurarEditorForma } from "./editor-forma.js";
 import { configurarCargarLote } from "./cargar-lote.js";
@@ -214,6 +215,7 @@ configurarVistaLista({
 });
 configurarDashboard({ db, doc, updateDoc, increment, mapa, mostrarFicha, tituloLote });
 configurarCrm({ mapa, mostrarFicha, tituloLote });
+configurarFavoritos({ mapa, mostrarFicha, tituloLote });
 configurarCargarLote({ mapa, cargarLotesDesdeFirestore, anilloAGeometryFirestore });
 
 iniciarEstoyYendo();

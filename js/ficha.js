@@ -36,6 +36,7 @@ import { mostrarEditarLoteDesdeGrilla } from "./vista-lista.js";
 import { registrarVistaDeLote } from "./dashboard.js";
 import { registrarAuditoria } from "./auditoria.js";
 import { crearContactoDesdeInteresado } from "./crm.js";
+import { esFavorito, alternarFavorito } from "./favoritos.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -397,6 +398,7 @@ export function mostrarFicha(feature) {
   elServicios.innerHTML = renderServiciosHTML(p.servicios);
   elObservaciones.textContent = p.observaciones || "Sin datos";
   renderFotos(feature);
+  actualizarBotonFavorito(feature.id);
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
   document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
@@ -644,6 +646,29 @@ elBtnBorrarLote.addEventListener("click", () => {
 // Plus Code, no el texto del lote. Tampoco calcula una ruta: es responsabilidad
 // del corredor iniciar la navegación una vez que confirma visualmente el pin.
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Favoritos: sin sesión, guardado en el propio navegador (ver
+// js/favoritos.js) — funciona igual para un comprador anónimo mirando el
+// mapa que para un corredor logueado.
+// ---------------------------------------------------------------------------
+
+const elBtnFavorito = document.getElementById("btn-favorito");
+
+function actualizarBotonFavorito(loteId) {
+  const guardado = esFavorito(loteId);
+  elBtnFavorito.textContent = guardado ? "❤️" : "🤍";
+  elBtnFavorito.setAttribute("aria-label", guardado ? "Quitar de favoritos" : "Guardar en favoritos");
+  elBtnFavorito.classList.toggle("activo", guardado);
+}
+
+elBtnFavorito.addEventListener("click", () => {
+  if (!getLoteSeleccionado()) return;
+  const guardado = alternarFavorito(getLoteSeleccionado().id);
+  elBtnFavorito.textContent = guardado ? "❤️" : "🤍";
+  elBtnFavorito.setAttribute("aria-label", guardado ? "Quitar de favoritos" : "Guardar en favoritos");
+  elBtnFavorito.classList.toggle("activo", guardado);
+});
 
 function construirUrlComoLlegar(feature) {
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
