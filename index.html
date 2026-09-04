@@ -4,6 +4,22 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>MojonApp</title>
+<!-- Metaetiquetas genéricas para cuando se comparte la app sin un lote
+     puntual (o si functions/_middleware.js no llega a reescribirlas,
+     ver ahí). Con un "?lote=<id>" en la URL ("Compartir este lote"),
+     _middleware.js las pisa del lado del servidor con el título/precio/
+     superficie reales de ESE lote — WhatsApp/Facebook leen el HTML
+     crudo con su propio crawler, no ejecutan el JS de la app, así que
+     esto no se puede armar solo en el cliente. -->
+<meta name="description" content="Mirá el límite real del terreno sobre imagen satelital, no un pin genérico." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="MojonApp" />
+<meta property="og:title" content="MojonApp" />
+<meta property="og:description" content="Mirá el límite real del terreno sobre imagen satelital, no un pin genérico." />
+<meta property="og:url" content="https://mojonapp.com.ar/" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="MojonApp" />
+<meta name="twitter:description" content="Mirá el límite real del terreno sobre imagen satelital, no un pin genérico." />
 <!-- "Modo embed" (?embed=1): para insertar el mapa en la página propia de
      una inmobiliaria vía <iframe> — esconde el encabezado (menú e
      "Ingresar"), dejando solo el mapa/catálogo público. Sincrónico y ANTES
