@@ -867,6 +867,53 @@ document.getElementById("btn-imprimir-cartel").addEventListener("click", () => {
   window.print();
 });
 
+// "Imprimir ficha (PDF)" (idea #9): a diferencia del cartel de arriba
+// (mínimo, para clavar en el terreno), esta hoja lleva TODOS los datos
+// del lote — pensada para que un corredor se la imprima o mande el PDF
+// (el propio diálogo de impresión del navegador ya deja "Guardar como
+// PDF", no hace falta una librería aparte) a un cliente. Mismo mecanismo
+// .hoja-imprimible + @media print que el cartel.
+const elPanelFichaImprimir = document.getElementById("panel-ficha-imprimir");
+const elFichaImprimirTitulo = document.getElementById("ficha-imprimir-titulo");
+const elFichaImprimirSubtitulo = document.getElementById("ficha-imprimir-subtitulo");
+const elFichaImprimirTablaCuerpo = document.getElementById("ficha-imprimir-tabla-cuerpo");
+const elFichaImprimirImagen = document.getElementById("ficha-imprimir-imagen");
+const elFichaImprimirFecha = document.getElementById("ficha-imprimir-fecha");
+
+function filaTabla(etiqueta, valorHTML) {
+  return `<tr><th>${etiqueta}</th><td>${valorHTML}</td></tr>`;
+}
+
+document.getElementById("btn-ficha-imprimir").addEventListener("click", () => {
+  const feature = getLoteSeleccionado();
+  if (!feature) return;
+  const p = feature.properties;
+  const url = `${location.origin}${location.pathname}?lote=${feature.id}`;
+
+  elFichaImprimirTitulo.textContent = tituloLote(p);
+  elFichaImprimirSubtitulo.textContent = [p.sector, p.barrio].filter(Boolean).join(" — ");
+
+  const filas = [];
+  if (p.superficie_m2 != null) filas.push(filaTabla("Superficie", `${p.superficie_m2} m²`));
+  filas.push(filaTabla("Estado", textoEstadoConVencimiento(p)));
+  if (p.precio_usd != null) filas.push(filaTabla("Precio", `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`));
+  filas.push(filaTabla("Servicios", renderServiciosHTML(p.servicios)));
+  if (p.nomenclatura) filas.push(filaTabla("Nomenclatura catastral", p.nomenclatura));
+  elFichaImprimirTablaCuerpo.innerHTML = filas.join("");
+
+  elFichaImprimirImagen.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=${encodeURIComponent(url)}`;
+  elFichaImprimirFecha.textContent = `Impreso el ${new Date().toLocaleDateString("es-AR")}`;
+  elPanelFichaImprimir.classList.remove("oculto");
+});
+
+document.getElementById("cerrar-ficha-imprimir").addEventListener("click", () => {
+  elPanelFichaImprimir.classList.add("oculto");
+});
+
+document.getElementById("btn-imprimir-ficha").addEventListener("click", () => {
+  window.print();
+});
+
 // Si la app se abrió con "?lote=<id>" (link armado por "Compartir este
 // lote"), abre esa ficha directo apenas hay datos para buscarla. Al
 // arrancar, la app dispara DOS cargas de lotes en paralelo — iniciarMapa()

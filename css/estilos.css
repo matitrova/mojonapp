@@ -726,10 +726,13 @@ button:active {
   user-select: text;
 }
 
-/* Cartel con QR (idea #7) — pensado para que se vea bien tanto en
-   pantalla (mientras se revisa antes de imprimir) como en la hoja
-   impresa (ver @media print más abajo). */
-#cartel-qr-contenido {
+/* Cartel con QR (idea #7) y ficha imprimible (idea #9) comparten la
+   clase .hoja-imprimible: pensada para verse bien tanto en pantalla
+   (mientras se revisa antes de imprimir) como en la hoja impresa (ver
+   @media print más abajo) — cada una vive en su propio panel
+   (#panel-cartel-qr / #panel-ficha-imprimir), así que solo una está
+   visible/imprimible por vez. */
+.hoja-imprimible {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -740,7 +743,7 @@ button:active {
   max-width: 360px;
 }
 
-.cartel-qr-marca {
+.hoja-imprimible-marca {
   font-weight: 700;
   color: var(--color-primario);
   letter-spacing: 0.04em;
@@ -749,48 +752,81 @@ button:active {
   margin: 0;
 }
 
-#cartel-qr-titulo {
+.hoja-imprimible-titulo {
   margin: 4px 0 0;
   font-size: 1.4rem;
 }
 
-#cartel-qr-subtitulo {
+.hoja-imprimible-subtitulo {
   margin: 0 0 12px;
   color: var(--color-texto-secundario);
 }
 
-#cartel-qr-imagen {
+.hoja-imprimible-qr {
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-mediano);
   padding: 12px;
   background: #fff;
 }
 
-.cartel-qr-instruccion {
+.hoja-imprimible-nota {
   margin: 12px 0 0;
   font-weight: 600;
 }
 
-#btn-imprimir-cartel {
+.btn-imprimir {
   margin: 20px auto 0;
   display: block;
 }
 
-/* Al imprimir, ocultar TODO menos el contenido del cartel — el resto de
-   la app (mapa, drawer, header, botón de imprimir/cerrar) no tiene
-   sentido en una hoja pensada para clavar en el terreno. Con
-   `visibility` en vez de `display:none` el layout de #cartel-qr-contenido
-   no se rompe (display:none en un ancestro colapsaría todo su
-   contenido igual). */
+/* Ficha imprimible (idea #9): a diferencia del cartel (un dato clavado
+   en un poste), acá conviene una tabla prolija con todos los datos que
+   un cliente se llevaría impresos — mismo look que .tabla-panel del
+   resto de la app, pero centrada y angosta para que quepa bien en una
+   hoja carta/A4. */
+.hoja-imprimible-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  margin: 8px 0 4px;
+}
+
+.hoja-imprimible-tabla th,
+.hoja-imprimible-tabla td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-borde);
+  font-size: 0.9rem;
+}
+
+.hoja-imprimible-tabla th {
+  color: var(--color-texto-secundario);
+  font-weight: 600;
+  width: 40%;
+}
+
+.hoja-imprimible-fecha {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--color-texto-secundario);
+}
+
+/* Al imprimir, ocultar TODO menos la hoja imprimible que esté abierta —
+   el resto de la app (mapa, drawer, header, botón de imprimir/cerrar)
+   no tiene sentido en una hoja para clavar en el terreno o llevarse
+   impresa. Con `visibility` en vez de `display:none` el layout de
+   .hoja-imprimible no se rompe (display:none en un ancestro colapsaría
+   todo su contenido igual) — y como el panel que NO está abierto sigue
+   con display:none por .oculto, su .hoja-imprimible ni siquiera llega a
+   este bloque (display:none no se puede "reabrir" con visibility). */
 @media print {
   body * {
     visibility: hidden;
   }
-  #cartel-qr-contenido,
-  #cartel-qr-contenido * {
+  .hoja-imprimible,
+  .hoja-imprimible * {
     visibility: visible;
   }
-  #cartel-qr-contenido {
+  .hoja-imprimible {
     position: absolute;
     top: 0;
     left: 0;

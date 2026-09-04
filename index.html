@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-13" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-14" />
 </head>
 <body>
 
@@ -297,6 +297,10 @@
          así que alguien que pasa caminando y lo escanea cae directo en
          la ficha de ESE lote. -->
     <button id="btn-cartel-qr" class="btn-editar-ficha" data-testid="btn-cartel-qr">Cartel con QR para imprimir</button>
+    <!-- Idea #9: a diferencia del cartel (mínimo, para el terreno), acá
+         van TODOS los datos — pensada para un corredor que le imprime o
+         manda el PDF a un cliente. -->
+    <button id="btn-ficha-imprimir" class="btn-editar-ficha" data-testid="btn-ficha-imprimir">Imprimir ficha (PDF)</button>
 
     <!-- Otros lotes de la misma zona (o, si no tiene zona cargada, los
          más cercanos por geometría real) — ver lotesSimilares() en
@@ -769,21 +773,48 @@
   </div>
 
   <!-- Cartel con QR para imprimir y dejar en el terreno (idea #7) — ver
-       js/ficha.js. Al imprimir (Cmd/Ctrl+P), estilosicss.css oculta todo
-       lo demás y deja solo #cartel-qr-contenido ocupando la hoja. -->
+       js/ficha.js. Al imprimir (Cmd/Ctrl+P), estilos.css oculta todo lo
+       demás y deja solo .hoja-imprimible ocupando la hoja (ver
+       @media print y el comentario de #panel-ficha-imprimir más abajo,
+       que comparte el mismo mecanismo). -->
   <div id="panel-cartel-qr" class="oculto panel-pantalla-completa" data-testid="panel-cartel-qr">
     <div class="panel-header">
       <h2>Cartel para el terreno</h2>
       <button id="cerrar-cartel-qr" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     </div>
-    <div id="cartel-qr-contenido">
-      <p class="cartel-qr-marca">MojonApp</p>
-      <h3 id="cartel-qr-titulo"></h3>
-      <p id="cartel-qr-subtitulo"></p>
-      <img id="cartel-qr-imagen" width="300" height="300" alt="Código QR para ver este lote en MojonApp" />
-      <p class="cartel-qr-instruccion">Escaneá el código para ver este lote</p>
+    <div class="hoja-imprimible">
+      <p class="hoja-imprimible-marca">MojonApp</p>
+      <h3 id="cartel-qr-titulo" class="hoja-imprimible-titulo"></h3>
+      <p id="cartel-qr-subtitulo" class="hoja-imprimible-subtitulo"></p>
+      <img id="cartel-qr-imagen" class="hoja-imprimible-qr" width="300" height="300" alt="Código QR para ver este lote en MojonApp" />
+      <p class="hoja-imprimible-nota">Escaneá el código para ver este lote</p>
     </div>
-    <button type="button" id="btn-imprimir-cartel" class="crm-btn-primario" data-testid="btn-imprimir-cartel">Imprimir</button>
+    <button type="button" id="btn-imprimir-cartel" class="crm-btn-primario btn-imprimir" data-testid="btn-imprimir-cartel">Imprimir</button>
+  </div>
+
+  <!-- Ficha imprimible en PDF (idea #9) — a diferencia del cartel (un
+       dato clavado en un poste), esta es para que un corredor le
+       imprima/mande el PDF a un cliente con todos los datos del lote.
+       Mismo mecanismo de impresión que el cartel (.hoja-imprimible +
+       @media print en estilos.css), separada en su propio panel para
+       que solo una de las dos hojas esté visible/imprimible por vez. -->
+  <div id="panel-ficha-imprimir" class="oculto panel-pantalla-completa" data-testid="panel-ficha-imprimir">
+    <div class="panel-header">
+      <h2>Ficha para imprimir</h2>
+      <button id="cerrar-ficha-imprimir" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="hoja-imprimible">
+      <p class="hoja-imprimible-marca">MojonApp</p>
+      <h3 id="ficha-imprimir-titulo" class="hoja-imprimible-titulo"></h3>
+      <p id="ficha-imprimir-subtitulo" class="hoja-imprimible-subtitulo"></p>
+      <table class="hoja-imprimible-tabla">
+        <tbody id="ficha-imprimir-tabla-cuerpo"></tbody>
+      </table>
+      <img id="ficha-imprimir-imagen" class="hoja-imprimible-qr" width="180" height="180" alt="Código QR para ver este lote en MojonApp" />
+      <p class="hoja-imprimible-nota">Escaneá el código para ver este lote actualizado</p>
+      <p id="ficha-imprimir-fecha" class="hoja-imprimible-fecha"></p>
+    </div>
+    <button type="button" id="btn-imprimir-ficha" class="crm-btn-primario btn-imprimir" data-testid="btn-imprimir-ficha">Imprimir</button>
   </div>
 
   <!-- CRM: contactos + pipeline visual (ver js/crm.js). "Agregar interesado"
@@ -1103,6 +1134,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-13"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-14"></script>
 </body>
 </html>
