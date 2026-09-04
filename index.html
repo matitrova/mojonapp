@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-16" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-17" />
 </head>
 <body>
 
@@ -783,16 +783,32 @@
   </div>
 
   <!-- Favoritos: lista personal del propio navegador (localStorage), sin
-       sesión — ver js/favoritos.js. -->
+       sesión — ver js/favoritos.js. Idea propia inspirada en el
+       comparador de Trulia (ver feedback_buscar_inspiracion_real): con 2
+       o más favoritos tildados aparece "Comparar" para verlos lado a
+       lado — mismo criterio real de "estoy dudando entre estos dos
+       lotes". -->
   <div id="panel-favoritos" class="oculto panel-pantalla-completa" data-testid="panel-favoritos">
     <div class="panel-header">
       <h2>Favoritos</h2>
       <button id="cerrar-panel-favoritos" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     </div>
+    <p id="favoritos-comparar-ayuda" class="dashboard-ayuda oculto">Tildá 2 a 4 para compararlos lado a lado.</p>
     <ul id="lista-favoritos" class="dashboard-lista" data-testid="lista-favoritos"></ul>
     <p id="favoritos-vacio" class="dashboard-vacio oculto" data-testid="favoritos-vacio">
       Todavía no guardaste ningún lote. Tocá el 🤍 en la ficha de un lote para guardarlo acá.
     </p>
+    <button type="button" id="btn-comparar-favoritos" class="crm-btn-primario oculto" data-testid="btn-comparar-favoritos">Comparar (0)</button>
+  </div>
+
+  <div id="panel-comparar-lotes" class="oculto panel-pantalla-completa" data-testid="panel-comparar-lotes">
+    <div class="panel-header">
+      <h2>Comparar lotes</h2>
+      <button id="cerrar-comparar-lotes" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="tabla-scroll">
+      <table id="tabla-comparar-lotes" class="tabla-panel" data-testid="tabla-comparar-lotes"></table>
+    </div>
   </div>
 
   <!-- Cartel con QR para imprimir y dejar en el terreno (idea #7) — ver
@@ -1170,6 +1186,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-16"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-17"></script>
 </body>
 </html>

@@ -2790,6 +2790,57 @@ button:active {
   color: var(--color-vendido);
 }
 
+/* Comparador (idea propia, ver feedback_buscar_inspiracion_real) —
+   checkbox para elegir hasta 4 favoritos y verlos lado a lado. */
+.favorito-comparar-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primario);
+  cursor: pointer;
+}
+
+#btn-comparar-favoritos {
+  width: 100%;
+  margin-top: 14px;
+}
+
+#tabla-comparar-lotes th:first-child,
+#tabla-comparar-lotes td:first-child {
+  color: var(--color-texto-secundario);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#tabla-comparar-lotes .comparar-lote-titulo {
+  display: block;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-primario);
+  cursor: pointer;
+  text-align: left;
+}
+
+#tabla-comparar-lotes .comparar-lote-titulo:hover {
+  text-decoration: underline;
+}
+
+#tabla-comparar-lotes .comparar-quitar {
+  background: none;
+  border: none;
+  color: var(--color-texto-secundario);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0 0 0 8px;
+}
+
+#tabla-comparar-lotes .comparar-quitar:hover {
+  color: var(--color-vendido);
+}
+
 /* ---------------------------------------------------------------------
    "También te puede interesar" (js/ficha.js, renderLotesSimilares) —
    fila de mini-tarjetas con scroll horizontal, mismo criterio que el

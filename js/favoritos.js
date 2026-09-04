@@ -62,11 +62,105 @@ const elBtnAbrir = document.getElementById("btn-abrir-favoritos");
 const elLista = document.getElementById("lista-favoritos");
 const elVacio = document.getElementById("favoritos-vacio");
 
+// ---------------------------------------------------------------------------
+// Comparador (idea propia, investigada en el comparador de Trulia antes de
+// armarla — ver feedback_buscar_inspiracion_real): elegir 2 a 4 favoritos y
+// verlos lado a lado. Mismo criterio de "un lote sin ese dato no se
+// inventa" que el resto de la app — se muestra "—", no se completa nada.
+// ---------------------------------------------------------------------------
+
+const MAX_COMPARAR = 4;
+const ETIQUETA_ESTADO = { disponible: "Disponible", reservado: "Reservado", vendido: "Vendido" };
+const SERVICIOS_INFO = [
+  { clave: "luz", etiqueta: "Luz" },
+  { clave: "agua", etiqueta: "Agua" },
+  { clave: "gas", etiqueta: "Gas" },
+  { clave: "cloaca", etiqueta: "Cloaca" }
+];
+
+let seleccionComparar = new Set(); // ids de lote tildados, se reinicia cada vez que se abre el panel
+
+const elAyudaComparar = document.getElementById("favoritos-comparar-ayuda");
+const elBtnComparar = document.getElementById("btn-comparar-favoritos");
+const elPanelComparar = document.getElementById("panel-comparar-lotes");
+const elTablaComparar = document.getElementById("tabla-comparar-lotes");
+
+function actualizarBotonComparar() {
+  const n = seleccionComparar.size;
+  elBtnComparar.textContent = `Comparar (${n})`;
+  elBtnComparar.classList.toggle("oculto", n < 2);
+}
+
+function formatearServicios(servicios) {
+  if (servicios == null) return "—";
+  return SERVICIOS_INFO.map(({ clave, etiqueta }) => `${etiqueta}: ${servicios[clave] ? "sí" : "no"}`).join(" · ");
+}
+
+function renderComparador() {
+  const lotesPorId = new Map(getLotesActuales().map((f) => [f.id, f]));
+  const lotes = [...seleccionComparar].map((id) => lotesPorId.get(id)).filter(Boolean);
+
+  const filas = [
+    { etiqueta: "Zona", valor: (p) => p.sector || "—" },
+    { etiqueta: "Barrio", valor: (p) => p.barrio || "—" },
+    { etiqueta: "Superficie", valor: (p) => (p.superficie_m2 != null ? `${p.superficie_m2} m²` : "—") },
+    { etiqueta: "Estado", valor: (p) => ETIQUETA_ESTADO[p.estado] || p.estado || "—" },
+    { etiqueta: "Precio", valor: (p) => (p.precio_usd != null ? `USD ${Number(p.precio_usd).toLocaleString("es-AR")}` : "—") },
+    { etiqueta: "Servicios", valor: (p) => formatearServicios(p.servicios) }
+  ];
+
+  const filaTitulos = lotes
+    .map(
+      (feature) =>
+        `<th><button type="button" class="comparar-lote-titulo">${tituloLote(feature.properties)}</button><br><button type="button" class="comparar-quitar">Quitar ×</button></th>`
+    )
+    .join("");
+
+  elTablaComparar.innerHTML = `
+    <thead><tr><th></th>${filaTitulos}</tr></thead>
+    <tbody>
+      ${filas
+        .map(
+          ({ etiqueta, valor }) =>
+            `<tr><th>${etiqueta}</th>${lotes.map((f) => `<td>${valor(f.properties)}</td>`).join("")}</tr>`
+        )
+        .join("")}
+    </tbody>
+  `;
+  // El HTML de arriba es texto plano (innerHTML) — los listeners se
+  // enganchan acá, no se pueden poner "adentro" del template.
+  elTablaComparar.querySelectorAll(".comparar-lote-titulo").forEach((boton, i) => {
+    boton.addEventListener("click", () => irALoteDesdeFavoritos(lotes[i]));
+  });
+  elTablaComparar.querySelectorAll(".comparar-quitar").forEach((boton, i) => {
+    boton.addEventListener("click", () => {
+      seleccionComparar.delete(lotes[i].id);
+      if (seleccionComparar.size < 2) {
+        elPanelComparar.classList.add("oculto");
+      } else {
+        renderComparador();
+      }
+      actualizarBotonComparar();
+    });
+  });
+}
+
+elBtnComparar.addEventListener("click", () => {
+  renderComparador();
+  elPanelComparar.classList.remove("oculto");
+});
+
+document.getElementById("cerrar-comparar-lotes").addEventListener("click", () => {
+  elPanelComparar.classList.add("oculto");
+});
+
 // Mismo criterio que irAFichaDesdeDashboard (dashboard.js): centra el
 // mapa primero para que la ficha no se abra sobre un punto fuera de la
-// vista actual.
+// vista actual. Cierra los dos paneles (favoritos y comparador) — puede
+// llamarse desde cualquiera de los dos.
 function irALoteDesdeFavoritos(feature) {
   elPanel.classList.add("oculto");
+  elPanelComparar.classList.add("oculto");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
   mostrarFicha(feature);
@@ -84,9 +178,35 @@ function renderFavoritos() {
   elLista.innerHTML = "";
   lotes.forEach((feature) => {
     const li = document.createElement("li");
+    li.dataset.loteId = feature.id; // permite ubicar una fila puntual (tests, debug)
 
     const grupo = document.createElement("span");
     grupo.className = "dashboard-lote-titulo-grupo";
+
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.className = "favorito-comparar-check";
+    check.checked = seleccionComparar.has(feature.id);
+    check.setAttribute("aria-label", `Elegir ${tituloLote(feature.properties)} para comparar`);
+    check.addEventListener("click", (evento) => evento.stopPropagation()); // no abrir la ficha al tildar
+    check.addEventListener("change", () => {
+      if (check.checked) {
+        // Techo de MAX_COMPARAR: más de 4 columnas no entra cómodo en
+        // una tabla comparativa — mismo criterio que cualquier
+        // comparador real (Trulia, por ejemplo, también limita cuántos
+        // podés comparar a la vez).
+        if (seleccionComparar.size >= MAX_COMPARAR) {
+          check.checked = false;
+          return;
+        }
+        seleccionComparar.add(feature.id);
+      } else {
+        seleccionComparar.delete(feature.id);
+      }
+      actualizarBotonComparar();
+    });
+    grupo.appendChild(check);
+
     const titulo = document.createElement("span");
     titulo.className = "dashboard-lote-titulo";
     titulo.textContent = tituloLote(feature.properties);
@@ -102,6 +222,8 @@ function renderFavoritos() {
     botonQuitar.addEventListener("click", (evento) => {
       evento.stopPropagation(); // no abrir la ficha al tocar "quitar"
       alternarFavorito(feature.id);
+      seleccionComparar.delete(feature.id); // no dejarlo colgado en el contador de "Comparar"
+      actualizarBotonComparar();
       renderFavoritos();
     });
     li.appendChild(botonQuitar);
@@ -110,6 +232,7 @@ function renderFavoritos() {
   });
 
   elVacio.classList.toggle("oculto", lotes.length > 0);
+  elAyudaComparar.classList.toggle("oculto", lotes.length < 2);
 }
 
 elBtnAbrir.addEventListener("click", () => {
@@ -121,12 +244,15 @@ elBtnAbrir.addEventListener("click", () => {
   document.getElementById("panel-dashboard")?.classList.add("oculto");
   document.getElementById("panel-crm")?.classList.add("oculto");
   document.getElementById("ficha-lote").classList.add("oculto");
+  seleccionComparar = new Set(); // arranca sin nada tildado cada vez que se abre
   renderFavoritos();
+  actualizarBotonComparar();
   elPanel.classList.remove("oculto");
 });
 
 document.getElementById("cerrar-panel-favoritos").addEventListener("click", () => {
   elPanel.classList.add("oculto");
+  elPanelComparar.classList.add("oculto");
 });
 
 // Cualquier otra navegación desde el menú lateral cierra este panel
@@ -135,5 +261,6 @@ document.getElementById("drawer-menu").addEventListener("click", (evento) => {
   const boton = evento.target.closest(".drawer-item");
   if (boton && boton.id !== "btn-abrir-favoritos") {
     elPanel.classList.add("oculto");
+    elPanelComparar.classList.add("oculto");
   }
 });
