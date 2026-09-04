@@ -164,9 +164,21 @@ def _con_reintento(intentar, intentos=8, espera=0.5):
     "buscar_..._por_..." de acá abajo lee por una vía completamente
     aparte (REST, desde Python) — un puñado de reintentos cortos evita un
     falso negativo por una carrera de red entre ambas lecturas, sin
-    esconder un fallo real (agota los intentos y devuelve None)."""
-    for _ in range(intentos):
-        resultado = intentar()
+    esconder un fallo real (agota los intentos y devuelve None).
+
+    Un 429 (quota excedida — visto en vivo corriendo el suite completo
+    varias veces seguidas) también se reintenta, con una espera más
+    larga: es un fallo transitorio de la cuota de Firestore, no una
+    señal de que el dato no está — dejarlo propagar como excepción corta
+    los reintentos de golpe en el primer intento."""
+    for intento in range(intentos):
+        try:
+            resultado = intentar()
+        except requests.exceptions.HTTPError as error:
+            if error.response is not None and error.response.status_code == 429 and intento < intentos - 1:
+                time.sleep(espera * 4)
+                continue
+            raise
         if resultado:
             return resultado
         time.sleep(espera)
@@ -177,16 +189,35 @@ def buscar_doc_id_por_observaciones(texto):
     """Lectura pública (sin login): busca un lote por su texto de
     observaciones exacto. Se usa para encontrar y limpiar el lote que un
     test creó a través del formulario de la UI (que no expone el id del
-    documento nuevo)."""
+    documento nuevo).
+
+    Pide pageSize=300 (por encima de la cantidad de lotes de prueba que
+    hay hoy) para traer todo en un solo pedido — Firestore REST devuelve
+    como mucho ~100 documentos por página si no se pide un tamaño mayor,
+    y con más de 100 lotes ya cargados en la base de prueba, quedarse con
+    el tamaño de página por default hacía que este helper no encontrara
+    lotes recién creados que cayeran fuera de la primera página, y el
+    test fallaba con "no apareció en Firestore" de forma intermitente
+    aunque el lote sí se había guardado bien. Igual recorre nextPageToken
+    por si en algún momento se supera ese tamaño, para no reintroducir el
+    mismo bug más adelante."""
 
     def intentar():
-        respuesta = requests.get(FIRESTORE_URL_BASE, timeout=10)
-        respuesta.raise_for_status()
-        for doc in respuesta.json().get("documents", []):
-            campos = doc.get("fields", {})
-            if campos.get("observaciones", {}).get("stringValue") == texto:
-                return doc["name"].rsplit("/", 1)[-1]
-        return None
+        pagina_token = None
+        while True:
+            parametros = {"pageSize": 300}
+            if pagina_token:
+                parametros["pageToken"] = pagina_token
+            respuesta = requests.get(FIRESTORE_URL_BASE, params=parametros, timeout=10)
+            respuesta.raise_for_status()
+            cuerpo = respuesta.json()
+            for doc in cuerpo.get("documents", []):
+                campos = doc.get("fields", {})
+                if campos.get("observaciones", {}).get("stringValue") == texto:
+                    return doc["name"].rsplit("/", 1)[-1]
+            pagina_token = cuerpo.get("nextPageToken")
+            if not pagina_token:
+                return None
 
     return _con_reintento(intentar)
 

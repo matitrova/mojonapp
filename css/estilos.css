@@ -1452,6 +1452,16 @@ button:active {
   color: var(--color-texto);
 }
 
+#vista-lista-filtros input[type="number"] {
+  font: inherit;
+  width: 110px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--color-texto);
+}
+
 #vista-lista-sin-resultados {
   color: var(--color-texto-secundario);
   font-size: 0.9rem;

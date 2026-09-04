@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-09" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-10" />
 </head>
 <body>
 
@@ -918,6 +918,23 @@
             <option value="vendido">Vendido</option>
           </select>
         </label>
+        <!-- Un lote SIN precio/superficie cargado no pasa este filtro en
+             cuanto se completa alguno de los dos campos (ver
+             lotesFiltrados en vista-lista.js) — no se puede asegurar que
+             esté en el rango pedido, mismo criterio que cualquier
+             filtro de un portal real. -->
+        <label>Precio USD, desde
+          <input type="number" id="filtro-precio-min" min="0" placeholder="Sin mínimo" data-testid="filtro-precio-min" />
+        </label>
+        <label>hasta
+          <input type="number" id="filtro-precio-max" min="0" placeholder="Sin máximo" data-testid="filtro-precio-max" />
+        </label>
+        <label>Superficie m², desde
+          <input type="number" id="filtro-superficie-min" min="0" placeholder="Sin mínimo" data-testid="filtro-superficie-min" />
+        </label>
+        <label>hasta
+          <input type="number" id="filtro-superficie-max" min="0" placeholder="Sin máximo" data-testid="filtro-superficie-max" />
+        </label>
         <label>Mostrar
           <select id="filtro-cantidad" data-testid="filtro-cantidad">
             <option value="5">5</option>
@@ -1029,6 +1046,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-09"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-10"></script>
 </body>
 </html>

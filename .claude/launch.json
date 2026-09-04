@@ -4,8 +4,8 @@
     {
       "name": "loteo-merlo-static",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8123"],
-      "port": 8123
+      "runtimeArgs": ["scripts/servidor_dev.py", "8137"],
+      "port": 8137
     }
   ]
 }

@@ -67,6 +67,10 @@ const elTablaLotesCuerpo = document.getElementById("tabla-lotes-cuerpo");
 const elFiltroSector = document.getElementById("filtro-sector");
 const elFiltroBarrio = document.getElementById("filtro-barrio");
 const elFiltroEstado = document.getElementById("filtro-estado");
+const elFiltroPrecioMin = document.getElementById("filtro-precio-min");
+const elFiltroPrecioMax = document.getElementById("filtro-precio-max");
+const elFiltroSuperficieMin = document.getElementById("filtro-superficie-min");
+const elFiltroSuperficieMax = document.getElementById("filtro-superficie-max");
 const elFiltroCantidad = document.getElementById("filtro-cantidad");
 const elPaginacion = document.getElementById("vista-lista-paginacion");
 const elPaginaAnterior = document.getElementById("pagina-anterior");
@@ -125,11 +129,23 @@ function actualizarOpcionesFiltroBarrio() {
 }
 
 function lotesFiltrados() {
+  const precioMin = elFiltroPrecioMin.value ? Number(elFiltroPrecioMin.value) : null;
+  const precioMax = elFiltroPrecioMax.value ? Number(elFiltroPrecioMax.value) : null;
+  const superficieMin = elFiltroSuperficieMin.value ? Number(elFiltroSuperficieMin.value) : null;
+  const superficieMax = elFiltroSuperficieMax.value ? Number(elFiltroSuperficieMax.value) : null;
+
   return getLotesActuales().filter((feature) => {
     const p = feature.properties;
     if (elFiltroSector.value && p.sector !== elFiltroSector.value) return false;
     if (elFiltroBarrio.value && p.barrio !== elFiltroBarrio.value) return false;
     if (elFiltroEstado.value && p.estado !== elFiltroEstado.value) return false;
+    // Un lote sin precio/superficie cargado no puede asegurarse que
+    // esté en el rango pedido — no pasa el filtro apenas se completa
+    // alguno de los dos campos (mismo criterio que un portal real).
+    if (precioMin != null && (p.precio_usd == null || p.precio_usd < precioMin)) return false;
+    if (precioMax != null && (p.precio_usd == null || p.precio_usd > precioMax)) return false;
+    if (superficieMin != null && (p.superficie_m2 == null || p.superficie_m2 < superficieMin)) return false;
+    if (superficieMax != null && (p.superficie_m2 == null || p.superficie_m2 > superficieMax)) return false;
     return true;
   });
 }
@@ -238,6 +254,10 @@ function reiniciarPaginaYActualizar() {
 elFiltroSector.addEventListener("change", reiniciarPaginaYActualizar);
 elFiltroBarrio.addEventListener("change", reiniciarPaginaYActualizar);
 elFiltroEstado.addEventListener("change", reiniciarPaginaYActualizar);
+elFiltroPrecioMin.addEventListener("input", reiniciarPaginaYActualizar);
+elFiltroPrecioMax.addEventListener("input", reiniciarPaginaYActualizar);
+elFiltroSuperficieMin.addEventListener("input", reiniciarPaginaYActualizar);
+elFiltroSuperficieMax.addEventListener("input", reiniciarPaginaYActualizar);
 elFiltroCantidad.addEventListener("change", reiniciarPaginaYActualizar);
 
 // Editar un lote directo desde la grilla (sin pasar por el mapa/ficha):
