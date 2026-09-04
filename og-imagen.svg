@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Imagen de marca para el preview al compartir un link (idea #10) —
+       mismo criterio visual que el resto de la app: paleta cálida/rural
+       (verde oliva + terracota sobre fondo crema, ver :root en
+       estilos.css), sin depender de ninguna fuente externa (system-ui,
+       igual que el resto de MojonApp). El motivo central es el límite
+       real de un lote sobre "imagen satelital" (el diferencial de la
+       app frente a un pin genérico de portal) -->
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fdfaf5" />
+      <stop offset="1" stop-color="#f5eee1" />
+    </linearGradient>
+    <pattern id="pastoSutil" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M0 42 L21 0 L42 42" fill="none" stroke="#e4d7c3" stroke-width="1" opacity="0.5" />
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#fondo)" />
+  <rect width="1200" height="630" fill="url(#pastoSutil)" />
+
+  <!-- "Imagen satelital" estilizada: parches verdes irregulares, como
+       manzanas de un loteo visto desde arriba -->
+  <g opacity="0.9">
+    <rect x="760" y="40" width="180" height="150" rx="6" fill="#5c7f3f" opacity="0.35" />
+    <rect x="960" y="70" width="150" height="130" rx="6" fill="#33523a" opacity="0.3" />
+    <rect x="800" y="210" width="160" height="140" rx="6" fill="#33523a" opacity="0.25" />
+    <rect x="980" y="220" width="140" height="160" rx="6" fill="#5c7f3f" opacity="0.3" />
+    <rect x="760" y="370" width="170" height="150" rx="6" fill="#5c7f3f" opacity="0.28" />
+    <rect x="960" y="400" width="160" height="140" rx="6" fill="#33523a" opacity="0.32" />
+  </g>
+
+  <!-- El lote destacado: límite real dibujado a mano, terracota, con sus
+       vértices marcados — la idea central de todo el producto -->
+  <polygon points="840,220 990,190 1030,320 900,380 830,320"
+           fill="#c1663f" fill-opacity="0.22" stroke="#c1663f" stroke-width="5"
+           stroke-dasharray="2 10" stroke-linecap="round" />
+  <g fill="#c1663f">
+    <circle cx="840" cy="220" r="7" />
+    <circle cx="990" cy="190" r="7" />
+    <circle cx="1030" cy="320" r="7" />
+    <circle cx="900" cy="380" r="7" />
+    <circle cx="830" cy="320" r="7" />
+  </g>
+
+  <!-- Marca -->
+  <text x="80" y="270" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="86" font-weight="800" fill="#33523a">MojonApp</text>
+  <text x="80" y="330" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="32" font-weight="600" fill="#7a6a58">El límite real de tu terreno,</text>
+  <text x="80" y="372" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="32" font-weight="600" fill="#7a6a58">no un pin genérico</text>
+
+  <!-- Chip "disponible", mismo verbo visual que usa la app en el mapa -->
+  <rect x="80" y="420" width="190" height="52" rx="26" fill="#5c7f3f" />
+  <circle cx="112" cy="446" r="7" fill="#fff" />
+  <text x="132" y="454" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="24" font-weight="700" fill="#fff">Disponible</text>
+</svg>
