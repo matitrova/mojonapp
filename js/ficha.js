@@ -843,14 +843,28 @@ document.getElementById("btn-como-llegar").addEventListener("click", () => {
 // link al portapapeles.
 const elCompartirLoteMensaje = document.getElementById("compartir-lote-mensaje");
 
+// El mensaje lleva superficie/precio si están cargados (idea propia,
+// mismo criterio que cualquier portal real — ZonaProp/MercadoLibre
+// arman el texto de WhatsApp con esos datos, no mandan un link pelado)
+// — un lote sin ese dato simplemente no lo menciona, no se inventa.
+function textoParaCompartir(feature) {
+  const p = feature.properties;
+  const partes = [`Mirá este lote en MojonApp: ${tituloLote(p)}`];
+  if (p.superficie_m2 != null) partes.push(`${p.superficie_m2} m²`);
+  if (p.precio_usd != null) partes.push(`USD ${Number(p.precio_usd).toLocaleString("es-AR")}`);
+  return partes.join(" — ");
+}
+
 document.getElementById("btn-compartir-lote").addEventListener("click", async () => {
   if (!getLoteSeleccionado()) return;
-  const url = `${location.origin}${location.pathname}?lote=${getLoteSeleccionado().id}`;
-  const titulo = tituloLote(getLoteSeleccionado().properties);
+  const feature = getLoteSeleccionado();
+  const url = `${location.origin}${location.pathname}?lote=${feature.id}`;
+  const titulo = tituloLote(feature.properties);
+  const texto = textoParaCompartir(feature);
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: `MojonApp - ${titulo}`, url });
+      await navigator.share({ title: `MojonApp - ${titulo}`, text: texto, url });
     } catch {
       // El usuario canceló el selector de compartir, o el navegador lo
       // bloqueó — no es un error real, no hace falta avisar nada.
@@ -859,16 +873,16 @@ document.getElementById("btn-compartir-lote").addEventListener("click", async ()
   }
 
   try {
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(`${texto}\n${url}`);
     elCompartirLoteMensaje.textContent = "Link copiado.";
     elCompartirLoteMensaje.classList.remove("oculto");
     setTimeout(() => elCompartirLoteMensaje.classList.add("oculto"), 2500);
   } catch {
     // Sin permiso de portapapeles (o sin soportarlo, como algunos
-    // navegadores embebidos): se deja el link a la vista, seleccionable
+    // navegadores embebidos): se deja el texto a la vista, seleccionable
     // a mano, en vez de depender de prompt() — no todos los entornos lo
     // soportan (ver quirk de testing en la memoria del proyecto).
-    elCompartirLoteMensaje.textContent = url;
+    elCompartirLoteMensaje.textContent = `${texto} ${url}`;
     elCompartirLoteMensaje.classList.remove("oculto");
   }
 });
