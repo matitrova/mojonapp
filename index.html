@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-08" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-09" />
 </head>
 <body>
 
@@ -177,6 +177,12 @@
         <button id="btn-editar-servicios" class="oculto btn-link" type="button" data-testid="btn-editar-servicios">Editar</button>
       </dd>
       <dt>Observaciones</dt><dd id="ficha-observaciones" data-testid="ficha-observaciones"></dd>
+      <!-- Se completa aparte, async (ver actualizarCercanias en
+           js/ficha.js) — dato real sacado en vivo de OpenStreetMap, no
+           un valor cargado con el resto del lote. Empieza oculta:
+           si Overpass no responde, no queda un "Calculando…" colgado. -->
+      <dt id="ficha-cercanias-dt" class="oculto">Cercanías</dt>
+      <dd id="ficha-cercanias" class="oculto" data-testid="ficha-cercanias"></dd>
     </dl>
     <!-- Fotos del lote (Cloudinary, ver subirFotoACloudinary en app.js) —
          la galería la ve cualquiera (comprador incluido, es justo lo que
@@ -1023,6 +1029,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-08"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-09"></script>
 </body>
 </html>

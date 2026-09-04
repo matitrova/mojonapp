@@ -37,6 +37,7 @@ import { registrarVistaDeLote } from "./dashboard.js";
 import { registrarAuditoria } from "./auditoria.js";
 import { crearContactoDesdeInteresado } from "./crm.js";
 import { esFavorito, alternarFavorito } from "./favoritos.js";
+import { distanciasReferenciaCercanas } from "./distancias-referencia.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -400,6 +401,7 @@ export function mostrarFicha(feature) {
   renderFotos(feature);
   actualizarBotonFavorito(feature.id);
   renderLotesSimilares(feature);
+  actualizarCercanias(feature);
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
   document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
@@ -746,6 +748,40 @@ function renderLotesSimilares(feature) {
     item.addEventListener("click", () => irALoteSimilar(f));
     elFichaSimilaresLista.appendChild(item);
   });
+}
+
+// ---------------------------------------------------------------------------
+// "Cercanías": distancia real a la ruta pavimentada y a la localidad más
+// próxima (ver js/distancias-referencia.js) — se pide async, no bloquea el
+// resto de la ficha, y no muestra nada si Overpass no contesta.
+// ---------------------------------------------------------------------------
+
+const elFichaCercaniasDt = document.getElementById("ficha-cercanias-dt");
+const elFichaCercanias = document.getElementById("ficha-cercanias");
+
+function formatearKm(km) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+}
+
+async function actualizarCercanias(feature) {
+  elFichaCercaniasDt.classList.add("oculto");
+  elFichaCercanias.classList.add("oculto");
+
+  const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+  const resultado = await distanciasReferenciaCercanas(lat, lon);
+
+  // Mientras se esperaba la respuesta el usuario pudo haber abierto otra
+  // ficha — no pisar esos datos con la respuesta de un pedido viejo.
+  if (!resultado || getLoteSeleccionado() !== feature) return;
+
+  const partes = [];
+  if (resultado.rutaKm != null) partes.push(`🛣️ Ruta pavimentada a ${formatearKm(resultado.rutaKm)}`);
+  if (resultado.localidadNombre) partes.push(`🏘️ ${resultado.localidadNombre} a ${formatearKm(resultado.localidadKm)}`);
+  if (partes.length === 0) return;
+
+  elFichaCercanias.innerHTML = partes.join("<br>");
+  elFichaCercaniasDt.classList.remove("oculto");
+  elFichaCercanias.classList.remove("oculto");
 }
 
 function construirUrlComoLlegar(feature) {
