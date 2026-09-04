@@ -15,6 +15,16 @@
   --color-disponible: #5c7f3f;
   --color-reservado: #d1912f;
   --color-vendido: #b8452f;
+  /* Un color por etapa del CRM (ver js/crm.js, ETAPAS) — visita/oferta/
+     cerrado/perdido reusan tonos que ya existen arriba porque significan
+     casi lo mismo que ya significan ahí; nuevo/contactado son los dos
+     únicos tonos nuevos que suma el CRM. */
+  --crm-nuevo: #6b7f8c;
+  --crm-contactado: #4f7cac;
+  --crm-visita: var(--color-acento);
+  --crm-oferta: var(--color-reservado);
+  --crm-cerrado: var(--color-disponible);
+  --crm-perdido: var(--color-vendido);
   --sombra-calida: 0 -4px 16px rgba(56, 38, 20, 0.22);
   --sombra-calida-suave: 0 1px 4px rgba(56, 38, 20, 0.18);
   --radio-chico: 8px;
@@ -1928,20 +1938,27 @@ button:active {
 
 #crm-kanban {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
-  padding-bottom: 10px;
+  padding: 2px 2px 12px;
   -webkit-overflow-scrolling: touch;
 }
 
+/* Cada columna tiñe apenas su fondo/borde con el color de su etapa
+   (--stage-color, puesto inline desde js/crm.js) y remata con una franja
+   de 3px arriba del mismo color — mismo lenguaje que Pipedrive/HubSpot:
+   las 6 columnas se distinguen entre sí de un vistazo, sin depender de
+   leer el título de cada una. */
 .crm-columna {
-  flex: 0 0 210px;
+  flex: 0 0 226px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: var(--color-fondo-alterno);
+  gap: 10px;
+  background: color-mix(in srgb, var(--stage-color) 7%, var(--color-fondo));
+  border: 1px solid color-mix(in srgb, var(--stage-color) 20%, var(--color-borde));
+  border-top: 3px solid var(--stage-color);
   border-radius: var(--radio-mediano);
-  padding: 10px;
+  padding: 12px 10px;
 }
 
 .crm-columna-titulo {
@@ -1954,8 +1971,16 @@ button:active {
   gap: 6px;
 }
 
+.crm-columna-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--stage-color);
+  flex-shrink: 0;
+}
+
 .crm-columna-contador {
-  background: var(--color-borde);
+  background: color-mix(in srgb, var(--stage-color) 16%, var(--color-fondo));
   color: var(--color-texto-secundario);
   font-size: 0.72rem;
   font-weight: 700;
@@ -1963,16 +1988,52 @@ button:active {
   padding: 1px 7px;
 }
 
+/* Tarjeta: borde izquierdo del color de la etapa (se ve aunque la
+   columna quede fuera de pantalla al scrollear), fondo blanco liso para
+   que contraste con el tinte de la columna, y un hover con sombra más
+   marcada + leve levantamiento — sensación de tarjeta "tocable", no un
+   bloque de texto plano. */
 .crm-tarjeta {
-  background: var(--color-fondo);
+  background: #fff;
   border: 1px solid var(--color-borde);
+  border-left: 4px solid var(--stage-color);
   border-radius: var(--radio-chico);
-  padding: 8px 10px;
+  padding: 10px 12px;
   box-shadow: var(--sombra-calida-suave);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.crm-tarjeta:hover {
+  box-shadow: 0 6px 16px rgba(56, 38, 20, 0.16);
+  transform: translateY(-1px);
+}
+
+.crm-tarjeta-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Avatar con iniciales, color determinístico por nombre (ver
+   colorAvatar en js/crm.js) — mismo lenguaje que Trello/Asana: identifica
+   la tarjeta de un vistazo, no solo texto plano. */
+.crm-avatar {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .crm-tarjeta-nombre {
@@ -1980,6 +2041,10 @@ button:active {
   font-weight: 700;
   color: var(--color-texto);
   font-size: 0.88rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .crm-tarjeta-lotes {
@@ -1991,21 +2056,47 @@ button:active {
   white-space: nowrap;
 }
 
+.crm-tarjeta-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .crm-tarjeta-fecha {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--color-texto-secundario);
 }
 
 .crm-tarjeta-mover {
   font: inherit;
   font-size: 0.78rem;
-  color: var(--color-texto);
+  font-weight: 600;
+  color: var(--stage-color);
   background: #fff;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-chico);
-  padding: 5px 6px;
+  padding: 6px 8px;
   margin-top: 2px;
+}
+
+/* Flecha propia en vez del control crudo del navegador — se aplica a
+   TODOS los <select> del CRM (acá abajo también .crm-campo select y
+   demás), para que se vean como parte del diseño y no como un <select>
+   sin estilizar. */
+.crm-tarjeta-mover,
+.crm-campo select,
+.crm-agregar-lote select,
+#crm-agregar-actividad select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a6a58' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  padding-right: 28px;
+  cursor: pointer;
 }
 
 /* Formulario de alta/edición de contacto — mismo look que el resto de
@@ -2152,6 +2243,13 @@ button:active {
   text-align: center;
   box-shadow: var(--sombra-calida-suave);
 }
+
+/* Un color distinto por métrica (mismo orden en que renderStats() las
+   arma) — igual que las tarjetas de estado del Dashboard, para que las 4
+   no se vean como una fila repetida del mismo bloque. */
+.crm-stat:nth-child(2) { border-top-color: var(--crm-contactado); }
+.crm-stat:nth-child(3) { border-top-color: var(--crm-cerrado); }
+.crm-stat:nth-child(4) { border-top-color: var(--crm-visita); }
 
 .crm-stat strong {
   display: block;
@@ -2304,22 +2402,12 @@ button:active {
   resize: vertical;
 }
 
-/* Quién es el dueño de un contacto — solo aparece en vista "Todos" (ver
-   textoAsignado en js/crm.js), tanto en la tarjeta del kanban como en el
-   formulario cuando el contacto no es propio. */
+/* Quién es el dueño de un contacto, en la tarjeta del kanban — solo
+   aparece en vista "Todos" (ver textoAsignado en js/crm.js). En el
+   formulario ya no es un badge de solo lectura: es el <select>
+   "Asignado a" (#crm-campo-asignado, reusa el estilo de .crm-campo). */
 .crm-tarjeta-asignado {
   margin: 0;
   font-size: 0.72rem;
   color: var(--color-texto-secundario);
-}
-
-.crm-asignado-a {
-  display: inline-block;
-  margin: -4px 0 12px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--color-acento);
-  background: var(--color-acento-suave);
-  border-radius: var(--radio-chico);
-  padding: 3px 9px;
 }

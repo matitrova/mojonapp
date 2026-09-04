@@ -230,6 +230,40 @@ def borrar_contacto_de_prueba(doc_id):
     )
 
 
+FIRESTORE_URL_BASE_USUARIOS = (
+    f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}"
+    "/databases/(default)/documents/usuarios"
+)
+
+
+def crear_usuario_de_prueba(uid, email):
+    """Crea (o pisa) un doc en "usuarios/{uid}" directo por REST — para
+    tests que necesitan un SEGUNDO corredor real en la lista (ej.
+    reasignar un contacto en el CRM) sin depender de qué usuarios reales
+    haya cargados hoy en este proyecto, ni crear una cuenta de Firebase
+    Auth nueva (alcanza con el doc de Firestore, que es lo único que lee
+    la app para armar el <select>). Solo root puede escribir en
+    "usuarios" (ver firestore.rules) — la cuenta de prueba lo es."""
+    id_token = _id_token_de_prueba()
+    campos = {clave: _a_valor_firestore(valor) for clave, valor in {"email": email, "perfil_id": "corredor"}.items()}
+    respuesta = requests.patch(
+        f"{FIRESTORE_URL_BASE_USUARIOS}/{uid}",
+        headers={"Authorization": f"Bearer {id_token}"},
+        json={"fields": campos},
+        timeout=10,
+    )
+    respuesta.raise_for_status()
+
+
+def borrar_usuario_de_prueba(uid):
+    id_token = _id_token_de_prueba()
+    requests.delete(
+        f"{FIRESTORE_URL_BASE_USUARIOS}/{uid}",
+        headers={"Authorization": f"Bearer {id_token}"},
+        timeout=10,
+    )
+
+
 def crear_contacto_de_prueba(datos):
     """Crea un documento en "contactos" directo por REST (sin pasar por
     la UI) y devuelve su id — para tests que necesitan un contacto con

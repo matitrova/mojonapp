@@ -24,8 +24,10 @@ from conftest import (
     TEST_USER_EMAIL,
     TEST_USER_PASSWORD,
     borrar_contacto_de_prueba,
+    borrar_usuario_de_prueba,
     buscar_contacto_doc_id_por_nombre,
     crear_contacto_de_prueba,
+    crear_usuario_de_prueba,
 )
 
 
@@ -269,7 +271,53 @@ def test_contacto_de_otro_corredor_solo_aparece_en_todos(page, base_url):
         expect(tarjeta).to_contain_text("Otro corredor")
 
         tarjeta.click()
-        expect(page.locator("#crm-asignado-a")).to_be_visible()
-        expect(page.locator("#crm-asignado-a")).to_contain_text("Otro corredor")
+        # Con "ver_todos_los_contactos" (root), "Asignado a" es un
+        # <select> editable, no un texto de solo lectura — el uid
+        # inexistente entra como opción aparte (mismo criterio que
+        # poblarSelectCatalogo en catalogos.js), no se pierde ni revienta.
+        expect(page.locator("#crm-campo-asignado")).to_be_visible()
+        select_asignado = page.locator("#contacto-asignado")
+        expect(select_asignado).to_have_value("uid-de-otro-corredor-inexistente")
+        expect(select_asignado).to_contain_text("usuario no encontrado")
     finally:
         borrar_contacto_de_prueba(doc_id)
+
+
+def test_reasignar_contacto_a_otro_corredor(page, base_url):
+    nombre = f"TEST-{uuid.uuid4().hex[:8]}"
+    otro_uid = f"uid-test-{uuid.uuid4().hex[:8]}"
+    otro_email = f"otro-{uuid.uuid4().hex[:6]}@mojonapp.local"
+    doc_id = None
+    # Segundo corredor de prueba, autocontenido — no depende de qué
+    # usuarios reales haya cargados hoy en este proyecto (ver
+    # crear_usuario_de_prueba en conftest.py).
+    crear_usuario_de_prueba(otro_uid, otro_email)
+    try:
+        _loguearse(page, base_url)
+        _abrir_crm(page)
+
+        page.locator("#btn-agregar-contacto").click()
+        page.locator("#contacto-nombre").fill(nombre)
+        page.locator("#contacto-guardar-btn").click()
+        expect(page.locator(".crm-tarjeta", has_text=nombre)).to_have_count(1)
+
+        doc_id = buscar_contacto_doc_id_por_nombre(nombre)
+        assert doc_id is not None
+
+        page.locator(f'[data-testid="crm-tarjeta-{doc_id}"]').click()
+        page.locator("#contacto-asignado").select_option(otro_uid)
+        page.locator("#contacto-guardar-btn").click()
+        expect(page.locator("#crm-vista-kanban")).to_be_visible()
+
+        # Reasignado fuera de uno mismo: ya no tiene que aparecer en "Mis
+        # contactos" (default), pero sí en "Todos", ahora con el email
+        # del nuevo dueño.
+        expect(page.locator(".crm-tarjeta", has_text=nombre)).to_have_count(0)
+        page.locator("#btn-crm-vista-todas").click()
+        tarjeta = page.locator(f'[data-testid="crm-tarjeta-{doc_id}"]')
+        expect(tarjeta).to_be_visible()
+        expect(tarjeta).to_contain_text(otro_email)
+    finally:
+        if doc_id:
+            borrar_contacto_de_prueba(doc_id)
+        borrar_usuario_de_prueba(otro_uid)

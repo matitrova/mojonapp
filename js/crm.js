@@ -67,15 +67,25 @@ export function configurarCrm(deps) {
   ({ mapa, mostrarFicha, tituloLote } = deps);
 }
 
+// Un color por etapa (variables CSS nuevas, ver estilos.css) — pintan el
+// borde de arriba de cada columna y el borde izquierdo de cada tarjeta,
+// mismo lenguaje visual que cualquier CRM real (Pipedrive, HubSpot): se
+// distingue la etapa de un vistazo, sin tener que leer el texto. Reusan
+// colores que YA existen en la app para "visita"/"oferta"/"cerrado"/
+// "perdido" porque significan casi lo mismo que ya significan ahí
+// (oferta = decisión pendiente, como una reserva; cerrado = éxito, como
+// un lote disponible; perdido = una pérdida, como un lote vendido a
+// otro) — "nuevo"/"contactado" son los dos únicos tonos nuevos.
 const ETAPAS = [
-  { clave: "nuevo", etiqueta: "Nuevo" },
-  { clave: "contactado", etiqueta: "Contactado" },
-  { clave: "visita", etiqueta: "Visita" },
-  { clave: "oferta", etiqueta: "Oferta" },
-  { clave: "cerrado", etiqueta: "Cerrado" },
-  { clave: "perdido", etiqueta: "Perdido" }
+  { clave: "nuevo", etiqueta: "Nuevo", color: "var(--crm-nuevo)" },
+  { clave: "contactado", etiqueta: "Contactado", color: "var(--crm-contactado)" },
+  { clave: "visita", etiqueta: "Visita", color: "var(--crm-visita)" },
+  { clave: "oferta", etiqueta: "Oferta", color: "var(--crm-oferta)" },
+  { clave: "cerrado", etiqueta: "Cerrado", color: "var(--crm-cerrado)" },
+  { clave: "perdido", etiqueta: "Perdido", color: "var(--crm-perdido)" }
 ];
 const ETIQUETA_ETAPA = Object.fromEntries(ETAPAS.map((e) => [e.clave, e.etiqueta]));
+const COLOR_ETAPA = Object.fromEntries(ETAPAS.map((e) => [e.clave, e.color]));
 
 const ETIQUETA_ACTIVIDAD = {
   nota: "📝 Nota",
@@ -84,6 +94,24 @@ const ETIQUETA_ACTIVIDAD = {
   visita: "🚗 Visita",
   email: "✉️ Email"
 };
+
+// Iniciales + color de avatar determinístico a partir del nombre —
+// mismo criterio que Trello/Asana: cada persona tiene un color estable
+// sin necesidad de guardarlo a mano por contacto.
+const PALETA_AVATAR = ["#33523a", "#c1663f", "#4f7cac", "#8a6d3b", "#6b5b95", "#3f7a5c", "#a1477a", "#5c7f3f"];
+
+function colorAvatar(texto) {
+  let hash = 0;
+  for (let i = 0; i < texto.length; i++) hash = (hash * 31 + texto.charCodeAt(i)) >>> 0;
+  return PALETA_AVATAR[hash % PALETA_AVATAR.length];
+}
+
+function iniciales(nombre) {
+  const partes = (nombre || "").trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[1][0]).toUpperCase();
+}
 
 // ---------------------------------------------------------------------------
 // WhatsApp: heurística de mejor esfuerzo para armar un link wa.me a partir
@@ -278,7 +306,6 @@ const elBtnAgregarContacto = document.getElementById("btn-agregar-contacto");
 const elBtnExportar = document.getElementById("btn-exportar-contactos");
 const elVolver = document.getElementById("crm-volver");
 const elFormTitulo = document.getElementById("crm-form-titulo");
-const elAsignadoA = document.getElementById("crm-asignado-a");
 const formulario = document.getElementById("formulario-contacto");
 const elIdEditando = document.getElementById("contacto-id-editando");
 const elNombre = document.getElementById("contacto-nombre");
@@ -288,6 +315,8 @@ const elEmail = document.getElementById("contacto-email");
 const elEstado = document.getElementById("contacto-estado");
 const elCampoMotivoPerdido = document.getElementById("crm-campo-motivo-perdido");
 const elMotivoPerdido = document.getElementById("contacto-motivo-perdido");
+const elCampoAsignado = document.getElementById("crm-campo-asignado");
+const elSelectAsignado = document.getElementById("contacto-asignado");
 const elSeguimientoInput = document.getElementById("contacto-seguimiento");
 const elListaLotesInteres = document.getElementById("crm-lista-lotes-interes");
 const elLotesInteresVacio = document.getElementById("crm-lotes-interes-vacio");
@@ -402,11 +431,25 @@ function tarjetaContacto(contacto) {
   const tarjeta = document.createElement("div");
   tarjeta.className = "crm-tarjeta";
   tarjeta.dataset.testid = `crm-tarjeta-${contacto.id}`;
+  // Borde izquierdo del color de la etapa actual — se lee de un vistazo
+  // sin depender del texto del <select>, mismo lenguaje visual que
+  // Pipedrive/HubSpot (ver COLOR_ETAPA más arriba).
+  tarjeta.style.setProperty("--stage-color", COLOR_ETAPA[contacto.estado] || "var(--color-borde)");
+
+  const cabecera = document.createElement("div");
+  cabecera.className = "crm-tarjeta-cabecera";
+
+  const avatar = document.createElement("span");
+  avatar.className = "crm-avatar";
+  avatar.textContent = iniciales(contacto.nombre);
+  avatar.style.background = colorAvatar(contacto.nombre);
+  cabecera.appendChild(avatar);
 
   const nombre = document.createElement("p");
   nombre.className = "crm-tarjeta-nombre";
   nombre.textContent = contacto.nombre;
-  tarjeta.appendChild(nombre);
+  cabecera.appendChild(nombre);
+  tarjeta.appendChild(cabecera);
 
   const lotes = document.createElement("p");
   lotes.className = "crm-tarjeta-lotes";
@@ -422,11 +465,6 @@ function tarjetaContacto(contacto) {
     tarjeta.appendChild(asignado);
   }
 
-  const fecha = document.createElement("p");
-  fecha.className = "crm-tarjeta-fecha";
-  fecha.textContent = textoHaceDias(contacto.fecha_actualizacion || contacto.fecha_creacion);
-  tarjeta.appendChild(fecha);
-
   // "Sin novedades": mismo espíritu que las alertas del Dashboard, para
   // que un lead que se está enfriando no quede perdido entre el resto de
   // la columna sin que nadie lo note.
@@ -439,6 +477,14 @@ function tarjetaContacto(contacto) {
     badges.appendChild(badge);
     tarjeta.appendChild(badges);
   }
+
+  const pie = document.createElement("div");
+  pie.className = "crm-tarjeta-pie";
+  const fecha = document.createElement("span");
+  fecha.className = "crm-tarjeta-fecha";
+  fecha.textContent = textoHaceDias(contacto.fecha_actualizacion || contacto.fecha_creacion);
+  pie.appendChild(fecha);
+  tarjeta.appendChild(pie);
 
   // Selector de etapa directo en la tarjeta: mecanismo PRINCIPAL para
   // mover un contacto de estado (no drag-and-drop) — el drag-and-drop
@@ -481,15 +527,16 @@ function renderKanban() {
   elVacio.classList.toggle("oculto", contactos.length > 0);
   elSinResultados.classList.toggle("oculto", contactos.length === 0 || filtrados.length > 0);
   elKanban.innerHTML = "";
-  ETAPAS.forEach(({ clave, etiqueta }) => {
+  ETAPAS.forEach(({ clave, etiqueta, color }) => {
     const deEstaEtapa = filtrados.filter((c) => c.estado === clave);
     const columna = document.createElement("div");
     columna.className = "crm-columna";
     columna.dataset.testid = `crm-columna-${clave}`;
+    columna.style.setProperty("--stage-color", color);
 
     const titulo = document.createElement("p");
     titulo.className = "crm-columna-titulo";
-    titulo.innerHTML = `${etiqueta} <span class="crm-columna-contador">${deEstaEtapa.length}</span>`;
+    titulo.innerHTML = `<span class="crm-columna-dot"></span>${etiqueta} <span class="crm-columna-contador">${deEstaEtapa.length}</span>`;
     columna.appendChild(titulo);
 
     deEstaEtapa.forEach((contacto) => columna.appendChild(tarjetaContacto(contacto)));
@@ -628,6 +675,29 @@ function poblarSelectLotes() {
   elSelectLote.innerHTML = lotes.map((f) => `<option value="${f.id}">${tituloLote(f.properties)}</option>`).join("");
 }
 
+// "Asignado a" — reasignar es elegir otro corredor de la lista y guardar,
+// nada más especial que eso. Solo tiene sentido con "ver_todos_los_
+// contactos" (o root): sin ese permiso un corredor gestiona su propia
+// cartera nomás, mostrarle este campo no tendría nada útil para elegir.
+// valorActual puede apuntar a un uid que ya no está en el cache (un
+// corredor borrado después) — mismo criterio que poblarSelectCatalogo
+// (catalogos.js): se agrega como opción aparte en vez de perder el dato.
+function poblarSelectAsignado(valorActual) {
+  const puede = puedeVerTodosLosContactos();
+  elCampoAsignado.classList.toggle("oculto", !puede);
+  if (!puede) return;
+
+  const usuarios = usuariosPorUid || {};
+  const opciones = Object.entries(usuarios).sort((a, b) => a[1].localeCompare(b[1]));
+  let html = opciones.map(([uid, email]) => `<option value="${uid}">${email}</option>`).join("");
+  const valorFinal = valorActual || auth.currentUser?.uid;
+  if (valorFinal && !usuarios[valorFinal]) {
+    html += `<option value="${valorFinal}">${valorFinal} (usuario no encontrado)</option>`;
+  }
+  elSelectAsignado.innerHTML = html;
+  elSelectAsignado.value = valorFinal;
+}
+
 elBtnAgregarLoteInteres.addEventListener("click", () => {
   const loteId = elSelectLote.value;
   if (!loteId || lotesInteresEnEdicion.some((l) => l.id === loteId)) return;
@@ -757,12 +827,6 @@ function mostrarForm(contacto) {
     elMotivoPerdido.value = contacto.motivo_perdido || "";
     elSeguimientoInput.value = contacto.proximo_seguimiento || "";
     elBtnBorrarContacto.classList.remove("oculto");
-    // Solo se llega a un contacto ajeno pasando por "Todos" primero (en
-    // "Mis contactos" la propia consulta ya lo excluye), así que el cache
-    // de usuarios ya está poblado a esta altura — ver cambiarModoVista.
-    const esAjeno = contacto.asignado_a && contacto.asignado_a !== auth.currentUser?.uid;
-    elAsignadoA.textContent = esAjeno ? `👤 Asignado a ${textoAsignado(contacto)}` : "";
-    elAsignadoA.classList.toggle("oculto", !esAjeno);
   } else {
     elIdEditando.value = "";
     elFormTitulo.textContent = "Nuevo contacto";
@@ -770,8 +834,12 @@ function mostrarForm(contacto) {
     elMotivoPerdido.value = "";
     elSeguimientoInput.value = "";
     elBtnBorrarContacto.classList.add("oculto");
-    elAsignadoA.classList.add("oculto");
   }
+  // Solo se llega a un contacto ajeno pasando por "Todos" primero (en
+  // "Mis contactos" la propia consulta ya lo excluye), así que el cache
+  // de usuarios ya está poblado a esta altura — ver cambiarModoVista y
+  // elBtnAbrir.
+  poblarSelectAsignado(contacto ? contacto.asignado_a : auth.currentUser?.uid);
   actualizarVisibilidadMotivoPerdido();
   actualizarBotonWhatsapp();
 
@@ -797,14 +865,30 @@ formulario.addEventListener("submit", async (evento) => {
     lotes_interes: lotesInteresEnEdicion,
     fecha_actualizacion: new Date().toISOString()
   };
+  // El <select> de reasignar solo existe con "ver_todos_los_contactos"
+  // (o root) — sin el permiso, un contacto editado se queda con su dueño
+  // actual tal cual, y uno nuevo queda asignado a quien lo está creando.
+  if (puedeVerTodosLosContactos()) {
+    datos.asignado_a = elSelectAsignado.value || auth.currentUser.uid;
+  }
+
   elBtnGuardarContacto.disabled = true;
   try {
     if (idEditando) {
+      const contactoPrevio = getContactosActuales().find((c) => c.id === idEditando);
       await updateDoc(doc(db, COLECCION_CONTACTOS, idEditando), datos);
-      registrarAuditoria({ accion: "editar_contacto", objetoId: idEditando, objetoTitulo: datos.nombre });
+      const reasignado = datos.asignado_a && contactoPrevio && datos.asignado_a !== contactoPrevio.asignado_a;
+      registrarAuditoria({
+        accion: "editar_contacto",
+        objetoId: idEditando,
+        objetoTitulo: datos.nombre,
+        detalle: reasignado
+          ? `Reasignado de ${textoAsignado(contactoPrevio)} a ${usuariosPorUid?.[datos.asignado_a] || datos.asignado_a}`
+          : null
+      });
     } else {
       datos.actividades = [];
-      datos.asignado_a = auth.currentUser.uid;
+      if (!datos.asignado_a) datos.asignado_a = auth.currentUser.uid;
       datos.creado_por = auth.currentUser.uid;
       datos.fecha_creacion = datos.fecha_actualizacion;
       const nuevoRef = await addDoc(collection(db, COLECCION_CONTACTOS), datos);
@@ -928,6 +1012,12 @@ elBtnAbrir.addEventListener("click", async () => {
   elFiltroVista.classList.toggle("oculto", !puedeVerTodosLosContactos());
   elBuscar.value = "";
   terminoBusqueda = "";
+
+  // Se precarga acá (no solo al pasar a "Todos") para que el <select>
+  // "Asignado a" del formulario ya tenga los corredores listos aunque el
+  // manager nunca haya tocado el toggle — reasignar un contacto propio
+  // desde "Mis contactos" tiene que andar igual.
+  if (puedeVerTodosLosContactos()) await obtenerUsuariosPorUid();
 
   await cargarContactos();
   renderTodo();
