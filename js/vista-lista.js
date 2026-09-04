@@ -71,6 +71,7 @@ const elFiltroPrecioMin = document.getElementById("filtro-precio-min");
 const elFiltroPrecioMax = document.getElementById("filtro-precio-max");
 const elFiltroSuperficieMin = document.getElementById("filtro-superficie-min");
 const elFiltroSuperficieMax = document.getElementById("filtro-superficie-max");
+const elFiltroOrden = document.getElementById("filtro-orden");
 const elFiltroCantidad = document.getElementById("filtro-cantidad");
 const elPaginacion = document.getElementById("vista-lista-paginacion");
 const elPaginaAnterior = document.getElementById("pagina-anterior");
@@ -128,13 +129,33 @@ function actualizarOpcionesFiltroBarrio() {
   if (barrios.includes(seleccionPrevia)) elFiltroBarrio.value = seleccionPrevia;
 }
 
+// Un lote sin el dato que se está ordenando (precio o superficie) va
+// SIEMPRE al final, ordene como ordene ("menor a mayor" o "mayor a
+// menor") — mezclarlo en el medio según a qué número equivale
+// "sin dato" (0? Infinity?) sería arbitrario y confundiría más de lo
+// que ayuda. Mismo criterio que los filtros de rango de arriba: un
+// lote sin ese dato no puede compararse con uno que sí lo tiene.
+const COMPARADORES_ORDEN = {
+  "precio-asc": (a, b) => compararConNulosAlFinal(a.properties.precio_usd, b.properties.precio_usd, 1),
+  "precio-desc": (a, b) => compararConNulosAlFinal(a.properties.precio_usd, b.properties.precio_usd, -1),
+  "superficie-asc": (a, b) => compararConNulosAlFinal(a.properties.superficie_m2, b.properties.superficie_m2, 1),
+  "superficie-desc": (a, b) => compararConNulosAlFinal(a.properties.superficie_m2, b.properties.superficie_m2, -1)
+};
+
+function compararConNulosAlFinal(valorA, valorB, signo) {
+  if (valorA == null && valorB == null) return 0;
+  if (valorA == null) return 1;
+  if (valorB == null) return -1;
+  return (valorA - valorB) * signo;
+}
+
 function lotesFiltrados() {
   const precioMin = elFiltroPrecioMin.value ? Number(elFiltroPrecioMin.value) : null;
   const precioMax = elFiltroPrecioMax.value ? Number(elFiltroPrecioMax.value) : null;
   const superficieMin = elFiltroSuperficieMin.value ? Number(elFiltroSuperficieMin.value) : null;
   const superficieMax = elFiltroSuperficieMax.value ? Number(elFiltroSuperficieMax.value) : null;
 
-  return getLotesActuales().filter((feature) => {
+  const filtrados = getLotesActuales().filter((feature) => {
     const p = feature.properties;
     if (elFiltroSector.value && p.sector !== elFiltroSector.value) return false;
     if (elFiltroBarrio.value && p.barrio !== elFiltroBarrio.value) return false;
@@ -148,6 +169,10 @@ function lotesFiltrados() {
     if (superficieMax != null && (p.superficie_m2 == null || p.superficie_m2 > superficieMax)) return false;
     return true;
   });
+
+  const comparador = COMPARADORES_ORDEN[elFiltroOrden.value];
+  if (comparador) filtrados.sort(comparador);
+  return filtrados;
 }
 
 // Paginación: sin techo, una cartera grande (o el catálogo público con
@@ -258,6 +283,7 @@ elFiltroPrecioMin.addEventListener("input", reiniciarPaginaYActualizar);
 elFiltroPrecioMax.addEventListener("input", reiniciarPaginaYActualizar);
 elFiltroSuperficieMin.addEventListener("input", reiniciarPaginaYActualizar);
 elFiltroSuperficieMax.addEventListener("input", reiniciarPaginaYActualizar);
+elFiltroOrden.addEventListener("change", reiniciarPaginaYActualizar);
 elFiltroCantidad.addEventListener("change", reiniciarPaginaYActualizar);
 
 // Editar un lote directo desde la grilla (sin pasar por el mapa/ficha):
@@ -439,6 +465,7 @@ document.getElementById("btn-compartir-filtro").addEventListener("click", async 
   if (elFiltroPrecioMax.value) parametros.set("precioMax", elFiltroPrecioMax.value);
   if (elFiltroSuperficieMin.value) parametros.set("superficieMin", elFiltroSuperficieMin.value);
   if (elFiltroSuperficieMax.value) parametros.set("superficieMax", elFiltroSuperficieMax.value);
+  if (elFiltroOrden.value) parametros.set("orden", elFiltroOrden.value);
   const url = `${location.origin}${location.pathname}?${parametros.toString()}`;
 
   if (navigator.share) {
@@ -492,6 +519,10 @@ export function aplicarFiltrosDesdeUrlSiCorresponde() {
   if (parametros.has("precioMax")) elFiltroPrecioMax.value = parametros.get("precioMax");
   if (parametros.has("superficieMin")) elFiltroSuperficieMin.value = parametros.get("superficieMin");
   if (parametros.has("superficieMax")) elFiltroSuperficieMax.value = parametros.get("superficieMax");
+  // Igual que sector/barrio: si el valor de la URL no es una de las
+  // opciones válidas del <select>, el navegador lo ignora y queda en
+  // "Más recientes primero" — no hace falta validarlo a mano acá.
+  if (parametros.has("orden")) elFiltroOrden.value = parametros.get("orden");
 
   reiniciarPaginaYActualizar();
 }

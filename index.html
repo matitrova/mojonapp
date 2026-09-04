@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-15" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-16" />
 </head>
 <body>
 
@@ -1039,6 +1039,19 @@
         <label>hasta
           <input type="number" id="filtro-superficie-max" min="0" placeholder="Sin máximo" data-testid="filtro-superficie-max" />
         </label>
+        <!-- Idea propia (idea #12, investigada en Zonaprop/LandWatch antes
+             de armarla — ver feedback_buscar_inspiracion_real): "Ordenar"
+             aparece en los dos como un control de primer nivel, al lado de
+             los filtros, no escondido en un menú — mismo lugar acá. -->
+        <label>Ordenar por
+          <select id="filtro-orden" data-testid="filtro-orden">
+            <option value="">Más recientes primero</option>
+            <option value="precio-asc">Precio: menor a mayor</option>
+            <option value="precio-desc">Precio: mayor a menor</option>
+            <option value="superficie-asc">Superficie: menor a mayor</option>
+            <option value="superficie-desc">Superficie: mayor a menor</option>
+          </select>
+        </label>
         <label>Mostrar
           <select id="filtro-cantidad" data-testid="filtro-cantidad">
             <option value="5">5</option>
@@ -1157,6 +1170,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-15"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-16"></script>
 </body>
 </html>
