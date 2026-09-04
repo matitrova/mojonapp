@@ -49,6 +49,7 @@ import {
 } from "./ficha.js";
 import "./admin.js";
 import "./auditoria.js";
+import "./dibujar-area.js";
 import {
   collection,
   getDocs,

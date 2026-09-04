@@ -1378,6 +1378,84 @@ button:active {
   color: #fff;
 }
 
+/* Mismo estilo de hoja flotante inferior que #panel-captura-vertices —
+   ver comentario ahí, acá es el equivalente para dibujar un ÁREA que
+   filtra en vez de un lote que se guarda. */
+#panel-dibujar-area {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 34px;
+  z-index: 1600;
+  background: rgba(37, 30, 20, 0.94);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--sombra-calida);
+}
+
+#dibujar-area-mensaje {
+  font-size: 0.9rem;
+  max-width: 400px;
+  margin: 0;
+}
+
+#dibujar-area-contador {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+#btn-dibujar-area-deshacer,
+#btn-dibujar-area-aplicar {
+  background: rgba(255,255,255,.15);
+  color: #fff;
+}
+
+#btn-dibujar-area-aplicar {
+  background: var(--color-disponible);
+}
+
+/* Chip flotante con el resultado del filtro de área — se queda puesto
+   mientras el filtro sigue activo, arriba del todo para no competir con
+   el panel de captura ni con el mensaje de carga inicial. */
+#chip-filtro-area {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-primario);
+  color: #fff;
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-calida);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+#btn-quitar-filtro-area {
+  background: rgba(255,255,255,.2);
+  color: #fff;
+  border: none;
+  border-radius: var(--radio-chico);
+  padding: 6px 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-quitar-filtro-area:hover {
+  background: rgba(255,255,255,.32);
+}
+
 /* Panel de pantalla completa: patrón compartido por "Ver como lista" y
    "Administrar" — a diferencia de las hojas inferiores, son pantallas
    con tablas que necesitan todo el alto disponible, no un panel que

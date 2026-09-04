@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-11" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-12" />
 </head>
 <body>
 
@@ -71,6 +71,10 @@
          Firestore) — un comprador anónimo también puede armarse su
          propia lista para volver a verla después. -->
     <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos">🤍 Favoritos</button>
+    <!-- También visible sin sesión, mismo criterio que "Favoritos" — un
+         visitante anónimo del catálogo público también puede acotar el
+         mapa a una zona dibujada a mano. -->
+    <button type="button" class="drawer-item" id="btn-dibujar-area" data-testid="btn-dibujar-area">✏️ Dibujar área</button>
 
     <div id="drawer-sesion-activa" class="oculto">
       <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard">Dashboard</button>
@@ -137,6 +141,29 @@
        Firestore el mapa se queda sin ningún cambio visible y parece que
        no está haciendo nada, sobre todo con conexión rural lenta. -->
   <p id="mensaje-carga-inicial" class="oculto" data-testid="mensaje-carga-inicial">Cargando lotes…</p>
+
+  <!-- "Dibujar área" (idea #5): tocar el mapa para marcar los vértices de
+       un área a mano, mismo patrón que "Cargar a mano → en el mapa"
+       (panel-captura-vertices) pero para FILTRAR lotes ya cargados en vez
+       de crear uno nuevo — ver js/dibujar-area.js. -->
+  <div id="panel-dibujar-area" class="oculto" data-testid="panel-dibujar-area">
+    <button id="cerrar-dibujar-area" class="btn-cerrar" aria-label="Cancelar">&times;</button>
+    <p id="dibujar-area-mensaje">Tocá el mapa para marcar cada esquina del área que te interesa.</p>
+    <p id="dibujar-area-contador" data-testid="dibujar-area-contador">0 puntos marcados</p>
+    <div class="botones-captura">
+      <button id="btn-dibujar-area-deshacer" data-testid="btn-dibujar-area-deshacer">Deshacer último</button>
+      <button id="btn-dibujar-area-aplicar" data-testid="btn-dibujar-area-aplicar">Aplicar (mínimo 3 puntos)</button>
+    </div>
+    <p id="dibujar-area-error" class="mensaje-error oculto" data-testid="dibujar-area-error"></p>
+  </div>
+
+  <!-- Chip flotante con el resultado, mientras el filtro de área sigue
+       activo (se puede seguir usando el resto de la app con el mapa
+       acotado) — el usuario decide cuándo sacarlo, no desaparece solo. -->
+  <div id="chip-filtro-area" class="oculto" data-testid="chip-filtro-area">
+    <span id="chip-filtro-area-texto"></span>
+    <button id="btn-quitar-filtro-area" data-testid="btn-quitar-filtro-area">Quitar filtro ×</button>
+  </div>
 
   <div id="catastro-cercano-mensaje" class="oculto" data-testid="catastro-cercano-mensaje"></div>
 
@@ -1053,6 +1080,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-11"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-12"></script>
 </body>
 </html>

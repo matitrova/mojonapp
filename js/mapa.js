@@ -21,7 +21,7 @@ import {
   query,
   where
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-import { centroideDePoligono } from "./geometria.js";
+import { centroideDePoligono, puntoDentroDePoligono } from "./geometria.js";
 import {
   CATASTRO_WFS_URL,
   CATASTRO_CBA_WFS_URL,
@@ -160,6 +160,56 @@ leyenda.addTo(mapa);
 
 let capaLotes = null;
 const elMensajeCargaInicial = document.getElementById("mensaje-carga-inicial");
+
+// Filtro por área dibujada a mano (idea #5, ver js/dibujar-area.js) —
+// puntosArea es [[lat,lon], ...], o null si no hay filtro activo. Se
+// guarda acá (no en dibujar-area.js) porque hace falta reaplicarlo cada
+// vez que cargarLotesDesdeFirestore() reconstruye capaLotes de cero
+// (login/logout) — si no, un cambio de sesión con el filtro puesto lo
+// perdía sin avisar.
+let puntosArea = null;
+
+function loteDentroDelAreaFiltrada(feature) {
+  if (!puntosArea) return true;
+  const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+  const anillo = puntosArea.map(([la, lo]) => [lo, la]); // a [lon,lat], ver geometria.js
+  return puntoDentroDePoligono(lat, lon, anillo);
+}
+
+// Lotes fuera del área quedan bien tenues en vez de desaparecer del
+// todo — sigue siendo posible tocarlos si hace falta, y da contexto de
+// qué hay alrededor de la zona elegida (mismo criterio que un mapa de
+// búsqueda real, no un vaciado agresivo).
+function aplicarFiltroDeAreaActual() {
+  if (!capaLotes) return 0;
+  let dentro = 0;
+  capaLotes.eachLayer((capa) => {
+    const adentro = loteDentroDelAreaFiltrada(capa.feature);
+    if (adentro) dentro++;
+    capa.setStyle(
+      adentro
+        ? { opacity: 1, fillOpacity: 0.55 }
+        : { opacity: 0.15, fillOpacity: 0.05 }
+    );
+  });
+  return dentro;
+}
+
+// dibujar-area.js llama a esto con los puntos ya marcados (mínimo 3) y
+// usa el conteo devuelto para el chip de resultado.
+export function filtrarLotesPorArea(puntos) {
+  puntosArea = puntos;
+  return aplicarFiltroDeAreaActual();
+}
+
+export function limpiarFiltroPorArea() {
+  puntosArea = null;
+  aplicarFiltroDeAreaActual();
+}
+
+export function hayFiltroDeAreaActivo() {
+  return puntosArea !== null;
+}
 
 // Un documento de Firestore es {geometry, ...propiedades} (ver
 // formularioLote.addEventListener("submit", ...) en cargar-lote.js). Se
@@ -303,6 +353,11 @@ export async function cargarLotesDesdeFirestore() {
   }
 
   if (habiaCatastroCercano) capaCatastroCercano.addTo(mapa);
+
+  // Reaplica el filtro de área si seguía activo (ver comentario en
+  // puntosArea más arriba) — sin esto, cambiar de sesión con el filtro
+  // puesto lo perdía sin avisar.
+  aplicarFiltroDeAreaActual();
 
   elMensajeCargaInicial.classList.add("oculto");
   primeraCargaDeLotesHecha = true;
