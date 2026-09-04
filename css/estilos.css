@@ -1961,14 +1961,48 @@ button:active {
   padding: 12px 10px;
 }
 
+.crm-columna-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
 .crm-columna-titulo {
-  margin: 0 0 2px;
+  margin: 0;
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--color-primario-oscuro);
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+}
+
+/* Alta rápida en esta columna (idea de Attio) — círculo chico, discreto
+   hasta que se lo toca. */
+.crm-columna-agregar {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--stage-color) 40%, var(--color-borde));
+  background: #fff;
+  color: var(--stage-color);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.crm-columna-agregar:hover {
+  background: var(--stage-color);
+  color: #fff;
 }
 
 .crm-columna-dot {
@@ -2059,13 +2093,18 @@ button:active {
 .crm-tarjeta-pie {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
 }
 
+/* Chip discreto en vez de texto plano — mismo criterio que el "12d" de
+   Attio en la esquina de cada tarjeta. */
 .crm-tarjeta-fecha {
   margin: 0;
-  font-size: 0.7rem;
+  background: var(--color-fondo-alterno);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.68rem;
   color: var(--color-texto-secundario);
 }
 
@@ -2199,6 +2238,7 @@ button:active {
 
 .crm-agregar-lote {
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
@@ -2274,8 +2314,83 @@ button:active {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+#crm-toolbar-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+#crm-toolbar-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Botón principal de una pantalla: mismo fondo/color que "Ingresar" o
+   "Guardar lote" en el resto de la app (ver #formulario-login button y
+   hermanos) — para que la acción destacada se reconozca al toque en
+   toda la app, no solo acá. Una sola acción con relleno de color por
+   pantalla; el resto usa .crm-btn-fantasma más abajo. */
+.crm-btn-primario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--color-primario);
+  color: #fff;
+  border: none;
+  border-radius: var(--radio-mediano);
+  padding: 10px 18px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(37, 60, 41, 0.25);
+}
+
+.crm-btn-primario:hover {
+  background: var(--color-primario-oscuro);
+}
+
+/* Acciones secundarias (Exportar, +Agregar lote/actividad): sin relleno,
+   solo borde + texto — no compiten en peso visual con la acción
+   principal de la pantalla (mismo criterio que cualquier CRM real: una
+   sola acción resaltada, el resto en segundo plano). */
+.crm-btn-fantasma {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto-secundario);
+  border-radius: var(--radio-mediano);
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.crm-btn-fantasma:hover {
+  background: var(--color-fondo-alterno);
+  border-color: var(--color-primario);
+  color: var(--color-primario-oscuro);
+}
+
+.crm-btn-chico {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
 }
 
 #crm-buscar {

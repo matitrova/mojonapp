@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-05" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-06" />
 </head>
 <body>
 
@@ -727,17 +727,25 @@
       </div>
 
       <div id="crm-toolbar" data-testid="crm-toolbar">
-        <input type="search" id="crm-buscar" placeholder="Buscar por nombre o teléfono…" data-testid="crm-buscar" />
-        <!-- Oculto por defecto: solo aparece con el permiso
-             "ver_todos_los_contactos" — sin él, el corredor ve
-             directamente sus propios contactos, sin ningún control que
-             sugiera que hay más para ver. -->
-        <div id="crm-filtro-vista" class="oculto botones-alternativos" data-testid="crm-filtro-vista">
-          <button type="button" id="btn-crm-vista-mias" class="activo" data-testid="btn-crm-vista-mias">Mis contactos</button>
-          <button type="button" id="btn-crm-vista-todas" data-testid="btn-crm-vista-todas">Todos</button>
+        <div id="crm-toolbar-filtros">
+          <input type="search" id="crm-buscar" placeholder="Buscar por nombre o teléfono…" data-testid="crm-buscar" />
+          <!-- Oculto por defecto: solo aparece con el permiso
+               "ver_todos_los_contactos" — sin él, el corredor ve
+               directamente sus propios contactos, sin ningún control que
+               sugiera que hay más para ver. -->
+          <div id="crm-filtro-vista" class="oculto botones-alternativos" data-testid="crm-filtro-vista">
+            <button type="button" id="btn-crm-vista-mias" class="activo" data-testid="btn-crm-vista-mias">Mis contactos</button>
+            <button type="button" id="btn-crm-vista-todas" data-testid="btn-crm-vista-todas">Todos</button>
+          </div>
         </div>
-        <button type="button" id="btn-agregar-contacto" class="btn-secundario" data-testid="btn-agregar-contacto">+ Nuevo contacto</button>
-        <button type="button" id="btn-exportar-contactos" class="btn-secundario" data-testid="btn-exportar-contactos">Exportar CSV</button>
+        <!-- Una sola acción destacada por pantalla (mismo criterio que
+             cualquier CRM real): "Nuevo contacto" es la acción principal
+             acá, con relleno de color; "Exportar" es secundaria, sin
+             relleno, para que no compitan en peso visual. -->
+        <div id="crm-toolbar-acciones">
+          <button type="button" id="btn-exportar-contactos" class="crm-btn-fantasma" data-testid="btn-exportar-contactos">⬇️ Exportar CSV</button>
+          <button type="button" id="btn-agregar-contacto" class="crm-btn-primario" data-testid="btn-agregar-contacto">+ Nuevo contacto</button>
+        </div>
       </div>
 
       <div id="crm-kanban" data-testid="crm-kanban"></div>
@@ -809,7 +817,7 @@
           <p id="crm-lotes-interes-vacio" class="dashboard-vacio oculto">Ninguno todavía.</p>
           <div class="crm-agregar-lote">
             <select id="crm-select-lote" data-testid="crm-select-lote"></select>
-            <button type="button" id="btn-agregar-lote-interes" data-testid="btn-agregar-lote-interes">+ Agregar</button>
+            <button type="button" id="btn-agregar-lote-interes" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-agregar-lote-interes">+ Agregar</button>
           </div>
         </div>
 
@@ -832,13 +840,13 @@
               <option value="email">✉️ Email</option>
             </select>
             <textarea id="actividad-texto" placeholder="¿Qué pasó?" data-testid="actividad-texto"></textarea>
-            <button type="button" id="btn-agregar-actividad" data-testid="btn-agregar-actividad">+ Agregar</button>
+            <button type="button" id="btn-agregar-actividad" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-agregar-actividad">+ Agregar</button>
           </div>
           <p id="crm-actividad-primero-guardar" class="dashboard-vacio" data-testid="crm-actividad-primero-guardar">Guardá el contacto primero para poder registrar actividad.</p>
         </div>
 
         <div class="crm-form-botones">
-          <button type="submit" id="contacto-guardar-btn" data-testid="contacto-guardar">Guardar</button>
+          <button type="submit" id="contacto-guardar-btn" class="crm-btn-primario" data-testid="contacto-guardar">Guardar</button>
           <button type="button" id="btn-borrar-contacto" class="oculto btn-peligro" data-testid="btn-borrar-contacto">Borrar contacto</button>
         </div>
         <p id="contacto-error" class="mensaje-error oculto" data-testid="contacto-error"></p>
@@ -984,6 +992,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-05"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-06"></script>
 </body>
 </html>

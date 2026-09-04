@@ -354,8 +354,8 @@ function textoHaceDias(fechaIso) {
 
 function textoLotesResumen(lotes) {
   if (!lotes.length) return "Sin lote de interés";
-  if (lotes.length === 1) return lotes[0].titulo;
-  return `${lotes[0].titulo} +${lotes.length - 1} más`;
+  if (lotes.length === 1) return `📍 ${lotes[0].titulo}`;
+  return `📍 ${lotes[0].titulo} +${lotes.length - 1} más`;
 }
 
 // Lleva directo al lote en el mapa desde un chip de "lotes de interés" —
@@ -534,10 +534,26 @@ function renderKanban() {
     columna.dataset.testid = `crm-columna-${clave}`;
     columna.style.setProperty("--stage-color", color);
 
+    const cabeceraColumna = document.createElement("div");
+    cabeceraColumna.className = "crm-columna-cabecera";
+
     const titulo = document.createElement("p");
     titulo.className = "crm-columna-titulo";
     titulo.innerHTML = `<span class="crm-columna-dot"></span>${etiqueta} <span class="crm-columna-contador">${deEstaEtapa.length}</span>`;
-    columna.appendChild(titulo);
+    cabeceraColumna.appendChild(titulo);
+
+    // Alta rápida directamente en esta columna (idea de Attio: un "+" en
+    // cada cabecera de columna) — abre el mismo formulario de siempre,
+    // solo que ya con el estado de esta columna preseleccionado.
+    const btnAgregarAqui = document.createElement("button");
+    btnAgregarAqui.type = "button";
+    btnAgregarAqui.className = "crm-columna-agregar";
+    btnAgregarAqui.textContent = "+";
+    btnAgregarAqui.setAttribute("aria-label", `Nuevo contacto en ${etiqueta}`);
+    btnAgregarAqui.addEventListener("click", () => mostrarForm(null, clave));
+    cabeceraColumna.appendChild(btnAgregarAqui);
+
+    columna.appendChild(cabeceraColumna);
 
     deEstaEtapa.forEach((contacto) => columna.appendChild(tarjetaContacto(contacto)));
     elKanban.appendChild(columna);
@@ -807,7 +823,10 @@ elEstado.addEventListener("change", actualizarVisibilidadMotivoPerdido);
 // contacto == null: alta de un contacto nuevo. Con un contacto, lo
 // precarga para editarlo (mismo formulario, en modo edición) — mismo
 // patrón que crearPanelCatalogo (catalogos.js).
-function mostrarForm(contacto) {
+// estadoInicial: solo se usa con contacto == null (alta rápida desde el
+// "+" de una columna del kanban) — precarga el estado con el que se creó
+// el contacto en vez de forzar siempre "Nuevo".
+function mostrarForm(contacto, estadoInicial) {
   formulario.reset();
   elError.classList.add("oculto");
   poblarSelectLotes();
@@ -830,7 +849,7 @@ function mostrarForm(contacto) {
   } else {
     elIdEditando.value = "";
     elFormTitulo.textContent = "Nuevo contacto";
-    elEstado.value = "nuevo";
+    elEstado.value = estadoInicial || "nuevo";
     elMotivoPerdido.value = "";
     elSeguimientoInput.value = "";
     elBtnBorrarContacto.classList.add("oculto");
