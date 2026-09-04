@@ -6,11 +6,15 @@ esta máquina), así que cada test siembra y borra sus propios datos.
 
 Cubren: crear un contacto desde el panel y verlo en la columna "Nuevo",
 moverlo de etapa con el selector de la tarjeta (y que quede reflejado tanto
-en el pipeline como en Firestore), y que "Agregar interesado" en la ficha de
-un lote (js/ficha.js) alimente el CRM automáticamente.
+en el pipeline como en Firestore), que "Agregar interesado" en la ficha de
+un lote (js/ficha.js) alimente el CRM automáticamente, registrar una
+actividad y un seguimiento, pedir el motivo al perder un contacto desde el
+kanban, que el toggle "Mis contactos"/"Todos" esté visible para root, y que
+"Exportar CSV" dispare una descarga real.
 """
 
 import uuid
+from datetime import date
 
 from playwright.sync_api import expect
 
@@ -130,3 +134,98 @@ def test_agregar_interesado_alimenta_el_crm(page, base_url, lote_sembrado):
     finally:
         if doc_id_contacto:
             borrar_contacto_de_prueba(doc_id_contacto)
+
+
+def test_agregar_actividad_y_seguimiento_para_hoy(page, base_url):
+    nombre = f"TEST-{uuid.uuid4().hex[:8]}"
+    doc_id = None
+    try:
+        _loguearse(page, base_url)
+        _abrir_crm(page)
+
+        page.locator("#btn-agregar-contacto").click()
+        page.locator("#contacto-nombre").fill(nombre)
+        page.locator("#contacto-guardar-btn").click()
+        expect(page.locator(".crm-tarjeta", has_text=nombre)).to_have_count(1)
+
+        doc_id = buscar_contacto_doc_id_por_nombre(nombre)
+        assert doc_id is not None
+
+        page.locator(f'[data-testid="crm-tarjeta-{doc_id}"]').click()
+
+        # La actividad se guarda con su propio botón, no con "Guardar" del
+        # resto del formulario (ver elBtnAgregarActividad en js/crm.js).
+        page.locator("#actividad-tipo").select_option("llamada")
+        page.locator("#actividad-texto").fill("Llamada de prueba, pidió más fotos.")
+        page.locator("#btn-agregar-actividad").click()
+        expect(page.locator("#crm-lista-actividades")).to_contain_text("Llamada de prueba, pidió más fotos.")
+        # El campo de texto se limpia después de agregar, para poder
+        # cargar la próxima sin arrastrar la anterior.
+        expect(page.locator("#actividad-texto")).to_have_value("")
+
+        # "Próximo seguimiento" hoy → tiene que aparecer en la sección
+        # "Seguimientos" del pipeline al volver.
+        page.locator("#contacto-seguimiento").fill(date.today().isoformat())
+        page.locator("#contacto-guardar-btn").click()
+        expect(page.locator("#crm-vista-kanban")).to_be_visible()
+        expect(page.locator("#crm-seguimientos")).to_contain_text(nombre)
+    finally:
+        if doc_id:
+            borrar_contacto_de_prueba(doc_id)
+
+
+def test_mover_a_perdido_pide_motivo_y_lo_guarda(page, base_url):
+    nombre = f"TEST-{uuid.uuid4().hex[:8]}"
+    motivo = "Se fue con otra inmobiliaria"
+    doc_id = None
+    try:
+        _loguearse(page, base_url)
+        _abrir_crm(page)
+
+        page.locator("#btn-agregar-contacto").click()
+        page.locator("#contacto-nombre").fill(nombre)
+        page.locator("#contacto-guardar-btn").click()
+        expect(page.locator(".crm-tarjeta", has_text=nombre)).to_have_count(1)
+
+        doc_id = buscar_contacto_doc_id_por_nombre(nombre)
+        assert doc_id is not None
+
+        # moverContacto() (js/crm.js) pide el motivo con window.prompt()
+        # solo al mover a "Perdido" — Playwright intercepta el diálogo
+        # nativo con page.on("dialog", ...), no hay otra forma de
+        # responderlo desde un test.
+        page.on("dialog", lambda dialog: dialog.accept(motivo))
+        page.locator(f'[data-testid="crm-tarjeta-{doc_id}"] select').select_option("perdido")
+
+        expect(
+            page.locator('[data-testid="crm-columna-perdido"]').locator(".crm-tarjeta", has_text=nombre)
+        ).to_have_count(1)
+
+        page.locator(f'[data-testid="crm-tarjeta-{doc_id}"]').click()
+        expect(page.locator("#contacto-motivo-perdido")).to_have_value(motivo)
+        # El campo solo se muestra con estado "Perdido" (ver
+        # actualizarVisibilidadMotivoPerdido en js/crm.js).
+        expect(page.locator("#crm-campo-motivo-perdido")).to_be_visible()
+    finally:
+        if doc_id:
+            borrar_contacto_de_prueba(doc_id)
+
+
+def test_toggle_ver_todos_visible_para_root(page, base_url):
+    _loguearse(page, base_url)
+    _abrir_crm(page)
+    # La cuenta de prueba es root (ver tests/.env): tiene que ver el
+    # toggle "Mis contactos"/"Todos" — un corredor sin
+    # "ver_todos_los_contactos" no lo vería (queda oculto, ver
+    # elBtnAbrir en js/crm.js).
+    expect(page.locator("#crm-filtro-vista")).to_be_visible()
+    expect(page.locator("#btn-crm-vista-mias")).to_have_class("activo")
+
+
+def test_exportar_csv_dispara_descarga(page, base_url):
+    _loguearse(page, base_url)
+    _abrir_crm(page)
+    with page.expect_download() as descarga_info:
+        page.locator("#btn-exportar-contactos").click()
+    descarga = descarga_info.value
+    assert descarga.suggested_filename.startswith("contactos-mojonapp-")

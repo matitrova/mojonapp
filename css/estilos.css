@@ -2129,3 +2129,177 @@ button:active {
   flex-wrap: wrap;
   margin-top: 4px;
 }
+
+/* ---------------------------------------------------------------------
+   CRM — segunda tanda (2026-09-04): métricas rápidas, seguimientos,
+   buscador/filtro de vista, historial de actividad, WhatsApp directo.
+   --------------------------------------------------------------------- */
+
+#crm-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.crm-stat {
+  flex: 1 1 110px;
+  background: var(--color-fondo-alterno);
+  border: 1px solid var(--color-borde);
+  border-top: 3px solid var(--color-primario);
+  border-radius: var(--radio-mediano);
+  padding: 10px 12px;
+  text-align: center;
+  box-shadow: var(--sombra-calida-suave);
+}
+
+.crm-stat strong {
+  display: block;
+  font-size: 1.3rem;
+  color: var(--color-primario-oscuro);
+}
+
+.crm-stat span {
+  font-size: 0.72rem;
+  color: var(--color-texto-secundario);
+}
+
+#crm-seguimientos-seccion {
+  margin-bottom: 14px;
+}
+
+/* Barra de acciones sobre el kanban: buscador + toggle "Mis contactos"/
+   "Todos" + altas/exportar. En una sola fila en desktop, se apila en
+   pantallas chicas (mismo ancho que el resto de los controles de la
+   app en mobile). */
+#crm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+#crm-buscar {
+  flex: 1 1 200px;
+  min-width: 0;
+  font: inherit;
+  color: var(--color-texto);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 9px 10px;
+}
+
+#crm-buscar:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(51, 82, 58, 0.15);
+}
+
+#crm-filtro-vista {
+  flex-shrink: 0;
+}
+
+.crm-campo-con-boton {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.crm-campo-con-boton input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#contacto-whatsapp {
+  flex-shrink: 0;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Chip de "estancado" y de seguimiento en la tarjeta del kanban — mismo
+   lenguaje visual que dashboard-badge (ver dashboard.js), en el color
+   de acento en vez de verde/rojo: acá no es "vence"/"venció", es "hace
+   rato que nadie lo toca", una alerta más suave. */
+.crm-tarjeta-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.crm-badge-estancado {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--color-acento-suave);
+  color: var(--color-acento);
+  border: 1px solid var(--color-acento);
+  white-space: nowrap;
+}
+
+/* Historial de actividad: cada interacción queda como una fila fija
+   (no se edita ni se borra después de cargada — un registro histórico
+   real, mismo criterio que la auditoría de la app) con un ícono según
+   el tipo, el texto, y quién/cuándo. */
+#crm-lista-actividades {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.crm-actividad {
+  background: var(--color-fondo-alterno);
+  border-radius: var(--radio-chico);
+  padding: 8px 10px;
+  font-size: 0.82rem;
+}
+
+.crm-actividad-cabecera {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--color-texto-secundario);
+  font-size: 0.72rem;
+  margin-bottom: 2px;
+}
+
+.crm-actividad-tipo {
+  font-weight: 700;
+  color: var(--color-primario-oscuro);
+}
+
+.crm-actividad-texto {
+  color: var(--color-texto);
+  white-space: pre-wrap;
+}
+
+#crm-agregar-actividad {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+#crm-agregar-actividad select,
+#crm-agregar-actividad textarea {
+  font: inherit;
+  color: var(--color-texto);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 8px;
+}
+
+#crm-agregar-actividad textarea {
+  min-height: 60px;
+  resize: vertical;
+}

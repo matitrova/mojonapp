@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-01" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-02" />
 </head>
 <body>
 
@@ -540,6 +540,7 @@
               </label>
               <div class="permisos-seccion-items">
                 <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-gestionar_contactos" data-testid="perfil-permiso-gestionar_contactos" /> Gestionar contactos (CRM)</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-ver_todos_los_contactos" data-testid="perfil-permiso-ver_todos_los_contactos" /> Ver contactos de todos los corredores</label>
               </div>
             </div>
           </div>
@@ -710,9 +711,38 @@
     </div>
 
     <div id="crm-vista-kanban" data-testid="crm-vista-kanban">
-      <button type="button" id="btn-agregar-contacto" class="btn-secundario" data-testid="btn-agregar-contacto">+ Nuevo contacto</button>
+      <div id="crm-stats" data-testid="crm-stats"></div>
+
+      <!-- Seguimientos vencidos o para hoy/los próximos días — mismo
+           lenguaje visual que "Reservas por vencer" del Dashboard
+           (dashboard-lista/dashboard-badge), para no inventar otra
+           forma de mostrar "esto se está por vencer". -->
+      <div id="crm-seguimientos-seccion" data-testid="crm-seguimientos-seccion">
+        <div class="dashboard-seccion-titulo">
+          <h3>Seguimientos</h3>
+          <span id="crm-seguimientos-contador" class="dashboard-contador oculto"></span>
+        </div>
+        <ul id="crm-seguimientos" class="dashboard-lista" data-testid="crm-seguimientos"></ul>
+        <p id="crm-seguimientos-vacio" class="dashboard-vacio oculto">No hay seguimientos para hoy ni vencidos.</p>
+      </div>
+
+      <div id="crm-toolbar" data-testid="crm-toolbar">
+        <input type="search" id="crm-buscar" placeholder="Buscar por nombre o teléfono…" data-testid="crm-buscar" />
+        <!-- Oculto por defecto: solo aparece con el permiso
+             "ver_todos_los_contactos" — sin él, el corredor ve
+             directamente sus propios contactos, sin ningún control que
+             sugiera que hay más para ver. -->
+        <div id="crm-filtro-vista" class="oculto botones-alternativos" data-testid="crm-filtro-vista">
+          <button type="button" id="btn-crm-vista-mias" class="activo" data-testid="btn-crm-vista-mias">Mis contactos</button>
+          <button type="button" id="btn-crm-vista-todas" data-testid="btn-crm-vista-todas">Todos</button>
+        </div>
+        <button type="button" id="btn-agregar-contacto" class="btn-secundario" data-testid="btn-agregar-contacto">+ Nuevo contacto</button>
+        <button type="button" id="btn-exportar-contactos" class="btn-secundario" data-testid="btn-exportar-contactos">Exportar CSV</button>
+      </div>
+
       <div id="crm-kanban" data-testid="crm-kanban"></div>
       <p id="crm-vacio" class="oculto" data-testid="crm-vacio">Todavía no hay contactos cargados.</p>
+      <p id="crm-sin-resultados" class="oculto dashboard-vacio" data-testid="crm-sin-resultados">Ningún contacto coincide con la búsqueda.</p>
     </div>
 
     <div id="crm-vista-form" class="oculto" data-testid="crm-vista-form">
@@ -726,7 +756,14 @@
         </label>
         <label class="crm-campo">
           Teléfono
-          <input type="text" id="contacto-telefono" data-testid="contacto-telefono" />
+          <div class="crm-campo-con-boton">
+            <input type="text" id="contacto-telefono" data-testid="contacto-telefono" />
+            <!-- Se arma con normalizarTelefonoWhatsapp() (js/crm.js) —
+                 heurística de mejor esfuerzo, los números locales se
+                 cargan sin criterio fijo (con/sin 15, con/sin código de
+                 área). Oculto sin teléfono cargado. -->
+            <a id="contacto-whatsapp" class="btn-secundario oculto" target="_blank" rel="noopener" data-testid="contacto-whatsapp">💬 WhatsApp</a>
+          </div>
         </label>
         <label class="crm-campo">
           Email
@@ -743,9 +780,18 @@
             <option value="perdido">Perdido</option>
           </select>
         </label>
+        <!-- Solo visible con estado "Perdido" (ver actualizarVisibilidadMotivoPerdido
+             en js/crm.js) — capturar por qué se pierde un contacto es lo
+             que después permite ver patrones reales (precio, financiación,
+             ya compró en otro lado...) en vez de perder el dato para
+             siempre apenas se archiva. -->
+        <label class="crm-campo oculto" id="crm-campo-motivo-perdido" data-testid="crm-campo-motivo-perdido">
+          Motivo de la pérdida
+          <input type="text" id="contacto-motivo-perdido" placeholder="Precio, financiación, ya compró en otro lado…" data-testid="contacto-motivo-perdido" />
+        </label>
         <label class="crm-campo">
-          Nota
-          <textarea id="contacto-nota" data-testid="contacto-nota"></textarea>
+          Próximo seguimiento
+          <input type="date" id="contacto-seguimiento" data-testid="contacto-seguimiento" />
         </label>
 
         <div id="crm-lotes-interes" data-testid="crm-lotes-interes">
@@ -756,6 +802,30 @@
             <select id="crm-select-lote" data-testid="crm-select-lote"></select>
             <button type="button" id="btn-agregar-lote-interes" data-testid="btn-agregar-lote-interes">+ Agregar</button>
           </div>
+        </div>
+
+        <!-- Historial de interacciones en vez de un campo de nota único:
+             cada llamada/visita/whatsapp queda registrada con fecha, no
+             se pisa la anterior. Solo disponible con el contacto ya
+             guardado (necesita un id de documento para poder agregarle
+             algo) — mismo criterio que "Interesados" en la ficha de un
+             lote, que tampoco aparece hasta que el lote existe. -->
+        <div id="crm-actividades" data-testid="crm-actividades">
+          <p class="crm-subtitulo">Actividad</p>
+          <ul id="crm-lista-actividades" data-testid="crm-lista-actividades"></ul>
+          <p id="crm-actividades-vacio" class="dashboard-vacio oculto">Sin actividad registrada todavía.</p>
+          <div id="crm-agregar-actividad" class="oculto" data-testid="crm-agregar-actividad">
+            <select id="actividad-tipo" data-testid="actividad-tipo">
+              <option value="nota">📝 Nota</option>
+              <option value="llamada">📞 Llamada</option>
+              <option value="whatsapp">💬 WhatsApp</option>
+              <option value="visita">🚗 Visita</option>
+              <option value="email">✉️ Email</option>
+            </select>
+            <textarea id="actividad-texto" placeholder="¿Qué pasó?" data-testid="actividad-texto"></textarea>
+            <button type="button" id="btn-agregar-actividad" data-testid="btn-agregar-actividad">+ Agregar</button>
+          </div>
+          <p id="crm-actividad-primero-guardar" class="dashboard-vacio" data-testid="crm-actividad-primero-guardar">Guardá el contacto primero para poder registrar actividad.</p>
         </div>
 
         <div class="crm-form-botones">
@@ -905,6 +975,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-01"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-02"></script>
 </body>
 </html>

@@ -67,7 +67,13 @@ const PERMISOS_SECCIONES = [
       // puede seguir haciendo eso, ver firestore.rules. Este permiso es
       // para GESTIONAR el pipeline entero (verlo armado en el panel CRM,
       // mover contactos de estado, editarlos o borrarlos).
-      { clave: "gestionar_contactos", etiqueta: "Gestionar contactos (CRM)" }
+      { clave: "gestionar_contactos", etiqueta: "Gestionar contactos (CRM)" },
+      // Sin este permiso, un corredor con "gestionar_contactos" ve y
+      // gestiona sus PROPIOS contactos nomás (asignado_a) — pensado para
+      // que varios corredores usando el mismo MojonApp no se pisen la
+      // cartera de leads entre sí a medida que crece el equipo. Con este
+      // permiso (pensado para dueños/gerentes) se ve la cartera completa.
+      { clave: "ver_todos_los_contactos", etiqueta: "Ver contactos de todos los corredores" }
     ]
   }
 ];
