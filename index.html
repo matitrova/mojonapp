@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-10" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-11" />
 </head>
 <body>
 
@@ -946,7 +946,14 @@
             <option value="0">Todos</option>
           </select>
         </label>
+        <!-- Arma un link a esta misma app con los filtros de arriba
+             puestos en la URL (?vista=lista&sector=...) — mismo criterio
+             que "Compartir este lote", pero para un filtro completo en
+             vez de un lote puntual (ver aplicarFiltrosDesdeUrlSiCorresponde
+             en vista-lista.js). -->
+        <button type="button" id="btn-compartir-filtro" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-compartir-filtro">Compartir este filtro</button>
       </div>
+      <p id="compartir-filtro-mensaje" class="oculto" data-testid="compartir-filtro-mensaje">Link copiado.</p>
       <p id="vista-lista-vacio" class="oculto">Todavía no hay lotes cargados.</p>
       <p id="vista-lista-sin-resultados" class="oculto">Ningún lote coincide con el filtro.</p>
       <div class="tabla-scroll">
@@ -1046,6 +1053,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-10"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-11"></script>
 </body>
 </html>

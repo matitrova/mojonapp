@@ -395,17 +395,103 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
   }
 });
 
-elBtnVerLista.addEventListener("click", () => {
-  const mostrar = elVistaLista.classList.contains("oculto");
+// Compartida entre el click de "Ver como lista" y el deep link de un
+// filtro compartido (más abajo) — las dos formas de abrir este panel
+// tienen que cerrar los otros paneles de pantalla completa igual.
+function abrirPanelVistaLista() {
   document.getElementById("panel-admin").classList.add("oculto"); // no superponer con "Seguridad"
   document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Zonas"
   document.getElementById("panel-barrios").classList.add("oculto"); // ni con "Barrios"
   document.getElementById("panel-dashboard").classList.add("oculto"); // ni con "Dashboard"
-  if (mostrar) mostrarListaLotesGrilla(); // siempre arranca en la lista, no en edición
-  elVistaLista.classList.toggle("oculto", !mostrar);
-  elBtnVerLista.classList.toggle("activo", mostrar);
+  mostrarListaLotesGrilla(); // siempre arranca en la lista, no en edición
+  elVistaLista.classList.remove("oculto");
+  elBtnVerLista.classList.add("activo");
+}
+
+elBtnVerLista.addEventListener("click", () => {
+  const mostrar = elVistaLista.classList.contains("oculto");
+  if (mostrar) {
+    abrirPanelVistaLista();
+  } else {
+    elVistaLista.classList.add("oculto");
+    elBtnVerLista.classList.remove("activo");
+  }
 });
 document.getElementById("cerrar-vista-lista").addEventListener("click", () => {
   elVistaLista.classList.add("oculto");
   elBtnVerLista.classList.remove("activo");
 });
+
+// "Compartir este filtro": mismo criterio que "Compartir este lote"
+// (ficha.js) pero para el estado completo de los filtros de esta grilla
+// en vez de un lote puntual — útil para mandarle a un colega "mirá los
+// lotes disponibles de tal zona entre tal y tal precio" sin tener que
+// explicarle qué tocar.
+const elCompartirFiltroMensaje = document.getElementById("compartir-filtro-mensaje");
+
+document.getElementById("btn-compartir-filtro").addEventListener("click", async () => {
+  const parametros = new URLSearchParams();
+  parametros.set("vista", "lista");
+  if (elFiltroSector.value) parametros.set("sector", elFiltroSector.value);
+  if (elFiltroBarrio.value) parametros.set("barrio", elFiltroBarrio.value);
+  if (elFiltroEstado.value) parametros.set("estado", elFiltroEstado.value);
+  if (elFiltroPrecioMin.value) parametros.set("precioMin", elFiltroPrecioMin.value);
+  if (elFiltroPrecioMax.value) parametros.set("precioMax", elFiltroPrecioMax.value);
+  if (elFiltroSuperficieMin.value) parametros.set("superficieMin", elFiltroSuperficieMin.value);
+  if (elFiltroSuperficieMax.value) parametros.set("superficieMax", elFiltroSuperficieMax.value);
+  const url = `${location.origin}${location.pathname}?${parametros.toString()}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "MojonApp - Lotes filtrados", url });
+    } catch {
+      // Cancelado por quien comparte, o bloqueado por el navegador — no
+      // es un error real, no hace falta avisar nada (mismo criterio que
+      // "Compartir este lote").
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(url);
+    elCompartirFiltroMensaje.textContent = "Link copiado.";
+    elCompartirFiltroMensaje.classList.remove("oculto");
+    setTimeout(() => elCompartirFiltroMensaje.classList.add("oculto"), 2500);
+  } catch {
+    elCompartirFiltroMensaje.textContent = url;
+    elCompartirFiltroMensaje.classList.remove("oculto");
+  }
+});
+
+// Si la app se abrió con "?vista=lista" (link armado por "Compartir este
+// filtro"), abre el panel con los filtros de la URL ya aplicados. Se
+// engancha en los mismos dos puntos que abrirLoteDesdeUrlSiCorresponde
+// (ficha.js) — ver ese comentario en app.js —, pero a diferencia de esa
+// función esto NO necesita reaplicarse en cada carga: una vez que el
+// usuario está mirando la lista con sus filtros, una segunda carga de
+// lotes (login/logout) no debería volver a pisarle lo que ya eligió.
+let filtroUrlYaAplicado = false;
+
+export function aplicarFiltrosDesdeUrlSiCorresponde() {
+  if (filtroUrlYaAplicado) return;
+  const parametros = new URLSearchParams(location.search);
+  if (parametros.get("vista") !== "lista") return;
+  filtroUrlYaAplicado = true;
+
+  abrirPanelVistaLista();
+
+  // Los <select> de sector/barrio ya están poblados con datos reales acá
+  // (mapa.js llama actualizarVistaLista() apenas termina de cargar los
+  // lotes, antes de este punto) — si el valor de la URL no coincide con
+  // ninguna opción real, el navegador simplemente lo ignora y el select
+  // se queda en "Todas las zonas"/"Todos los barrios".
+  if (parametros.has("sector")) elFiltroSector.value = parametros.get("sector");
+  if (parametros.has("barrio")) elFiltroBarrio.value = parametros.get("barrio");
+  if (parametros.has("estado")) elFiltroEstado.value = parametros.get("estado");
+  if (parametros.has("precioMin")) elFiltroPrecioMin.value = parametros.get("precioMin");
+  if (parametros.has("precioMax")) elFiltroPrecioMax.value = parametros.get("precioMax");
+  if (parametros.has("superficieMin")) elFiltroSuperficieMin.value = parametros.get("superficieMin");
+  if (parametros.has("superficieMax")) elFiltroSuperficieMax.value = parametros.get("superficieMax");
+
+  reiniciarPaginaYActualizar();
+}

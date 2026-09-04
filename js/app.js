@@ -27,7 +27,7 @@ import {
 import { configurarDashboard, abrirPanelDashboard, renderDashboard } from "./dashboard.js";
 import { configurarCrm } from "./crm.js";
 import { configurarFavoritos } from "./favoritos.js";
-import { configurarVistaLista } from "./vista-lista.js";
+import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde } from "./vista-lista.js";
 import { configurarEditorForma } from "./editor-forma.js";
 import { configurarCargarLote } from "./cargar-lote.js";
 import {
@@ -193,7 +193,10 @@ configurarMapa({ mostrarFicha, contenidoTooltipLote });
 // (la que pinta rápido, antes de saber si hay sesión) termina después que
 // la de onAuthStateChanged más abajo — ver el comentario en
 // abrirLoteDesdeUrlSiCorresponde (ficha.js).
-iniciarMapa().then(() => abrirLoteDesdeUrlSiCorresponde());
+iniciarMapa().then(() => {
+  abrirLoteDesdeUrlSiCorresponde();
+  aplicarFiltrosDesdeUrlSiCorresponde();
+});
 
 configurarVistaLista({
   db,
@@ -359,6 +362,7 @@ onAuthStateChanged(auth, async (usuario) => {
   // arrancar la app.
   cargarLotesDesdeFirestore().then(() => {
     abrirLoteDesdeUrlSiCorresponde();
+    aplicarFiltrosDesdeUrlSiCorresponde();
     // Si el dashboard se abrió recién (ver formularioLogin más arriba)
     // con datos todavía viejos/vacíos, esto lo refresca con los reales
     // apenas terminan de llegar. Si para entonces ya está cerrado (el

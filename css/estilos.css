@@ -1462,6 +1462,23 @@ button:active {
   color: var(--color-texto);
 }
 
+/* Alineado con la base de los <label> (que tienen texto arriba + campo
+   abajo) en vez de quedar pegado arriba de la fila — es el único item
+   de #vista-lista-filtros sin una etiqueta propia. */
+#btn-compartir-filtro {
+  align-self: flex-end;
+}
+
+#compartir-filtro-mensaje {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-primario);
+  font-weight: 600;
+  margin: -8px 0 16px;
+  word-break: break-all;
+  user-select: text;
+}
+
 #vista-lista-sin-resultados {
   color: var(--color-texto-secundario);
   font-size: 0.9rem;
