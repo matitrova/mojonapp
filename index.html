@@ -40,7 +40,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-07" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-08" />
 </head>
 <body>
 
@@ -259,6 +259,16 @@
     </div>
     <button id="btn-compartir-lote" class="btn-editar-ficha" data-testid="btn-compartir-lote">Compartir este lote</button>
     <p id="compartir-lote-mensaje" class="oculto" data-testid="compartir-lote-mensaje">Link copiado.</p>
+
+    <!-- Otros lotes de la misma zona (o, si no tiene zona cargada, los
+         más cercanos por geometría real) — ver lotesSimilares() en
+         js/ficha.js. Se oculta entera si no hay ningún otro lote
+         cargado todavía. -->
+    <div id="ficha-similares" class="oculto" data-testid="ficha-similares">
+      <p class="ficha-similares-titulo">También te puede interesar</p>
+      <div id="ficha-similares-lista" data-testid="ficha-similares-lista"></div>
+    </div>
+
     <button id="btn-editar-lote-completo" class="oculto btn-editar-ficha" data-testid="btn-editar-lote-completo">Editar lote</button>
     <button id="btn-editar-forma-lote" class="oculto btn-editar-ficha" data-testid="btn-editar-forma-lote">Ajustar forma en el mapa</button>
     <button id="btn-borrar-lote" class="oculto btn-peligro" data-testid="btn-borrar-lote">Borrar lote</button>
@@ -1013,6 +1023,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-07"></script>
+  <script type="module" src="js/app.js?v=2026-09-04-08"></script>
 </body>
 </html>

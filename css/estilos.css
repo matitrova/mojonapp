@@ -2574,3 +2574,83 @@ button:active {
 .favorito-quitar:hover {
   color: var(--color-vendido);
 }
+
+/* ---------------------------------------------------------------------
+   "También te puede interesar" (js/ficha.js, renderLotesSimilares) —
+   fila de mini-tarjetas con scroll horizontal, mismo criterio que el
+   kanban del CRM: pensado para tocar con el dedo, no solo con mouse.
+   --------------------------------------------------------------------- */
+
+#ficha-similares {
+  margin-top: 14px;
+}
+
+.ficha-similares-titulo {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-primario-oscuro);
+}
+
+#ficha-similares-lista {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ficha-similar-item {
+  flex: 0 0 150px;
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 10px;
+  box-shadow: var(--sombra-calida-suave);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.ficha-similar-item:hover {
+  box-shadow: 0 4px 12px rgba(56, 38, 20, 0.14);
+  transform: translateY(-1px);
+}
+
+.ficha-similar-titulo {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--color-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ficha-similar-dato {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--color-texto-secundario);
+}
+
+.ficha-similar-estado {
+  align-self: flex-start;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-fondo-alterno);
+  color: var(--color-texto-secundario);
+}
+
+.ficha-similar-estado.disponible {
+  background: color-mix(in srgb, var(--color-disponible) 16%, var(--color-fondo));
+  color: var(--color-disponible);
+}
+
+.ficha-similar-estado.reservado {
+  background: color-mix(in srgb, var(--color-reservado) 18%, var(--color-fondo));
+  color: var(--color-reservado);
+}

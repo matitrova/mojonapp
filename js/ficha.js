@@ -20,7 +20,7 @@ import {
   arrayUnion,
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-import { centroideDePoligono, textoMedidasLados } from "./geometria.js";
+import { centroideDePoligono, textoMedidasLados, distanciaMetros } from "./geometria.js";
 import {
   getLoteSeleccionado,
   setLoteSeleccionado,
@@ -399,6 +399,7 @@ export function mostrarFicha(feature) {
   elObservaciones.textContent = p.observaciones || "Sin datos";
   renderFotos(feature);
   actualizarBotonFavorito(feature.id);
+  renderLotesSimilares(feature);
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
   document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
@@ -669,6 +670,83 @@ elBtnFavorito.addEventListener("click", () => {
   elBtnFavorito.setAttribute("aria-label", guardado ? "Quitar de favoritos" : "Guardar en favoritos");
   elBtnFavorito.classList.toggle("activo", guardado);
 });
+
+// ---------------------------------------------------------------------------
+// "También te puede interesar": otros lotes de la misma zona (o, sin zona
+// cargada, los más cercanos por geometría real) — mismo criterio que
+// cualquier portal real (Zonaprop, LandWatch), para que quien mira un lote
+// no se vaya sin ver el resto de la cartera cercana.
+// ---------------------------------------------------------------------------
+
+const elFichaSimilares = document.getElementById("ficha-similares");
+const elFichaSimilaresLista = document.getElementById("ficha-similares-lista");
+const CANTIDAD_SIMILARES = 4;
+
+function lotesSimilares(feature) {
+  const candidatos = getLotesActuales().filter((f) => f.id !== feature.id && f.properties.estado !== "vendido");
+  if (candidatos.length === 0) return [];
+
+  const { sector } = feature.properties;
+  const mismaZona = sector ? candidatos.filter((f) => f.properties.sector === sector) : [];
+  // Si la propia zona no alcanza para completar la cantidad pedida, se
+  // completa con el resto de la cartera ordenado por distancia real —
+  // así siempre hay algo útil para mostrar, tenga o no zona cargada.
+  const base = mismaZona.length >= CANTIDAD_SIMILARES ? mismaZona : candidatos;
+
+  const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+  return base
+    .map((f) => {
+      const centro = centroideDePoligono(f.geometry.coordinates[0]);
+      return { feature: f, distancia: distanciaMetros(lat, lon, centro.lat, centro.lon) };
+    })
+    .sort((a, b) => a.distancia - b.distancia)
+    .slice(0, CANTIDAD_SIMILARES)
+    .map((x) => x.feature);
+}
+
+// "Reemplaza" la ficha actual por la del lote elegido — mismo criterio de
+// animate:false que cargarLotesDesdeFirestore/abrirLoteDesdeUrlSiCorresponde
+// (ver comentario ahí): con una animación de cámara todavía en curso,
+// Leaflet puede ignorar en silencio este segundo setView.
+function irALoteSimilar(feature) {
+  const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+  mapa.setView([lat, lon], 19, { animate: false });
+  mostrarFicha(feature);
+}
+
+function renderLotesSimilares(feature) {
+  const similares = lotesSimilares(feature);
+  elFichaSimilares.classList.toggle("oculto", similares.length === 0);
+  elFichaSimilaresLista.innerHTML = "";
+
+  similares.forEach((f) => {
+    const p = f.properties;
+    const item = document.createElement("div");
+    item.className = "ficha-similar-item";
+    item.dataset.testid = `ficha-similar-${f.id}`;
+
+    const titulo = document.createElement("p");
+    titulo.className = "ficha-similar-titulo";
+    titulo.textContent = tituloLote(p);
+    item.appendChild(titulo);
+
+    const dato = document.createElement("p");
+    dato.className = "ficha-similar-dato";
+    const partes = [];
+    if (p.superficie_m2 != null) partes.push(`${p.superficie_m2} m²`);
+    if (p.precio_usd != null) partes.push(`USD ${Number(p.precio_usd).toLocaleString("es-AR")}`);
+    dato.textContent = partes.length ? partes.join(" · ") : "Sin datos";
+    item.appendChild(dato);
+
+    const estado = document.createElement("span");
+    estado.className = `ficha-similar-estado ${p.estado || ""}`;
+    estado.textContent = ETIQUETA_ESTADO[p.estado] || p.estado || "";
+    item.appendChild(estado);
+
+    item.addEventListener("click", () => irALoteSimilar(f));
+    elFichaSimilaresLista.appendChild(item);
+  });
+}
 
 function construirUrlComoLlegar(feature) {
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
