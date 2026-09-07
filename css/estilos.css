@@ -2520,6 +2520,19 @@ button:active {
   white-space: nowrap;
 }
 
+/* Última actividad (idea propia, ver ultimaActividad en crm.js) — una
+   línea, cursiva para diferenciarla del resto de los datos "duros" de
+   la tarjeta (nombre, lotes), es un resumen textual libre. */
+.crm-tarjeta-ultima-actividad {
+  margin: 0;
+  font-size: 0.76rem;
+  font-style: italic;
+  color: var(--color-texto-secundario);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .crm-tarjeta-pie {
   display: flex;
   align-items: center;
@@ -2715,11 +2728,22 @@ button:active {
 }
 
 /* Un color distinto por métrica (mismo orden en que renderStats() las
-   arma) — igual que las tarjetas de estado del Dashboard, para que las 4
-   no se vean como una fila repetida del mismo bloque. */
+   arma) — igual que las tarjetas de estado del Dashboard, para que no
+   se vean como una fila repetida del mismo bloque. */
 .crm-stat:nth-child(2) { border-top-color: var(--crm-contactado); }
 .crm-stat:nth-child(3) { border-top-color: var(--crm-cerrado); }
-.crm-stat:nth-child(4) { border-top-color: var(--crm-visita); }
+.crm-stat:nth-child(5) { border-top-color: var(--crm-visita); }
+
+/* "Sin atender" (idea propia, ver estaSinAtender en crm.js) es la
+   métrica más urgente de las 5 — mismo rojo que .crm-badge-sin-atender,
+   para que se note antes de leer el número. */
+.crm-stat-urgente {
+  border-top-color: var(--color-vendido) !important;
+}
+
+.crm-stat-urgente strong {
+  color: var(--color-vendido);
+}
 
 .crm-stat strong {
   display: block;
@@ -2881,6 +2905,23 @@ button:active {
   background: var(--color-acento-suave);
   color: var(--color-acento);
   border: 1px solid var(--color-acento);
+  white-space: nowrap;
+}
+
+/* "Sin atender" (idea propia, investigada en Tokko Broker antes de
+   armarla — "controlar los tiempos de atención") — rojo en vez del
+   acento suave de "estancado": un lead NUEVO sin ni una primera
+   llamada/mensaje es más urgente que uno que ya se atendió y después
+   se enfrió. */
+.crm-badge-sin-atender {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-vendido) 15%, white);
+  color: var(--color-vendido);
+  border: 1px solid var(--color-vendido);
   white-space: nowrap;
 }
 

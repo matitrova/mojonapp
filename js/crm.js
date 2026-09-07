@@ -147,6 +147,33 @@ function estaEstancado(contacto) {
   return dias >= DIAS_ESTANCADO;
 }
 
+// "Control de tiempos de atención" (idea propia, investigada en las
+// funcionalidades de Tokko Broker antes de armarla — ver
+// feedback_buscar_inspiracion_real: "Módulo de oportunidades... te
+// permite... controlar los tiempos de atención"). Distinto de
+// "estancado" (que mide silencio DESPUÉS de haber arrancado la
+// gestión): esto mide el momento más crítico de todos — un lead nuevo
+// que todavía NADIE llamó ni escribió. Deja de contar en cuanto tiene
+// una primera actividad registrada, sea cual sea.
+const HORAS_SIN_ATENDER = 24;
+
+function estaSinAtender(contacto) {
+  if (contacto.estado !== "nuevo") return false;
+  if ((contacto.actividades || []).length > 0) return false;
+  if (!contacto.fecha_creacion) return false;
+  const horas = (Date.now() - new Date(contacto.fecha_creacion).getTime()) / 3600000;
+  return horas >= HORAS_SIN_ATENDER;
+}
+
+// Última actividad, para el resumen de una línea en la tarjeta del
+// kanban (mismo criterio que Pipedrive/HubSpot: ver de un vistazo qué
+// fue lo último que pasó, sin tener que abrir el contacto).
+function ultimaActividad(contacto) {
+  const actividades = contacto.actividades || [];
+  if (actividades.length === 0) return null;
+  return [...actividades].sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))[0];
+}
+
 // ---------------------------------------------------------------------------
 // Alta automática desde "Agregar interesado" (ficha del lote). Fire-and-
 // forget, mismo criterio que registrarVistaDeLote/registrarAuditoria: si
@@ -456,6 +483,19 @@ function tarjetaContacto(contacto) {
   lotes.textContent = textoLotesResumen(contacto.lotes_interes || []);
   tarjeta.appendChild(lotes);
 
+  // Última actividad en una línea (idea propia, mismo criterio que
+  // Pipedrive/HubSpot: se lee de un vistazo qué fue lo último que pasó,
+  // sin tener que abrir el contacto). Sin actividad todavía, no se
+  // muestra nada acá — "Sin atender" (más abajo) ya cubre ese caso.
+  const ultima = ultimaActividad(contacto);
+  if (ultima) {
+    const actividad = document.createElement("p");
+    actividad.className = "crm-tarjeta-ultima-actividad";
+    const textoCorto = ultima.texto && ultima.texto.length > 42 ? `${ultima.texto.slice(0, 42)}…` : ultima.texto;
+    actividad.textContent = `${ETIQUETA_ACTIVIDAD[ultima.tipo] || ultima.tipo}${textoCorto ? `: ${textoCorto}` : ""}`;
+    tarjeta.appendChild(actividad);
+  }
+
   // Solo en "Todos": en "Mis contactos" siempre serías vos, no aporta
   // nada aclararlo tarjeta por tarjeta.
   if (modoVista === "todas") {
@@ -465,16 +505,29 @@ function tarjetaContacto(contacto) {
     tarjeta.appendChild(asignado);
   }
 
-  // "Sin novedades": mismo espíritu que las alertas del Dashboard, para
-  // que un lead que se está enfriando no quede perdido entre el resto de
-  // la columna sin que nadie lo note.
+  // "Sin atender" (rojo, más urgente) y "Sin novedades" (acento, más
+  // suave) — investigado en Tokko Broker antes de armarlo ("controlar
+  // los tiempos de atención"), ver comentario en estaSinAtender. Los dos
+  // pueden convivir en teoría, pero en la práctica no: "sin atender"
+  // exige actividades.length === 0 y estado "nuevo", "estancado" mide
+  // silencio DESPUÉS de la primera gestión — se muestran igual como dos
+  // chips independientes por si algún día cambia el criterio de alguno.
+  const badgesUrgencia = [];
+  if (estaSinAtender(contacto)) {
+    badgesUrgencia.push({ clase: "crm-badge-sin-atender", texto: `Sin atender +${HORAS_SIN_ATENDER}h` });
+  }
   if (estaEstancado(contacto)) {
+    badgesUrgencia.push({ clase: "crm-badge-estancado", texto: `Sin novedades +${DIAS_ESTANCADO}d` });
+  }
+  if (badgesUrgencia.length > 0) {
     const badges = document.createElement("div");
     badges.className = "crm-tarjeta-badges";
-    const badge = document.createElement("span");
-    badge.className = "crm-badge-estancado";
-    badge.textContent = `Sin novedades +${DIAS_ESTANCADO}d`;
-    badges.appendChild(badge);
+    badgesUrgencia.forEach(({ clase, texto }) => {
+      const badge = document.createElement("span");
+      badge.className = clase;
+      badge.textContent = texto;
+      badges.appendChild(badge);
+    });
     tarjeta.appendChild(badges);
   }
 
@@ -571,7 +624,8 @@ function calcularMetricas(contactos) {
   const cerrados = contactos.filter((c) => c.estado === "cerrado").length;
   const tasaConversion = total > 0 ? Math.round((cerrados / total) * 100) : null;
   const estancados = contactos.filter(estaEstancado).length;
-  return { total, nuevosEstaSemana, tasaConversion, estancados };
+  const sinAtender = contactos.filter(estaSinAtender).length;
+  return { total, nuevosEstaSemana, tasaConversion, estancados, sinAtender };
 }
 
 function renderStats() {
@@ -580,6 +634,7 @@ function renderStats() {
     <div class="crm-stat"><strong>${m.total}</strong><span>Contactos</span></div>
     <div class="crm-stat"><strong>${m.nuevosEstaSemana}</strong><span>Nuevos (7 días)</span></div>
     <div class="crm-stat"><strong>${m.tasaConversion == null ? "—" : `${m.tasaConversion}%`}</strong><span>Conversión a cerrado</span></div>
+    <div class="crm-stat crm-stat-urgente"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span></div>
     <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span></div>
   `;
 }
