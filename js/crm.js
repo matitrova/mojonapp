@@ -629,6 +629,26 @@ function contactosFiltrados() {
   );
 }
 
+// Valor potencial de un contacto (idea propia, mismo lenguaje que
+// Pipedrive/HubSpot: cada columna del pipeline muestra cuánto dinero
+// representa, no solo cuántas tarjetas hay — "3 contactos" dice mucho
+// menos que "3 contactos, USD 90.000"). Se suma el precio de cada lote
+// de interés (los que tengan precio cargado; sin precio no aporta nada,
+// no se inventa un valor). Puede sumar el mismo lote más de una vez
+// entre distintos contactos — a propósito: cada uno es una oportunidad
+// de venta independiente, no una reserva real todavía.
+function valorPotencialContacto(contacto) {
+  const lotesPorId = new Map(getLotesActuales().map((f) => [f.id, f.properties]));
+  return (contacto.lotes_interes || []).reduce((total, l) => {
+    const precio = lotesPorId.get(l.id)?.precio_usd;
+    return total + (precio || 0);
+  }, 0);
+}
+
+function formatoUsdCompacto(valor) {
+  return valor > 0 ? `USD ${Math.round(valor).toLocaleString("es-AR")}` : null;
+}
+
 function renderKanban() {
   const contactos = getContactosActuales();
   const filtrados = contactosFiltrados();
@@ -637,6 +657,7 @@ function renderKanban() {
   elKanban.innerHTML = "";
   ETAPAS.forEach(({ clave, etiqueta, color }) => {
     const deEstaEtapa = filtrados.filter((c) => c.estado === clave);
+    const valorColumna = deEstaEtapa.reduce((total, c) => total + valorPotencialContacto(c), 0);
     const columna = document.createElement("div");
     columna.className = "crm-columna";
     columna.dataset.testid = `crm-columna-${clave}`;
@@ -645,10 +666,27 @@ function renderKanban() {
     const cabeceraColumna = document.createElement("div");
     cabeceraColumna.className = "crm-columna-cabecera";
 
+    // Título + valor apilados en su propio grupo — así "space-between"
+    // en la cabecera reparte contra el botón "+" nomás, no contra el
+    // valor (que si no quedaría empujado lejos del título al que
+    // pertenece).
+    const grupoTitulo = document.createElement("div");
+    grupoTitulo.className = "crm-columna-titulo-grupo";
+
     const titulo = document.createElement("p");
     titulo.className = "crm-columna-titulo";
     titulo.innerHTML = `<span class="crm-columna-dot"></span>${etiqueta} <span class="crm-columna-contador">${deEstaEtapa.length}</span>`;
-    cabeceraColumna.appendChild(titulo);
+    grupoTitulo.appendChild(titulo);
+
+    const valorTexto = formatoUsdCompacto(valorColumna);
+    if (valorTexto) {
+      const valorEl = document.createElement("p");
+      valorEl.className = "crm-columna-valor";
+      valorEl.dataset.testid = `crm-columna-valor-${clave}`;
+      valorEl.textContent = valorTexto;
+      grupoTitulo.appendChild(valorEl);
+    }
+    cabeceraColumna.appendChild(grupoTitulo);
 
     // Alta rápida directamente en esta columna (idea de Attio: un "+" en
     // cada cabecera de columna) — abre el mismo formulario de siempre,
@@ -680,7 +718,13 @@ function calcularMetricas(contactos) {
   const tasaConversion = total > 0 ? Math.round((cerrados / total) * 100) : null;
   const estancados = contactos.filter(estaEstancado).length;
   const sinAtender = contactos.filter(estaSinAtender).length;
-  return { total, nuevosEstaSemana, tasaConversion, estancados, sinAtender };
+  // Solo lo que sigue en juego — cerrado ya se ganó, perdido ya se
+  // perdió, ninguno de los dos es "pipeline" en el sentido de "todavía
+  // por definir".
+  const valorPipelineActivo = contactos
+    .filter((c) => c.estado !== "cerrado" && c.estado !== "perdido")
+    .reduce((total, c) => total + valorPotencialContacto(c), 0);
+  return { total, nuevosEstaSemana, tasaConversion, estancados, sinAtender, valorPipelineActivo };
 }
 
 function renderStats() {
@@ -691,6 +735,7 @@ function renderStats() {
     <div class="crm-stat"><strong>${m.tasaConversion == null ? "—" : `${m.tasaConversion}%`}</strong><span>Conversión a cerrado</span></div>
     <div class="crm-stat crm-stat-urgente"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span></div>
     <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span></div>
+    <div class="crm-stat crm-stat-valor"><strong>${formatoUsdCompacto(m.valorPipelineActivo) || "—"}</strong><span>Valor en pipeline</span></div>
   `;
 }
 
