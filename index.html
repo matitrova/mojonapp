@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-15" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-16" />
 </head>
 <body>
 
@@ -1075,6 +1075,21 @@
             <a id="contacto-whatsapp" class="btn-secundario oculto" target="_blank" rel="noopener" data-testid="contacto-whatsapp">💬 WhatsApp</a>
           </div>
         </label>
+
+        <!-- Aviso de posible duplicado (idea propia — complementa
+             "Fusionar con otro contacto…": mejor avisar ANTES de crear
+             dos veces a la misma persona que limpiarlo después). Solo
+             al dar de alta (no editando uno existente, ver
+             actualizarAvisoDuplicado en crm.js) — compara nombre y
+             teléfono contra lo ya cargado, en el cliente, sin pegarle a
+             Firestore de nuevo por cada letra tipeada. -->
+        <div id="crm-aviso-duplicado" class="oculto" data-testid="crm-aviso-duplicado">
+          <p id="crm-aviso-duplicado-texto" data-testid="crm-aviso-duplicado-texto"></p>
+          <button type="button" id="btn-abrir-duplicado" class="btn-link" data-testid="btn-abrir-duplicado">
+            Abrir ese contacto en vez de crear uno nuevo
+          </button>
+        </div>
+
         <label class="crm-campo">
           Email
           <input type="email" id="contacto-email" data-testid="contacto-email" />
@@ -1413,6 +1428,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-15"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-16"></script>
 </body>
 </html>

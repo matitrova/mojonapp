@@ -2923,6 +2923,23 @@ button:active {
   color: var(--color-texto);
 }
 
+/* Aviso de posible duplicado al dar de alta (ver actualizarAvisoDuplicado
+   en crm.js) — mismo tono ámbar que .crm-automatizacion, misma lógica de
+   "esto es una alerta de gestión, no un error". */
+#crm-aviso-duplicado {
+  margin: 4px 0 8px;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-reservado) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-reservado) 35%, transparent);
+}
+
+#crm-aviso-duplicado p {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: var(--color-texto);
+}
+
 /* "Fusionar con otro contacto" — deduplicación manual (ver
    elBtnFusionarContacto en crm.js). Separado del resto del formulario
    con un borde arriba, mismo criterio visual que .dashboard-detalle: es

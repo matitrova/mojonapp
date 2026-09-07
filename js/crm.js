@@ -376,6 +376,9 @@ const elIdEditando = document.getElementById("contacto-id-editando");
 const elNombre = document.getElementById("contacto-nombre");
 const elTelefono = document.getElementById("contacto-telefono");
 const elWhatsapp = document.getElementById("contacto-whatsapp");
+const elAvisoDuplicado = document.getElementById("crm-aviso-duplicado");
+const elAvisoDuplicadoTexto = document.getElementById("crm-aviso-duplicado-texto");
+const elBtnAbrirDuplicado = document.getElementById("btn-abrir-duplicado");
 const elEmail = document.getElementById("contacto-email");
 const elEstado = document.getElementById("contacto-estado");
 const elCampoMotivoPerdido = document.getElementById("crm-campo-motivo-perdido");
@@ -1190,6 +1193,46 @@ function actualizarVisibilidadMotivoPerdido() {
 }
 elEstado.addEventListener("change", actualizarVisibilidadMotivoPerdido);
 
+// Aviso de posible duplicado (idea propia — complementa "Fusionar con
+// otro contacto…": mejor avisar ANTES de cargar dos veces a la misma
+// persona que limpiarlo después a mano). Solo tiene sentido dando de
+// alta — editando uno existente, comparar contra sí mismo no aporta
+// nada. Coincide por teléfono normalizado (mismos dígitos, sin importar
+// espacios/guiones) o por nombre exacto sin mayúsculas/minúsculas — no
+// es un fuzzy-match sofisticado, es la misma heurística de "casi seguro
+// es la misma persona" que ya usa crearContactoDesdeInteresado con el
+// teléfono.
+function contactoParecido() {
+  if (elIdEditando.value) return null;
+  const nombre = elNombre.value.trim().toLowerCase();
+  const telefono = elTelefono.value.replace(/\D/g, "");
+  if (!nombre && !telefono) return null;
+  return (
+    getContactosActuales().find((c) => {
+      const mismoTelefono = telefono && (c.telefono || "").replace(/\D/g, "") === telefono;
+      const mismoNombre = nombre && (c.nombre || "").trim().toLowerCase() === nombre;
+      return mismoTelefono || mismoNombre;
+    }) || null
+  );
+}
+
+function actualizarAvisoDuplicado() {
+  const match = contactoParecido();
+  elAvisoDuplicado.classList.toggle("oculto", !match);
+  if (!match) return;
+  elAvisoDuplicadoTexto.textContent = `Ya hay un contacto parecido: "${match.nombre}"${
+    match.telefono ? ` (${match.telefono})` : ""
+  }. ¿Es la misma persona?`;
+  elAvisoDuplicado.dataset.contactoId = match.id;
+}
+elNombre.addEventListener("input", actualizarAvisoDuplicado);
+elTelefono.addEventListener("input", actualizarAvisoDuplicado);
+
+elBtnAbrirDuplicado.addEventListener("click", () => {
+  const match = getContactosActuales().find((c) => c.id === elAvisoDuplicado.dataset.contactoId);
+  if (match) mostrarForm(match);
+});
+
 // contacto == null: alta de un contacto nuevo. Con un contacto, lo
 // precarga para editarlo (mismo formulario, en modo edición) — mismo
 // patrón que crearPanelCatalogo (catalogos.js).
@@ -1199,6 +1242,7 @@ elEstado.addEventListener("change", actualizarVisibilidadMotivoPerdido);
 function mostrarForm(contacto, estadoInicial) {
   formulario.reset();
   elError.classList.add("oculto");
+  elAvisoDuplicado.classList.add("oculto"); // se vuelve a evaluar recién cuando se tipea algo
   poblarSelectLotes();
   lotesInteresEnEdicion = contacto ? [...(contacto.lotes_interes || [])] : [];
   renderListaLotesInteres();

@@ -75,7 +75,16 @@ const ETIQUETA_ACCION = {
   borrar_zona: "Borró la zona",
   crear_barrio: "Creó el barrio",
   editar_barrio: "Editó el barrio",
-  borrar_barrio: "Borró el barrio"
+  borrar_barrio: "Borró el barrio",
+  // Contactos del CRM (crm.js) — usadas ahí desde antes de que existiera
+  // este mapa; faltaban acá, así que el panel les mostraba la clave
+  // cruda en vez de una etiqueta en español (encontrado de paso
+  // armando "Fusionar contactos", no arreglado en el momento por
+  // alcance — completado ahora).
+  crear_contacto: "Creó el contacto",
+  editar_contacto: "Editó el contacto",
+  borrar_contacto: "Borró el contacto",
+  mover_contacto: "Movió el contacto de etapa"
 };
 
 const elPanel = document.getElementById("panel-auditoria");
