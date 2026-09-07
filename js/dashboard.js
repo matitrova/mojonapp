@@ -169,22 +169,45 @@ function calcularMetricasDashboard() {
     .sort((a, b) => (b.properties.interesados || []).length - (a.properties.interesados || []).length)
     .slice(0, 5);
 
-  // Precio promedio por zona: solo entra un lote si tiene precio Y zona
-  // cargados — un lote sin zona no puede agruparse en ningún lado, y uno
-  // sin precio arruinaría el promedio del resto de su zona.
+  // Resumen por zona (idea propia, investigada en las funcionalidades y
+  // planes de Tokko Broker antes de armarla — ver
+  // feedback_buscar_inspiracion_real): Tokko cobra "Emprendimientos"
+  // aparte, recién desde el plan de $252.320/mes, con "visión general
+  // del estado de las propiedades" como su propia descripción del
+  // módulo. Acá cualquier zona/sector ya cumple ese rol (es como se
+  // organiza un loteo en esta app) — no hace falta un concepto nuevo de
+  // "emprendimiento", solo mostrar el desglose que ya se puede calcular
+  // con lo que hay. Un lote sin zona no entra en ninguna fila (no hay
+  // dónde agruparlo); dentro de una zona, uno sin precio sí cuenta para
+  // el inventario pero no entra en el promedio (arruinaría el número).
   const acumuladoPorZona = {};
   lotes.forEach((f) => {
-    const { sector, precio_usd } = f.properties;
-    if (!sector || precio_usd == null) return;
-    if (!acumuladoPorZona[sector]) acumuladoPorZona[sector] = { suma: 0, cantidad: 0 };
-    acumuladoPorZona[sector].suma += Number(precio_usd);
-    acumuladoPorZona[sector].cantidad++;
+    const { sector, precio_usd, estado } = f.properties;
+    if (!sector) return;
+    if (!acumuladoPorZona[sector]) {
+      acumuladoPorZona[sector] = { sumaPrecio: 0, cantidadConPrecio: 0, disponible: 0, reservado: 0, vendido: 0, total: 0 };
+    }
+    const z = acumuladoPorZona[sector];
+    z.total++;
+    if (estado in z) z[estado]++;
+    if (precio_usd != null) {
+      z.sumaPrecio += Number(precio_usd);
+      z.cantidadConPrecio++;
+    }
   });
-  const precioPorZona = Object.entries(acumuladoPorZona)
-    .map(([zona, { suma, cantidad }]) => ({ zona, cantidad, promedio: suma / cantidad }))
-    .sort((a, b) => b.promedio - a.promedio);
+  const resumenPorZona = Object.entries(acumuladoPorZona)
+    .map(([zona, z]) => ({
+      zona,
+      total: z.total,
+      disponible: z.disponible,
+      reservado: z.reservado,
+      vendido: z.vendido,
+      pctVendido: z.total > 0 ? Math.round((z.vendido / z.total) * 100) : 0,
+      promedio: z.cantidadConPrecio > 0 ? z.sumaPrecio / z.cantidadConPrecio : null
+    }))
+    .sort((a, b) => b.total - a.total);
 
-  return { inventario, reservas, incompletos, consultados, conInteresados, precioPorZona };
+  return { inventario, reservas, incompletos, consultados, conInteresados, resumenPorZona };
 }
 
 // Actualiza el contador de una sección ("Reservas por vencer  3") — se
@@ -347,19 +370,24 @@ export function renderDashboard() {
   });
   document.getElementById("dashboard-interesados-vacio").classList.toggle("oculto", m.conInteresados.length > 0);
 
-  // Barra comparativa de precio por zona, en proporción a la zona más
-  // cara de la tabla (no a un techo fijo) — así siempre hay al menos
-  // una barra llena del todo, sea cual sea el rango de precios real.
+  // "Resumen por zona" (idea propia, ver comentario en
+  // calcularMetricasDashboard) — la barra de precio sigue en proporción
+  // a la zona más cara de la tabla (no a un techo fijo), y de paso
+  // ahora suma el desglose de inventario de cada zona, mismo dato que
+  // "Emprendimientos" de Tokko pero sin pagar un plan más caro por
+  // verlo.
   const elPreciosCuerpo = document.getElementById("dashboard-precios-zona-cuerpo");
   elPreciosCuerpo.innerHTML = "";
-  const promedioMaximo = Math.max(0, ...m.precioPorZona.map((z) => z.promedio));
-  m.precioPorZona.forEach(({ zona, cantidad, promedio }) => {
+  const promedioMaximo = Math.max(0, ...m.resumenPorZona.map((z) => z.promedio || 0));
+  m.resumenPorZona.forEach(({ zona, total, disponible, reservado, vendido, pctVendido, promedio }) => {
     const fila = document.createElement("tr");
-    const ancho = promedioMaximo > 0 ? (promedio / promedioMaximo) * 100 : 0;
-    fila.innerHTML = `<td>${zona}</td><td>${cantidad}</td><td><div class="dashboard-precio-celda"><div class="dashboard-precio-bar-track"><div class="dashboard-precio-bar-fill" style="width:${ancho}%"></div></div><span>USD ${Math.round(
-      promedio
-    ).toLocaleString("es-AR")}</span></div></td>`;
+    const ancho = promedioMaximo > 0 && promedio ? (promedio / promedioMaximo) * 100 : 0;
+    const celdaPrecio =
+      promedio == null
+        ? "—"
+        : `<div class="dashboard-precio-celda"><div class="dashboard-precio-bar-track"><div class="dashboard-precio-bar-fill" style="width:${ancho}%"></div></div><span>USD ${Math.round(promedio).toLocaleString("es-AR")}</span></div>`;
+    fila.innerHTML = `<td>${zona}</td><td>${total}</td><td>${disponible}</td><td>${reservado}</td><td>${vendido} (${pctVendido}%)</td><td>${celdaPrecio}</td>`;
     elPreciosCuerpo.appendChild(fila);
   });
-  document.getElementById("dashboard-precios-zona-vacio").classList.toggle("oculto", m.precioPorZona.length > 0);
+  document.getElementById("dashboard-precios-zona-vacio").classList.toggle("oculto", m.resumenPorZona.length > 0);
 }

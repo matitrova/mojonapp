@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-04" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-05" />
 </head>
 <body>
 
@@ -789,17 +789,23 @@
         <p id="dashboard-interesados-vacio" class="dashboard-vacio oculto">Todavía no hay interesados anotados en ningún lote.</p>
       </section>
 
+      <!-- Idea propia, investigada en las funcionalidades y planes de
+           Tokko Broker antes de armarla (ver
+           feedback_buscar_inspiracion_real): Tokko cobra
+           "Emprendimientos" aparte, recién desde el plan de
+           $252.320/mes — acá cualquier zona/sector ya cumple ese rol
+           (así se organiza un loteo en esta app), sin plan especial. -->
       <section class="dashboard-seccion">
-        <h3>Precio promedio por zona</h3>
+        <h3>Resumen por zona</h3>
         <div class="tabla-scroll">
           <table class="tabla-panel" data-testid="dashboard-precios-zona">
             <thead>
-              <tr><th>Zona</th><th>Lotes con precio</th><th>Precio promedio</th></tr>
+              <tr><th>Zona</th><th>Lotes</th><th>Disponible</th><th>Reservado</th><th>Vendido</th><th>Precio promedio</th></tr>
             </thead>
             <tbody id="dashboard-precios-zona-cuerpo"></tbody>
           </table>
         </div>
-        <p id="dashboard-precios-zona-vacio" class="dashboard-vacio oculto">Todavía no hay lotes con precio cargado.</p>
+        <p id="dashboard-precios-zona-vacio" class="dashboard-vacio oculto">Todavía no hay lotes con zona cargada.</p>
       </section>
     </div>
   </div>
@@ -1252,6 +1258,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-04"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-05"></script>
 </body>
 </html>
