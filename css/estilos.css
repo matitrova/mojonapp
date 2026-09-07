@@ -2628,6 +2628,24 @@ button:active {
   white-space: nowrap;
 }
 
+/* Etiquetas libres en la tarjeta (idea propia, mismo criterio visual que
+   Trello) — chips chicos, se leen de un vistazo sin abrir el contacto. */
+.crm-tarjeta-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0 0;
+}
+
+.crm-tarjeta-etiqueta {
+  background: color-mix(in srgb, var(--color-primario) 12%, var(--color-fondo-alterno));
+  color: var(--color-primario-oscuro);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
 /* Última actividad (idea propia, ver ultimaActividad en crm.js) — una
    línea, cursiva para diferenciarla del resto de los datos "duros" de
    la tarjeta (nombre, lotes), es un resumen textual libre. */
@@ -2740,7 +2758,8 @@ button:active {
   color: var(--color-texto-secundario);
 }
 
-#crm-lista-lotes-interes {
+#crm-lista-lotes-interes,
+#crm-lista-etiquetas {
   list-style: none;
   margin: 0 0 8px;
   padding: 0;
@@ -2772,6 +2791,14 @@ button:active {
   cursor: pointer;
 }
 
+/* Igual que .crm-chip-titulo pero sin el subrayado/cursor de link — la
+   etiqueta no navega a ningún lado, a diferencia del lote de interés. */
+.crm-chip-etiqueta-texto {
+  color: var(--color-texto);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .crm-chip-quitar {
   background: none;
   border: none;
@@ -2793,7 +2820,8 @@ button:active {
   gap: 6px;
 }
 
-.crm-agregar-lote select {
+.crm-agregar-lote select,
+.crm-agregar-lote input[type="text"] {
   flex: 1 1 auto;
   min-width: 0;
   font: inherit;
@@ -3046,6 +3074,29 @@ button:active {
   outline: none;
   border-color: var(--color-primario);
   box-shadow: 0 0 0 3px rgba(51, 82, 58, 0.15);
+}
+
+/* Filtros de calificación/etiqueta (ver contactosFiltrados en crm.js) —
+   mismo look que el buscador, con la flechita propia que ya usa el
+   resto de los <select> del CRM. */
+#crm-filtro-calificacion,
+#crm-filtro-etiqueta {
+  flex: 0 1 150px;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--color-texto);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 9px 28px 9px 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a6a58' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  cursor: pointer;
 }
 
 #crm-filtro-vista {

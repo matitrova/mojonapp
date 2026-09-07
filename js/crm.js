@@ -387,6 +387,12 @@ const elListaLotesInteres = document.getElementById("crm-lista-lotes-interes");
 const elLotesInteresVacio = document.getElementById("crm-lotes-interes-vacio");
 const elSelectLote = document.getElementById("crm-select-lote");
 const elBtnAgregarLoteInteres = document.getElementById("btn-agregar-lote-interes");
+const elListaEtiquetas = document.getElementById("crm-lista-etiquetas");
+const elEtiquetasVacio = document.getElementById("crm-etiquetas-vacio");
+const elInputEtiqueta = document.getElementById("crm-input-etiqueta");
+const elBtnAgregarEtiqueta = document.getElementById("btn-agregar-etiqueta");
+const elFiltroCalificacion = document.getElementById("crm-filtro-calificacion");
+const elFiltroEtiqueta = document.getElementById("crm-filtro-etiqueta");
 const elListaActividades = document.getElementById("crm-lista-actividades");
 const elActividadesVacio = document.getElementById("crm-actividades-vacio");
 const elAgregarActividad = document.getElementById("crm-agregar-actividad");
@@ -410,10 +416,17 @@ const elBtnFusionarCancelar = document.getElementById("btn-fusionar-cancelar");
 // por cada "+ Agregar"/"Quitar" mientras se completa el alta.
 let lotesInteresEnEdicion = [];
 
+// Etiquetas libres del contacto en edición — mismo criterio que
+// lotesInteresEnEdicion (vive acá hasta guardar el formulario).
+let etiquetasEnEdicion = [];
+
 // Filtro de texto de la barra de herramientas (nombre o teléfono) — se
 // aplica en el cliente sobre lo ya cargado, no perfora Firestore de nuevo
-// por cada letra tipeada.
+// por cada letra tipeada. filtroCalificacion/filtroEtiqueta son
+// combinables con el texto y entre sí (ver contactosFiltrados).
 let terminoBusqueda = "";
+let filtroCalificacion = "";
+let filtroEtiqueta = "";
 
 function textoHaceDias(fechaIso) {
   if (!fechaIso) return "";
@@ -538,6 +551,20 @@ function tarjetaContacto(contacto) {
   lotes.textContent = textoLotesResumen(contacto.lotes_interes || []);
   tarjeta.appendChild(lotes);
 
+  // Etiquetas libres, como chips chicos — mismo criterio que Trello: se
+  // leen de un vistazo sin tener que abrir el contacto.
+  if ((contacto.etiquetas || []).length > 0) {
+    const etiquetasEl = document.createElement("div");
+    etiquetasEl.className = "crm-tarjeta-etiquetas";
+    contacto.etiquetas.forEach((etiqueta) => {
+      const chip = document.createElement("span");
+      chip.className = "crm-tarjeta-etiqueta";
+      chip.textContent = etiqueta;
+      etiquetasEl.appendChild(chip);
+    });
+    tarjeta.appendChild(etiquetasEl);
+  }
+
   // Última actividad en una línea (idea propia, mismo criterio que
   // Pipedrive/HubSpot: se lee de un vistazo qué fue lo último que pasó,
   // sin tener que abrir el contacto). Sin actividad todavía, no se
@@ -621,12 +648,37 @@ function tarjetaContacto(contacto) {
 
 function contactosFiltrados() {
   const contactos = getContactosActuales();
-  if (!terminoBusqueda) return contactos;
-  return contactos.filter(
-    (c) =>
-      (c.nombre || "").toLowerCase().includes(terminoBusqueda) ||
-      (c.telefono || "").toLowerCase().includes(terminoBusqueda)
-  );
+  return contactos.filter((c) => {
+    if (terminoBusqueda) {
+      const coincideTexto =
+        (c.nombre || "").toLowerCase().includes(terminoBusqueda) ||
+        (c.telefono || "").toLowerCase().includes(terminoBusqueda);
+      if (!coincideTexto) return false;
+    }
+    if (filtroCalificacion) {
+      const calificacion = calificacionContacto(c);
+      if (!calificacion || calificacion.nivel !== filtroCalificacion) return false;
+    }
+    if (filtroEtiqueta) {
+      if (!(c.etiquetas || []).includes(filtroEtiqueta)) return false;
+    }
+    return true;
+  });
+}
+
+// Opciones del filtro de etiquetas: la unión de todas las etiquetas que
+// aparecen en los contactos ya cargados, ordenadas — se rearma cada vez
+// que cambia la lista visible (no hace falta una colección aparte para
+// "catálogo de etiquetas", son libres). Conserva la selección actual si
+// sigue existiendo.
+function poblarSelectFiltroEtiqueta() {
+  const etiquetas = new Set();
+  getContactosActuales().forEach((c) => (c.etiquetas || []).forEach((e) => etiquetas.add(e)));
+  const opciones = [...etiquetas].sort((a, b) => a.localeCompare(b));
+  elFiltroEtiqueta.innerHTML =
+    `<option value="">Toda etiqueta</option>` + opciones.map((e) => `<option value="${e}">${e}</option>`).join("");
+  elFiltroEtiqueta.value = opciones.includes(filtroEtiqueta) ? filtroEtiqueta : "";
+  if (!opciones.includes(filtroEtiqueta)) filtroEtiqueta = "";
 }
 
 // Valor potencial de un contacto (idea propia, mismo lenguaje que
@@ -904,6 +956,7 @@ function renderTodo() {
   renderAutomatizacion();
   renderRendimientoPorCorredor();
   renderSeguimientos();
+  poblarSelectFiltroEtiqueta();
   renderKanban();
 }
 
@@ -980,6 +1033,64 @@ elBtnAgregarLoteInteres.addEventListener("click", () => {
   if (!feature) return;
   lotesInteresEnEdicion.push({ id: loteId, titulo: tituloLote(feature.properties) });
   renderListaLotesInteres();
+});
+
+// ---------------------------------------------------------------------------
+// Etiquetas libres (dentro del formulario de alta/edición) — mismo
+// patrón visual que "Lotes de interés" (chip + quitar), pero de texto
+// libre en vez de un <select> con catálogo fijo.
+// ---------------------------------------------------------------------------
+
+function renderListaEtiquetas() {
+  elListaEtiquetas.innerHTML = "";
+  etiquetasEnEdicion.forEach((etiqueta) => {
+    const li = document.createElement("li");
+    li.className = "crm-chip-lote";
+
+    const texto = document.createElement("span");
+    texto.className = "crm-chip-etiqueta-texto";
+    texto.textContent = etiqueta;
+    li.appendChild(texto);
+
+    const botonQuitar = document.createElement("button");
+    botonQuitar.type = "button";
+    botonQuitar.className = "crm-chip-quitar";
+    botonQuitar.textContent = "×";
+    botonQuitar.setAttribute("aria-label", `Quitar etiqueta ${etiqueta}`);
+    botonQuitar.addEventListener("click", () => {
+      etiquetasEnEdicion = etiquetasEnEdicion.filter((e) => e !== etiqueta);
+      renderListaEtiquetas();
+    });
+    li.appendChild(botonQuitar);
+
+    elListaEtiquetas.appendChild(li);
+  });
+  elEtiquetasVacio.classList.toggle("oculto", etiquetasEnEdicion.length > 0);
+}
+
+function agregarEtiquetaDesdeInput() {
+  const valor = elInputEtiqueta.value.trim();
+  if (!valor) return;
+  // Comparación sin mayúsculas/minúsculas para no juntar "Urgente" y
+  // "urgente" como dos etiquetas distintas — se guarda tal cual se
+  // escribió la primera vez.
+  const yaExiste = etiquetasEnEdicion.some((e) => e.toLowerCase() === valor.toLowerCase());
+  if (!yaExiste) {
+    etiquetasEnEdicion.push(valor);
+    renderListaEtiquetas();
+  }
+  elInputEtiqueta.value = "";
+  elInputEtiqueta.focus();
+}
+
+elBtnAgregarEtiqueta.addEventListener("click", agregarEtiquetaDesdeInput);
+elInputEtiqueta.addEventListener("keydown", (evento) => {
+  // Enter agrega la etiqueta en vez de mandar el formulario entero —
+  // mismo criterio que cualquier campo de "chips" (Gmail, Notion, etc.).
+  if (evento.key === "Enter") {
+    evento.preventDefault();
+    agregarEtiquetaDesdeInput();
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -1091,6 +1202,9 @@ function mostrarForm(contacto, estadoInicial) {
   poblarSelectLotes();
   lotesInteresEnEdicion = contacto ? [...(contacto.lotes_interes || [])] : [];
   renderListaLotesInteres();
+  etiquetasEnEdicion = contacto ? [...(contacto.etiquetas || [])] : [];
+  renderListaEtiquetas();
+  elInputEtiqueta.value = "";
   renderActividades(contacto);
   elAgregarActividad.classList.toggle("oculto", !contacto);
   elActividadPrimeroGuardar.classList.toggle("oculto", !!contacto);
@@ -1144,6 +1258,7 @@ formulario.addEventListener("submit", async (evento) => {
     motivo_perdido: estado === "perdido" ? elMotivoPerdido.value.trim() || null : null,
     proximo_seguimiento: elSeguimientoInput.value || null,
     lotes_interes: lotesInteresEnEdicion,
+    etiquetas: etiquetasEnEdicion,
     fecha_actualizacion: new Date().toISOString()
   };
   // El <select> de reasignar solo existe con "ver_todos_los_contactos"
@@ -1254,6 +1369,12 @@ elBtnFusionarConfirmar.addEventListener("click", async () => {
     (duplicado.lotes_interes || []).forEach((l) => {
       if (!lotesFusionados.some((existente) => existente.id === l.id)) lotesFusionados.push(l);
     });
+    const etiquetasFusionadas = [...(actual.etiquetas || [])];
+    (duplicado.etiquetas || []).forEach((e) => {
+      if (!etiquetasFusionadas.some((existente) => existente.toLowerCase() === e.toLowerCase())) {
+        etiquetasFusionadas.push(e);
+      }
+    });
     const ahora = new Date().toISOString();
     const actividadFusion = {
       tipo: "nota",
@@ -1270,6 +1391,7 @@ elBtnFusionarConfirmar.addEventListener("click", async () => {
       proximo_seguimiento:
         [actual.proximo_seguimiento, duplicado.proximo_seguimiento].filter(Boolean).sort()[0] || null,
       lotes_interes: lotesFusionados,
+      etiquetas: etiquetasFusionadas,
       actividades: [...(actual.actividades || []), ...(duplicado.actividades || []), actividadFusion],
       fecha_creacion: [actual.fecha_creacion, duplicado.fecha_creacion].filter(Boolean).sort()[0] || actual.fecha_creacion,
       fecha_actualizacion: ahora
@@ -1302,6 +1424,16 @@ elBtnFusionarConfirmar.addEventListener("click", async () => {
 
 elBuscar.addEventListener("input", () => {
   terminoBusqueda = elBuscar.value.trim().toLowerCase();
+  renderKanban();
+});
+
+elFiltroCalificacion.addEventListener("change", () => {
+  filtroCalificacion = elFiltroCalificacion.value;
+  renderKanban();
+});
+
+elFiltroEtiqueta.addEventListener("change", () => {
+  filtroEtiqueta = elFiltroEtiqueta.value;
   renderKanban();
 });
 
@@ -1383,6 +1515,9 @@ async function abrirPanelCrm() {
   elFiltroVista.classList.toggle("oculto", !puedeVerTodosLosContactos());
   elBuscar.value = "";
   terminoBusqueda = "";
+  elFiltroCalificacion.value = "";
+  filtroCalificacion = "";
+  filtroEtiqueta = ""; // el <select> se repuebla en renderTodo() más abajo
 
   // Se precarga acá (no solo al pasar a "Todos") para que el <select>
   // "Asignado a" del formulario ya tenga los corredores listos aunque el

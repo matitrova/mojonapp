@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-14" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-15" />
 </head>
 <body>
 
@@ -1018,6 +1018,19 @@
       <div id="crm-toolbar" data-testid="crm-toolbar">
         <div id="crm-toolbar-filtros">
           <input type="search" id="crm-buscar" placeholder="Buscar por nombre o teléfono…" data-testid="crm-buscar" />
+          <!-- Filtros combinables con la búsqueda de texto y entre sí
+               (ver contactosFiltrados en crm.js) — solo afectan el
+               pipeline visible, igual que la búsqueda; las tarjetas de
+               stat de arriba siguen mostrando el total real. -->
+          <select id="crm-filtro-calificacion" data-testid="crm-filtro-calificacion">
+            <option value="">Toda calificación</option>
+            <option value="caliente">🔥 Caliente</option>
+            <option value="tibio">🌤️ Tibio</option>
+            <option value="frio">❄️ Frío</option>
+          </select>
+          <select id="crm-filtro-etiqueta" data-testid="crm-filtro-etiqueta">
+            <option value="">Toda etiqueta</option>
+          </select>
           <!-- Oculto por defecto: solo aparece con el permiso
                "ver_todos_los_contactos" — sin él, el corredor ve
                directamente sus propios contactos, sin ningún control que
@@ -1107,6 +1120,29 @@
           <div class="crm-agregar-lote">
             <select id="crm-select-lote" data-testid="crm-select-lote"></select>
             <button type="button" id="btn-agregar-lote-interes" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-agregar-lote-interes">+ Agregar</button>
+          </div>
+        </div>
+
+        <!-- Etiquetas libres (idea propia — "financiamiento", "urgente",
+             "referido", lo que haga falta): a diferencia de "lotes de
+             interés" no salen de un catálogo fijo, se escriben a mano.
+             Sirven para filtrar el pipeline (ver #crm-filtro-etiqueta en
+             la barra de herramientas) y se ven como chips en la tarjeta
+             del kanban. -->
+        <div id="crm-etiquetas" data-testid="crm-etiquetas">
+          <p class="crm-subtitulo">Etiquetas</p>
+          <ul id="crm-lista-etiquetas" data-testid="crm-lista-etiquetas"></ul>
+          <p id="crm-etiquetas-vacio" class="dashboard-vacio oculto">Ninguna todavía.</p>
+          <div class="crm-agregar-lote">
+            <input
+              type="text"
+              id="crm-input-etiqueta"
+              placeholder="Ej: financiamiento, urgente…"
+              data-testid="crm-input-etiqueta"
+            />
+            <button type="button" id="btn-agregar-etiqueta" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-agregar-etiqueta">
+              + Agregar
+            </button>
           </div>
         </div>
 
@@ -1377,6 +1413,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-14"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-15"></script>
 </body>
 </html>
