@@ -319,6 +319,8 @@ const elBtnAbrir = document.getElementById("btn-abrir-crm");
 const elVistaKanban = document.getElementById("crm-vista-kanban");
 const elVistaForm = document.getElementById("crm-vista-form");
 const elStats = document.getElementById("crm-stats");
+const elRendimientoSeccion = document.getElementById("crm-rendimiento-seccion");
+const elRendimientoCuerpo = document.getElementById("crm-rendimiento-cuerpo");
 const elSeguimientos = document.getElementById("crm-seguimientos");
 const elSeguimientosVacio = document.getElementById("crm-seguimientos-vacio");
 const elSeguimientosContador = document.getElementById("crm-seguimientos-contador");
@@ -639,6 +641,43 @@ function renderStats() {
   `;
 }
 
+// "Rendimiento por corredor" (idea propia, investigada en Tokko Broker
+// antes de armarla — "Métricas de negocio... performance de tu
+// equipo"). Solo tiene sentido en "Todos": en "Mis contactos" ya es
+// obvio de quién son (las tarjetas de arriba alcanzan), comparar contra
+// nadie no aporta nada.
+function renderRendimientoPorCorredor() {
+  const enTodas = modoVista === "todas";
+  elRendimientoSeccion.classList.toggle("oculto", !enTodas);
+  if (!enTodas) return;
+
+  const contactos = getContactosActuales();
+  const porUid = new Map();
+  contactos.forEach((c) => {
+    const uid = c.asignado_a || "__sin_asignar__";
+    if (!porUid.has(uid)) porUid.set(uid, []);
+    porUid.get(uid).push(c);
+  });
+
+  const filas = [...porUid.entries()]
+    .map(([uid, propios]) => {
+      const cerrados = propios.filter((c) => c.estado === "cerrado").length;
+      const sinAtender = propios.filter(estaSinAtender).length;
+      const tasa = propios.length > 0 ? Math.round((cerrados / propios.length) * 100) : 0;
+      const nombreCorredor =
+        uid === "__sin_asignar__" ? "Sin asignar" : uid === auth.currentUser?.uid ? "Vos" : usuariosPorUid?.[uid] || uid;
+      return { nombreCorredor, total: propios.length, cerrados, tasa, sinAtender };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  elRendimientoCuerpo.innerHTML = filas
+    .map(
+      (f) =>
+        `<tr><td>${f.nombreCorredor}</td><td>${f.total}</td><td>${f.cerrados}</td><td>${f.tasa}%</td><td>${f.sinAtender > 0 ? `<span class="crm-badge-sin-atender">${f.sinAtender}</span>` : "0"}</td></tr>`
+    )
+    .join("");
+}
+
 // ---------------------------------------------------------------------------
 // Seguimientos: recordatorios vencidos o próximos, mismo lenguaje visual
 // que "Reservas por vencer" del Dashboard (reusa .dashboard-lista/
@@ -703,6 +742,7 @@ function renderSeguimientos() {
 
 function renderTodo() {
   renderStats();
+  renderRendimientoPorCorredor();
   renderSeguimientos();
   renderKanban();
 }

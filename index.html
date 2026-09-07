@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-03" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-04" />
 </head>
 <body>
 
@@ -892,6 +892,31 @@
     <div id="crm-vista-kanban" data-testid="crm-vista-kanban">
       <div id="crm-stats" data-testid="crm-stats"></div>
 
+      <!-- Idea propia, investigada en las funcionalidades de Tokko
+           Broker antes de armarla ("Métricas de negocio... conocer la
+           performance de tu equipo") — solo tiene sentido en "Todos"
+           (en "Mis contactos" el corredor ya se ve a sí mismo en las
+           tarjetas de arriba, comparar contra nadie no aporta nada). -->
+      <div id="crm-rendimiento-seccion" class="oculto" data-testid="crm-rendimiento-seccion">
+        <div class="dashboard-seccion-titulo">
+          <h3>Rendimiento por corredor</h3>
+        </div>
+        <div class="tabla-scroll">
+          <table id="crm-tabla-rendimiento" class="tabla-panel" data-testid="crm-tabla-rendimiento">
+            <thead>
+              <tr>
+                <th>Corredor</th>
+                <th>Contactos</th>
+                <th>Cerrados</th>
+                <th>Conversión</th>
+                <th>Sin atender</th>
+              </tr>
+            </thead>
+            <tbody id="crm-rendimiento-cuerpo"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Seguimientos vencidos o para hoy/los próximos días — mismo
            lenguaje visual que "Reservas por vencer" del Dashboard
            (dashboard-lista/dashboard-badge), para no inventar otra
@@ -1227,6 +1252,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-03"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-04"></script>
 </body>
 </html>
