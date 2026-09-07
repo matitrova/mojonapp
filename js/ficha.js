@@ -35,7 +35,7 @@ import { mapa, cargarLotesDesdeFirestore, abrirTooltipDeLote } from "./mapa.js";
 import { mostrarEditarLoteDesdeGrilla } from "./vista-lista.js";
 import { registrarVistaDeLote } from "./dashboard.js";
 import { registrarAuditoria } from "./auditoria.js";
-import { crearContactoDesdeInteresado } from "./crm.js";
+import { crearContactoDesdeInteresado, abrirContactoEnCrm } from "./crm.js";
 import { esFavorito, alternarFavorito } from "./favoritos.js";
 import { distanciasReferenciaCercanas } from "./distancias-referencia.js";
 
@@ -111,6 +111,25 @@ const elEstado = document.getElementById("ficha-estado");
 const elPrecio = document.getElementById("ficha-precio");
 const elServicios = document.getElementById("ficha-servicios");
 const elObservaciones = document.getElementById("ficha-observaciones");
+
+// Trazabilidad de venta (idea propia — "vendido a" se carga desde
+// "Editar lote", ver poblarSelectComprador/actualizarVisibilidadComprador
+// en vista-lista.js): acá solo se muestra, y clickearlo abre ese
+// contacto directo en el CRM (abrirContactoEnCrm, la misma función que
+// ya usa el resumen de seguimientos del Dashboard).
+const elFichaCompradorDt = document.getElementById("ficha-comprador-dt");
+const elFichaCompradorDd = document.getElementById("ficha-comprador-dd");
+const elFichaComprador = document.getElementById("ficha-comprador");
+
+function actualizarComprador(feature) {
+  const { estado, comprador_contacto_id, comprador_nombre } = feature.properties;
+  const mostrar = estado === "vendido" && !!comprador_contacto_id && !!comprador_nombre;
+  elFichaCompradorDt.classList.toggle("oculto", !mostrar);
+  elFichaCompradorDd.classList.toggle("oculto", !mostrar);
+  if (!mostrar) return;
+  elFichaComprador.textContent = comprador_nombre;
+  elFichaComprador.onclick = () => abrirContactoEnCrm(comprador_contacto_id);
+}
 
 // ---------------------------------------------------------------------------
 // Tasador automático simple (idea propia, módulo #3 del listado para
@@ -498,6 +517,7 @@ export function mostrarFicha(feature) {
   elSuperficie.textContent = p.superficie_m2 == null ? "Sin datos" : `${p.superficie_m2} m²`;
   elMedidas.textContent = textoMedidasLados(feature.geometry.coordinates[0]);
   elEstado.innerHTML = textoEstadoConVencimiento(p);
+  actualizarComprador(feature);
   elPrecio.textContent = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   elServicios.innerHTML = renderServiciosHTML(p.servicios);
   elObservaciones.textContent = p.observaciones || "Sin datos";

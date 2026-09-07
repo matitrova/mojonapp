@@ -40,8 +40,8 @@ const COLECCION_AUDITORIA = "auditoria";
 const MAX_EVENTOS = 300;
 
 // accion: "crear_lote" | "editar_lote" | "borrar_lote" | "reservar_lote" |
-// "quitar_reserva" | "crear_zona" | "editar_zona" | "borrar_zona" |
-// "crear_barrio" | "editar_barrio" | "borrar_barrio".
+// "quitar_reserva" | "vender_lote" | "crear_zona" | "editar_zona" |
+// "borrar_zona" | "crear_barrio" | "editar_barrio" | "borrar_barrio".
 // objetoId/objetoTitulo: id y nombre para mostrar de lo que se tocó — el
 // id del lote/zona/barrio y su título/nombre. Nombres genéricos (no
 // "lote_id") porque esta misma colección cubre lotes Y catálogos.
@@ -69,6 +69,7 @@ const ETIQUETA_ACCION = {
   borrar_lote: "Borró el lote",
   reservar_lote: "Reservó el lote",
   quitar_reserva: "Quitó la reserva del lote",
+  vender_lote: "Vendió el lote",
   crear_zona: "Creó la zona",
   editar_zona: "Editó la zona",
   borrar_zona: "Borró la zona",

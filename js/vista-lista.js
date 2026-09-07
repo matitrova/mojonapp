@@ -11,10 +11,11 @@
 // configurarVistaLista() para evitar una dependencia circular.
 // ---------------------------------------------------------------------------
 
-import { getLotesActuales, getLoteEditadoDesdeFicha, setLoteEditadoDesdeFicha } from "./estado.js";
+import { getLotesActuales, getContactosActuales, getLoteEditadoDesdeFicha, setLoteEditadoDesdeFicha } from "./estado.js";
 import { centroideDePoligono } from "./geometria.js";
 import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
 import { registrarAuditoria } from "./auditoria.js";
+import { cargarContactos } from "./crm.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -109,13 +110,40 @@ const elEditarLoteEstado = document.getElementById("editar-lote-estado");
 const elEditarLoteReservadoHastaLabel = document.getElementById("editar-lote-reservado-hasta-label");
 const elEditarLoteReservadoHasta = document.getElementById("editar-lote-reservado-hasta");
 const elEditarLotePrecio = document.getElementById("editar-lote-precio");
+const elEditarLoteCompradorLabel = document.getElementById("editar-lote-comprador-label");
+const elEditarLoteComprador = document.getElementById("editar-lote-comprador");
 
 // El campo "Reservado hasta" solo tiene sentido con estado "Reservado"
 // — se muestra/oculta solo al cambiar el estado en el formulario.
 function actualizarVisibilidadReservadoHasta() {
   elEditarLoteReservadoHastaLabel.classList.toggle("oculto", elEditarLoteEstado.value !== "reservado");
 }
-elEditarLoteEstado.addEventListener("change", actualizarVisibilidadReservadoHasta);
+
+// "Vendido a" (trazabilidad de venta, idea propia — Tokko no conecta
+// esto entre su CRM y su inventario de forma tan directa): solo tiene
+// sentido con estado "Vendido". Lista los contactos ya cargados en el
+// CRM — si nunca se abrió el panel CRM en esta sesión, getContactosActuales()
+// viene vacío, así que se dispara cargarContactos() recién la primera vez
+// que hace falta (mismo criterio "lazy" que abrirPanelDashboard con los
+// seguimientos del CRM). "valorDeseado" es el comprador_contacto_id ya
+// guardado del lote, para preseleccionarlo al abrir el formulario (el
+// cambio manual del <select> desde el usuario no pasa por acá).
+async function actualizarVisibilidadComprador(valorDeseado) {
+  const esVendido = elEditarLoteEstado.value === "vendido";
+  elEditarLoteCompradorLabel.classList.toggle("oculto", !esVendido);
+  if (!esVendido) return;
+  if (getContactosActuales().length === 0) await cargarContactos();
+  const valorPrevio = valorDeseado ?? elEditarLoteComprador.value;
+  const opciones = [...getContactosActuales()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  elEditarLoteComprador.innerHTML =
+    `<option value="">Sin especificar</option>` +
+    opciones.map((c) => `<option value="${c.id}">${c.nombre}</option>`).join("");
+  elEditarLoteComprador.value = valorPrevio || "";
+}
+elEditarLoteEstado.addEventListener("change", () => {
+  actualizarVisibilidadReservadoHasta();
+  actualizarVisibilidadComprador();
+});
 const elEditarLoteSector = document.getElementById("editar-lote-sector");
 const elEditarLoteBarrio = document.getElementById("editar-lote-barrio");
 const elEditarLoteServicioLuz = document.getElementById("editar-lote-servicio-luz");
@@ -404,6 +432,7 @@ export function mostrarEditarLoteDesdeGrilla(feature) {
   elEditarLoteEstado.value = p.estado || "disponible";
   elEditarLoteReservadoHasta.value = p.reservado_hasta || "";
   actualizarVisibilidadReservadoHasta();
+  actualizarVisibilidadComprador(p.comprador_contacto_id || "");
   elEditarLotePrecio.value = p.precio_usd ?? "";
   poblarSelectSector(elEditarLoteSector, p.sector);
   poblarSelectBarrio(elEditarLoteBarrio, p.barrio);
@@ -457,6 +486,13 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
       // se vendió o volvió a estar disponible.
       reservado_hasta:
         elEditarLoteEstado.value === "reservado" ? elEditarLoteReservadoHasta.value || null : null,
+      // Mismo criterio que reservado_hasta: solo tiene sentido con
+      // "Vendido" cargado, se limpia solo si no.
+      comprador_contacto_id: elEditarLoteEstado.value === "vendido" ? elEditarLoteComprador.value || null : null,
+      comprador_nombre:
+        elEditarLoteEstado.value === "vendido" && elEditarLoteComprador.value
+          ? elEditarLoteComprador.options[elEditarLoteComprador.selectedIndex].textContent
+          : null,
       precio_usd: elEditarLotePrecio.value.trim() === "" ? null : Number(elEditarLotePrecio.value),
       sector: elEditarLoteSector.value.trim() || null,
       barrio: elEditarLoteBarrio.value.trim() || null,
@@ -469,15 +505,17 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
       observaciones: elEditarLoteObservaciones.value.trim() || null
     };
 
-    // Para la auditoría: si el estado entra o sale de "reservado" en este
-    // mismo guardado, eso es lo que se registra (reservar_lote/quitar_
-    // reserva) en vez de un "editar_lote" genérico — es el dato más
-    // sensible comercialmente de todo lo que puede cambiar acá. Si no
-    // hubo ese cruce puntual, es una edición común.
+    // Para la auditoría: si el estado entra o sale de "reservado"/
+    // "vendido" en este mismo guardado, eso es lo que se registra
+    // (reservar_lote/quitar_reserva/vender_lote) en vez de un
+    // "editar_lote" genérico — es el dato más sensible comercialmente de
+    // todo lo que puede cambiar acá. Si no hubo ese cruce puntual, es una
+    // edición común.
     const estadoAnterior = loteEditandoDesdeGrilla.properties.estado;
     let accionAuditoria = "editar_lote";
     if (estadoAnterior !== "reservado" && datos.estado === "reservado") accionAuditoria = "reservar_lote";
     else if (estadoAnterior === "reservado" && datos.estado !== "reservado") accionAuditoria = "quitar_reserva";
+    else if (estadoAnterior !== "vendido" && datos.estado === "vendido") accionAuditoria = "vender_lote";
 
     await updateDoc(doc(db, COLECCION_LOTES, loteEditandoDesdeGrilla.id), datos);
     Object.assign(loteEditandoDesdeGrilla.properties, datos);
@@ -485,7 +523,12 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
       accion: accionAuditoria,
       objetoId: loteEditandoDesdeGrilla.id,
       objetoTitulo: tituloLote(datos),
-      detalle: accionAuditoria === "reservar_lote" && datos.reservado_hasta ? `Hasta ${datos.reservado_hasta}` : null
+      detalle:
+        accionAuditoria === "reservar_lote" && datos.reservado_hasta
+          ? `Hasta ${datos.reservado_hasta}`
+          : accionAuditoria === "vender_lote" && datos.comprador_nombre
+            ? `A ${datos.comprador_nombre}`
+            : null
     });
 
     if (getLoteEditadoDesdeFicha()) {

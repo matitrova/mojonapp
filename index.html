@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-08" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-09" />
 </head>
 <body>
 
@@ -206,6 +206,13 @@
       <dt>Superficie</dt><dd id="ficha-superficie" data-testid="ficha-superficie"></dd>
       <dt>Medidas</dt><dd id="ficha-medidas" data-testid="ficha-medidas"></dd>
       <dt>Estado</dt><dd id="ficha-estado" data-testid="ficha-estado"></dd>
+      <!-- Trazabilidad de venta: solo aparece con estado "vendido" y un
+           comprador_contacto_id cargado (ver actualizarComprador en
+           ficha.js) — clickeable, abre ese contacto directo en el CRM. -->
+      <dt id="ficha-comprador-dt" class="oculto">Vendido a</dt>
+      <dd id="ficha-comprador-dd" class="oculto">
+        <button type="button" id="ficha-comprador" class="btn-link" data-testid="ficha-comprador"></button>
+      </dd>
       <dt>Precio</dt><dd id="ficha-precio" data-testid="ficha-precio"></dd>
       <dt>Servicios</dt>
       <dd>
@@ -1241,6 +1248,19 @@
         <label id="editar-lote-reservado-hasta-label" class="oculto">Reservado hasta
           <input type="date" id="editar-lote-reservado-hasta" data-testid="editar-lote-reservado-hasta" />
         </label>
+        <!-- Trazabilidad de venta (idea propia — un dueño de inmobiliaria
+             que compara con Tokko quiere poder responder "¿quién le
+             vendió qué a quién?" sin abrir dos sistemas separados): solo
+             visible al marcar el lote "Vendido", lista los contactos ya
+             cargados en el CRM (ver poblarSelectComprador en
+             vista-lista.js). No cubre un comprador que nunca pasó por el
+             CRM — queda "Sin especificar" en ese caso, no se agregó un
+             campo de texto libre aparte por alcance. -->
+        <label id="editar-lote-comprador-label" class="oculto">Vendido a
+          <select id="editar-lote-comprador" data-testid="editar-lote-comprador">
+            <option value="">Sin especificar</option>
+          </select>
+        </label>
         <label>Precio (USD)
           <input type="number" id="editar-lote-precio" data-testid="editar-lote-precio" min="0" step="1" />
         </label>
@@ -1286,6 +1306,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-08"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-09"></script>
 </body>
 </html>
