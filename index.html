@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-04-20" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-01" />
 </head>
 <body>
 
@@ -1042,6 +1042,13 @@
 
     <div id="lote-vista-lista">
       <div id="vista-lista-filtros" data-testid="vista-lista-filtros">
+        <!-- Idea propia, mismo criterio que el buscador del CRM
+             (#crm-buscar en crm.js) — busca en manzana/lote/
+             nomenclatura/zona/barrio/observaciones, todo junto, sin
+             tener que saber en qué campo puntual está el dato. -->
+        <label>Buscar
+          <input type="search" id="filtro-buscar" placeholder="Manzana, lote, zona…" data-testid="filtro-buscar" />
+        </label>
         <label>Zona
           <select id="filtro-sector" data-testid="filtro-sector">
             <option value="">Todas las zonas</option>
@@ -1208,6 +1215,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-04-20"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-01"></script>
 </body>
 </html>

@@ -77,6 +77,7 @@ const elVistaListaVacio = document.getElementById("vista-lista-vacio");
 const elVistaListaSinResultados = document.getElementById("vista-lista-sin-resultados");
 const elTablaLotes = document.getElementById("tabla-lotes");
 const elTablaLotesCuerpo = document.getElementById("tabla-lotes-cuerpo");
+const elFiltroBuscar = document.getElementById("filtro-buscar");
 const elFiltroSector = document.getElementById("filtro-sector");
 const elFiltroBarrio = document.getElementById("filtro-barrio");
 const elFiltroEstado = document.getElementById("filtro-estado");
@@ -162,14 +163,26 @@ function compararConNulosAlFinal(valorA, valorB, signo) {
   return (valorA - valorB) * signo;
 }
 
+// Busca en manzana/lote/nomenclatura/zona/barrio/observaciones juntos
+// (idea propia, mismo criterio que #crm-buscar en crm.js) — no hace
+// falta saber en qué campo puntual está el dato que se busca.
+function coincideConBusqueda(p, termino) {
+  if (!termino) return true;
+  return [p.manzana, p.lote, p.nomenclatura, p.sector, p.barrio, p.observaciones]
+    .filter(Boolean)
+    .some((valor) => String(valor).toLowerCase().includes(termino));
+}
+
 function lotesFiltrados() {
   const precioMin = elFiltroPrecioMin.value ? Number(elFiltroPrecioMin.value) : null;
   const precioMax = elFiltroPrecioMax.value ? Number(elFiltroPrecioMax.value) : null;
   const superficieMin = elFiltroSuperficieMin.value ? Number(elFiltroSuperficieMin.value) : null;
   const superficieMax = elFiltroSuperficieMax.value ? Number(elFiltroSuperficieMax.value) : null;
+  const termino = elFiltroBuscar.value.trim().toLowerCase();
 
   const filtrados = getLotesActuales().filter((feature) => {
     const p = feature.properties;
+    if (!coincideConBusqueda(p, termino)) return false;
     if (elFiltroSector.value && p.sector !== elFiltroSector.value) return false;
     if (elFiltroBarrio.value && p.barrio !== elFiltroBarrio.value) return false;
     if (elFiltroEstado.value && p.estado !== elFiltroEstado.value) return false;
@@ -289,6 +302,7 @@ function reiniciarPaginaYActualizar() {
   paginaActual = 1;
   actualizarVistaLista();
 }
+elFiltroBuscar.addEventListener("input", reiniciarPaginaYActualizar);
 elFiltroSector.addEventListener("change", reiniciarPaginaYActualizar);
 elFiltroBarrio.addEventListener("change", reiniciarPaginaYActualizar);
 elFiltroEstado.addEventListener("change", reiniciarPaginaYActualizar);
@@ -471,6 +485,7 @@ const elCompartirFiltroMensaje = document.getElementById("compartir-filtro-mensa
 document.getElementById("btn-compartir-filtro").addEventListener("click", async () => {
   const parametros = new URLSearchParams();
   parametros.set("vista", "lista");
+  if (elFiltroBuscar.value.trim()) parametros.set("buscar", elFiltroBuscar.value.trim());
   if (elFiltroSector.value) parametros.set("sector", elFiltroSector.value);
   if (elFiltroBarrio.value) parametros.set("barrio", elFiltroBarrio.value);
   if (elFiltroEstado.value) parametros.set("estado", elFiltroEstado.value);
@@ -525,6 +540,7 @@ export function aplicarFiltrosDesdeUrlSiCorresponde() {
   // lotes, antes de este punto) — si el valor de la URL no coincide con
   // ninguna opción real, el navegador simplemente lo ignora y el select
   // se queda en "Todas las zonas"/"Todos los barrios".
+  if (parametros.has("buscar")) elFiltroBuscar.value = parametros.get("buscar");
   if (parametros.has("sector")) elFiltroSector.value = parametros.get("sector");
   if (parametros.has("barrio")) elFiltroBarrio.value = parametros.get("barrio");
   if (parametros.has("estado")) elFiltroEstado.value = parametros.get("estado");

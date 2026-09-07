@@ -1701,6 +1701,16 @@ button:active {
   color: var(--color-texto);
 }
 
+#vista-lista-filtros input[type="search"] {
+  font: inherit;
+  width: 180px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--color-texto);
+}
+
 /* Alineado con la base de los <label> (que tienen texto arriba + campo
    abajo) en vez de quedar pegado arriba de la fila — es el único item
    de #vista-lista-filtros sin una etiqueta propia. */
