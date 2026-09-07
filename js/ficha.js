@@ -533,6 +533,7 @@ export function mostrarFicha(feature) {
   document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(feature));
   elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(feature));
   renderInteresados(feature);
+  actualizarPortales(feature);
   cerrarEditorServicios(); // por si había quedado abierto en el lote anterior
   cerrarEditorSector();
   cerrarEditorBarrio();
@@ -970,6 +971,90 @@ document.getElementById("btn-compartir-lote").addEventListener("click", async ()
     elCompartirLoteMensaje.textContent = `${texto} ${url}`;
     elCompartirLoteMensaje.classList.remove("oculto");
   }
+});
+
+// "Portales" — checklist de publicación (idea propia, a pedido del
+// usuario: "la sección para publicar en varios portales también
+// sumala"). Investigado: MercadoLibre tiene API pública pero pide
+// registrar una app y conseguir credenciales; ZonaProp/Argenprop piden
+// un acuerdo comercial con feed XML — ninguna es una integración que se
+// pueda prender sin que el usuario primero consiga esas credenciales.
+// Esto NO publica de verdad en ningún lado: es un checklist de "dónde
+// debería estar este lote" (para no perder de vista qué falta subir a
+// mano) más un texto ya armado, listo para copiar y pegar en el
+// formulario de cada portal. Igual que "Compartir este lote", con
+// fallback si el navegador no tiene permiso de portapapeles.
+const PORTALES = ["zonaprop", "mercadolibre", "argenprop"];
+const elFichaPortales = document.getElementById("ficha-portales");
+const elPortalesMensaje = document.getElementById("portales-mensaje");
+const elsPortalCheckbox = Object.fromEntries(PORTALES.map((p) => [p, document.getElementById(`portal-${p}`)]));
+
+function actualizarPortales(feature) {
+  const puedeEditar = puedeEditarLote(feature);
+  elFichaPortales.classList.toggle("oculto", !puedeEditar);
+  if (!puedeEditar) return;
+  const publicado = feature.properties.portales_publicado || {};
+  PORTALES.forEach((p) => {
+    elsPortalCheckbox[p].checked = !!publicado[p];
+  });
+}
+
+PORTALES.forEach((portal) => {
+  elsPortalCheckbox[portal].addEventListener("change", async () => {
+    const feature = getLoteSeleccionado();
+    if (!feature) return;
+    const checkbox = elsPortalCheckbox[portal];
+    const valorAnterior = !checkbox.checked; // ya cambió antes de disparar "change"
+    const publicado = { ...(feature.properties.portales_publicado || {}), [portal]: checkbox.checked };
+    try {
+      await updateDoc(doc(db, COLECCION_LOTES, feature.id), { portales_publicado: publicado });
+      feature.properties.portales_publicado = publicado;
+      // Sin esto, no había ninguna señal de que el toggle se guardó de
+      // verdad (a diferencia de "Copiar descripción", que sí avisa) — un
+      // corredor con conexión lenta podía cerrar la ficha pensando que
+      // ya estaba, sin que se hubiera guardado todavía.
+      elPortalesMensaje.textContent = "Guardado.";
+      elPortalesMensaje.classList.remove("oculto");
+      setTimeout(() => elPortalesMensaje.classList.add("oculto"), 2000);
+    } catch (error) {
+      checkbox.checked = valorAnterior; // revertir: no quedó guardado
+      window.alert(
+        error.code === "permission-denied" ? "No tenés permiso para editar este lote." : "No se pudo guardar."
+      );
+    }
+  });
+});
+
+function textoDescripcionPortal(feature) {
+  const p = feature.properties;
+  const lineas = [tituloLote(p)];
+  const ubicacion = [p.sector, p.barrio].filter(Boolean).join(" — ");
+  if (ubicacion) lineas.push(ubicacion);
+  if (p.superficie_m2 != null) lineas.push(`Superficie: ${p.superficie_m2} m²`);
+  if (p.precio_usd != null) lineas.push(`Precio: USD ${Number(p.precio_usd).toLocaleString("es-AR")}`);
+  const servicios = Object.entries(p.servicios || {})
+    .filter(([, tiene]) => tiene)
+    .map(([nombre]) => nombre);
+  if (servicios.length > 0) lineas.push(`Servicios: ${servicios.join(", ")}`);
+  if (p.observaciones) lineas.push(p.observaciones);
+  lineas.push(`Más info: ${location.origin}${location.pathname}?lote=${feature.id}`);
+  return lineas.join("\n");
+}
+
+document.getElementById("btn-copiar-descripcion-portal").addEventListener("click", async () => {
+  const feature = getLoteSeleccionado();
+  if (!feature) return;
+  const texto = textoDescripcionPortal(feature);
+  try {
+    await navigator.clipboard.writeText(texto);
+    elPortalesMensaje.textContent = "Descripción copiada.";
+  } catch {
+    // Mismo fallback que "Compartir este lote": sin permiso de
+    // portapapeles, se deja el texto a la vista para copiarlo a mano.
+    elPortalesMensaje.textContent = texto;
+  }
+  elPortalesMensaje.classList.remove("oculto");
+  setTimeout(() => elPortalesMensaje.classList.add("oculto"), 4000);
 });
 
 // "Cartel con QR para imprimir" (idea #7): mismo link que "Compartir

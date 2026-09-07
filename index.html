@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-09" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-12" />
 </head>
 <body>
 
@@ -354,6 +354,37 @@
          van TODOS los datos — pensada para un corredor que le imprime o
          manda el PDF a un cliente. -->
     <button id="btn-ficha-imprimir" class="btn-editar-ficha" data-testid="btn-ficha-imprimir">Imprimir ficha (PDF)</button>
+
+    <!-- "Portales" — checklist de publicación (idea propia, a pedido del
+         usuario: "la sección para publicar en varios portales"). NO
+         publica de verdad — MercadoLibre tiene API pública pero pide
+         registrar una app y credenciales; ZonaProp/Argenprop piden un
+         acuerdo comercial con feed XML, ninguno es algo que se pueda
+         activar sin que el usuario consiga esas credenciales primero
+         (ver mojonapp_estado_proyecto para el detalle investigado). Lo
+         que SÍ se puede armar hoy sin depender de nadie: un checklist de
+         en qué portales debería estar este lote, y una descripción lista
+         para copiar y pegar a mano en cada uno. Solo para quien puede
+         editar el lote — es una herramienta de gestión interna, no algo
+         que vea un visitante público (ver actualizarPortales en
+         ficha.js). -->
+    <div id="ficha-portales" class="oculto" data-testid="ficha-portales">
+      <p class="ficha-calculadora-titulo">Publicación en portales</p>
+      <p class="ficha-calculadora-nota">Marcá dónde ya está publicado este lote — no lo publica automáticamente.</p>
+      <label class="opcion-servicio">
+        <input type="checkbox" id="portal-zonaprop" data-testid="portal-zonaprop" /> ZonaProp
+      </label>
+      <label class="opcion-servicio">
+        <input type="checkbox" id="portal-mercadolibre" data-testid="portal-mercadolibre" /> MercadoLibre
+      </label>
+      <label class="opcion-servicio">
+        <input type="checkbox" id="portal-argenprop" data-testid="portal-argenprop" /> Argenprop
+      </label>
+      <button type="button" id="btn-copiar-descripcion-portal" class="btn-editar-ficha" data-testid="btn-copiar-descripcion-portal">
+        Copiar descripción para portales
+      </button>
+      <p id="portales-mensaje" class="oculto" data-testid="portales-mensaje">Descripción copiada.</p>
+    </div>
 
     <!-- Otros lotes de la misma zona (o, si no tiene zona cargada, los
          más cercanos por geometría real) — ver lotesSimilares() en
@@ -799,36 +830,49 @@
         <p id="dashboard-incompletos-vacio" class="dashboard-vacio oculto">Todos los lotes tienen foto y precio cargados.</p>
       </section>
 
-      <section class="dashboard-seccion">
-        <h3>Más consultados</h3>
-        <ol id="dashboard-consultados" class="dashboard-lista dashboard-ranking" data-testid="dashboard-consultados"></ol>
-        <p id="dashboard-consultados-vacio" class="dashboard-vacio oculto">Todavía no hay vistas registradas.</p>
-      </section>
+      <!-- Feedback directo del usuario ("siento que en el dashboard hay
+           muchas cosas en pantalla y marea"): las 3 secciones de abajo
+           son análisis/métricas para revisar de vez en cuando, no
+           alertas urgentes como las de arriba (seguimientos, reservas,
+           incompletos) — se agrupan colapsadas por defecto detrás de un
+           <details> nativo (sin JS propio, funciona en cualquier
+           navegador) para que lo primero que se ve al abrir el
+           Dashboard sea más corto. Sigue siendo un clic, no dos
+           pantallas separadas. -->
+      <details id="dashboard-metricas-detalle" class="dashboard-detalle">
+        <summary>Ver métricas y estadísticas</summary>
 
-      <section class="dashboard-seccion">
-        <h3>Con más interesados anotados</h3>
-        <ol id="dashboard-interesados" class="dashboard-lista dashboard-ranking" data-testid="dashboard-interesados"></ol>
-        <p id="dashboard-interesados-vacio" class="dashboard-vacio oculto">Todavía no hay interesados anotados en ningún lote.</p>
-      </section>
+        <section class="dashboard-seccion">
+          <h3>Más consultados</h3>
+          <ol id="dashboard-consultados" class="dashboard-lista dashboard-ranking" data-testid="dashboard-consultados"></ol>
+          <p id="dashboard-consultados-vacio" class="dashboard-vacio oculto">Todavía no hay vistas registradas.</p>
+        </section>
 
-      <!-- Idea propia, investigada en las funcionalidades y planes de
-           Tokko Broker antes de armarla (ver
-           feedback_buscar_inspiracion_real): Tokko cobra
-           "Emprendimientos" aparte, recién desde el plan de
-           $252.320/mes — acá cualquier zona/sector ya cumple ese rol
-           (así se organiza un loteo en esta app), sin plan especial. -->
-      <section class="dashboard-seccion">
-        <h3>Resumen por zona</h3>
-        <div class="tabla-scroll">
-          <table class="tabla-panel" data-testid="dashboard-precios-zona">
-            <thead>
-              <tr><th>Zona</th><th>Lotes</th><th>Disponible</th><th>Reservado</th><th>Vendido</th><th>Precio promedio</th></tr>
-            </thead>
-            <tbody id="dashboard-precios-zona-cuerpo"></tbody>
-          </table>
-        </div>
-        <p id="dashboard-precios-zona-vacio" class="dashboard-vacio oculto">Todavía no hay lotes con zona cargada.</p>
-      </section>
+        <section class="dashboard-seccion">
+          <h3>Con más interesados anotados</h3>
+          <ol id="dashboard-interesados" class="dashboard-lista dashboard-ranking" data-testid="dashboard-interesados"></ol>
+          <p id="dashboard-interesados-vacio" class="dashboard-vacio oculto">Todavía no hay interesados anotados en ningún lote.</p>
+        </section>
+
+        <!-- Idea propia, investigada en las funcionalidades y planes de
+             Tokko Broker antes de armarla (ver
+             feedback_buscar_inspiracion_real): Tokko cobra
+             "Emprendimientos" aparte, recién desde el plan de
+             $252.320/mes — acá cualquier zona/sector ya cumple ese rol
+             (así se organiza un loteo en esta app), sin plan especial. -->
+        <section class="dashboard-seccion">
+          <h3>Resumen por zona</h3>
+          <div class="tabla-scroll">
+            <table class="tabla-panel" data-testid="dashboard-precios-zona">
+              <thead>
+                <tr><th>Zona</th><th>Lotes</th><th>Disponible</th><th>Reservado</th><th>Vendido</th><th>Precio promedio</th></tr>
+              </thead>
+              <tbody id="dashboard-precios-zona-cuerpo"></tbody>
+            </table>
+          </div>
+          <p id="dashboard-precios-zona-vacio" class="dashboard-vacio oculto">Todavía no hay lotes con zona cargada.</p>
+        </section>
+      </details>
     </div>
   </div>
 
@@ -1306,6 +1350,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-09"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-12"></script>
 </body>
 </html>

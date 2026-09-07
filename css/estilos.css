@@ -777,6 +777,37 @@ button:active {
   user-select: text;
 }
 
+/* "Portales" (checklist de publicación, ver actualizarPortales en
+   ficha.js) — mismo estilo de tarjeta que la calculadora de cuotas y la
+   tasación, para que se lea como parte del mismo grupo de "extras" de
+   la ficha, no como un bloque suelto. */
+#ficha-portales {
+  background: var(--color-fondo-alterno);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+
+#ficha-portales .opcion-servicio {
+  display: block;
+  margin: 0.35rem 0;
+}
+
+#ficha-portales #btn-copiar-descripcion-portal {
+  margin-top: 0.5rem;
+}
+
+#portales-mensaje {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-primario);
+  font-weight: 600;
+  margin: 6px 0 0;
+  word-break: break-word;
+  user-select: text;
+  white-space: pre-line;
+}
+
 /* Cartel con QR (idea #7) y ficha imprimible (idea #9) comparten la
    clase .hoja-imprimible: pensada para verse bien tanto en pantalla
    (mientras se revisa antes de imprimir) como en la hoja impresa (ver
@@ -2045,6 +2076,48 @@ button:active {
   margin: 0 0 8px;
   font-size: 0.78rem;
   color: var(--color-texto-secundario);
+}
+
+/* Grupo colapsable de "métricas y estadísticas" (feedback del usuario:
+   el Dashboard tenía demasiado junto en pantalla). <details> nativo,
+   cerrado por defecto — las secciones de alerta/acción (seguimientos,
+   reservas, incompletos) quedan arriba siempre visibles, esto queda un
+   clic más lejos. */
+.dashboard-detalle {
+  margin-bottom: 22px;
+  border-top: 1px solid var(--color-borde);
+  padding-top: 14px;
+}
+
+.dashboard-detalle summary {
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-primario-oscuro);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.dashboard-detalle summary::-webkit-details-marker {
+  display: none;
+}
+
+.dashboard-detalle summary::before {
+  content: "▸";
+  font-size: 0.75rem;
+  color: var(--color-texto-secundario);
+  transition: transform 0.15s ease;
+}
+
+.dashboard-detalle[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.dashboard-detalle .dashboard-seccion:first-of-type {
+  margin-top: 16px;
 }
 
 .dashboard-vacio {
