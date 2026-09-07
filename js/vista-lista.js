@@ -91,6 +91,10 @@ const elPaginacion = document.getElementById("vista-lista-paginacion");
 const elPaginaAnterior = document.getElementById("pagina-anterior");
 const elPaginaSiguiente = document.getElementById("pagina-siguiente");
 const elPaginaInfo = document.getElementById("pagina-info");
+const elBtnModoTabla = document.getElementById("btn-modo-tabla");
+const elBtnModoGrilla = document.getElementById("btn-modo-grilla");
+const elGrillaLotes = document.getElementById("grilla-lotes");
+const elTablaScroll = document.getElementById("tabla-lotes-scroll");
 
 const elLoteVistaLista = document.getElementById("lote-vista-lista");
 const elLoteVistaEditar = document.getElementById("lote-vista-editar");
@@ -218,30 +222,23 @@ function cambiarPagina(delta) {
 elPaginaAnterior.addEventListener("click", () => cambiarPagina(-1));
 elPaginaSiguiente.addEventListener("click", () => cambiarPagina(1));
 
-export function actualizarVistaLista() {
-  actualizarOpcionesFiltroSector();
-  actualizarOpcionesFiltroBarrio();
-  const lotes = lotesFiltrados();
+// Tabla/Grilla (idea propia, ver comentario en index.html) — arranca en
+// "tabla" siempre (no se persiste entre sesiones): es el modo que ya
+// conocía cualquiera que usara la app antes de esta idea, y sigue
+// siendo el que necesita un corredor administrando (Editar/Borrar en
+// fila no tiene sentido en tarjetas).
+let modoVistaLista = "tabla";
 
-  const porPagina = Number(elFiltroCantidad.value) || Infinity; // "Todos" = value 0
-  const totalPaginas = Number.isFinite(porPagina) ? Math.max(1, Math.ceil(lotes.length / porPagina)) : 1;
-  paginaActual = Math.min(Math.max(1, paginaActual), totalPaginas);
-  const inicio = Number.isFinite(porPagina) ? (paginaActual - 1) * porPagina : 0;
-  const lotesPagina = Number.isFinite(porPagina) ? lotes.slice(inicio, inicio + porPagina) : lotes;
+function irAFichaDesdeVistaLista(feature) {
+  elVistaLista.classList.add("oculto");
+  elBtnVerLista.classList.remove("activo");
+  const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+  mapa.setView([lat, lon], 19);
+  mostrarFicha(feature);
+}
 
-  elPaginacion.classList.toggle("oculto", totalPaginas <= 1);
-  elPaginaAnterior.disabled = paginaActual <= 1;
-  elPaginaSiguiente.disabled = paginaActual >= totalPaginas;
-  elPaginaInfo.textContent = `Página ${paginaActual} de ${totalPaginas} (${lotes.length} lotes)`;
-
+function renderTabla(lotesPagina) {
   elTablaLotesCuerpo.innerHTML = "";
-  elVistaListaVacio.classList.toggle("oculto", getLotesActuales().length > 0);
-  // Distinto de "no hay lotes cargados": acá SÍ hay lotes, pero ninguno
-  // coincide con el sector/estado elegido — un mensaje genérico de
-  // "vacío" hubiera hecho pensar que se perdió todo lo cargado.
-  elVistaListaSinResultados.classList.toggle("oculto", getLotesActuales().length === 0 || lotes.length > 0);
-  elTablaLotes.classList.toggle("oculto", lotes.length === 0);
-
   lotesPagina.forEach((feature) => {
     const p = feature.properties;
     const fila = document.createElement("tr");
@@ -258,14 +255,7 @@ export function actualizarVistaLista() {
       <td></td>
     `;
 
-    // Tocar la fila lleva al mapa, centrado en ese lote, y abre su ficha.
-    fila.addEventListener("click", () => {
-      elVistaLista.classList.add("oculto");
-      elBtnVerLista.classList.remove("activo");
-      const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
-      mapa.setView([lat, lon], 19);
-      mostrarFicha(feature);
-    });
+    fila.addEventListener("click", () => irAFichaDesdeVistaLista(feature));
 
     const celdaAcciones = fila.querySelector("td:last-child");
 
@@ -296,6 +286,84 @@ export function actualizarVistaLista() {
 
     elTablaLotesCuerpo.appendChild(fila);
   });
+}
+
+// Misma info que la tabla, sin las acciones de editar/borrar (esas se
+// siguen haciendo desde la tabla) — con la primera foto si el lote
+// tiene alguna cargada. Un lote sin fotos no muestra ningún placeholder
+// genérico, mismo criterio "no se inventa nada" del resto de la app.
+function renderGrilla(lotesPagina) {
+  elGrillaLotes.innerHTML = "";
+  lotesPagina.forEach((feature) => {
+    const p = feature.properties;
+    const foto = (p.fotos || [])[0];
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "tarjeta-lote";
+    tarjeta.dataset.loteId = feature.id;
+    tarjeta.innerHTML = `
+      ${foto ? `<img class="tarjeta-lote-foto" src="${foto}" alt="Foto de ${tituloLote(p)}" loading="lazy" />` : ""}
+      <div class="tarjeta-lote-cuerpo">
+        <span class="tarjeta-lote-estado ${p.estado || ""}">${textoEstadoConVencimiento(p)}</span>
+        <span class="tarjeta-lote-titulo">${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}</span>
+        <span class="tarjeta-lote-dato">${[p.sector, p.barrio].filter(Boolean).join(" — ") || "Zona sin datos"}</span>
+        <span class="tarjeta-lote-dato">${p.superficie_m2 == null ? "Superficie sin datos" : `${p.superficie_m2} m²`}</span>
+        ${p.precio_usd != null ? `<span class="tarjeta-lote-precio">USD ${Number(p.precio_usd).toLocaleString("es-AR")}</span>` : ""}
+      </div>
+    `;
+    tarjeta.addEventListener("click", () => irAFichaDesdeVistaLista(feature));
+    elGrillaLotes.appendChild(tarjeta);
+  });
+}
+
+// hayLotesParaMostrar se guarda del último actualizarVistaLista() —
+// tocar el toggle Tabla/Grilla no vuelve a filtrar nada, solo cambia
+// cuál de las dos, ya renderizadas, se ve.
+let hayLotesParaMostrar = false;
+
+function actualizarModoVistaLista(hayLotes = hayLotesParaMostrar) {
+  hayLotesParaMostrar = hayLotes;
+  elBtnModoTabla.classList.toggle("activo", modoVistaLista === "tabla");
+  elBtnModoGrilla.classList.toggle("activo", modoVistaLista === "grilla");
+  elTablaScroll.classList.toggle("oculto", !hayLotes || modoVistaLista !== "tabla");
+  elGrillaLotes.classList.toggle("oculto", !hayLotes || modoVistaLista !== "grilla");
+}
+
+elBtnModoTabla.addEventListener("click", () => {
+  modoVistaLista = "tabla";
+  actualizarModoVistaLista();
+});
+elBtnModoGrilla.addEventListener("click", () => {
+  modoVistaLista = "grilla";
+  actualizarModoVistaLista();
+});
+
+export function actualizarVistaLista() {
+  actualizarOpcionesFiltroSector();
+  actualizarOpcionesFiltroBarrio();
+  const lotes = lotesFiltrados();
+
+  const porPagina = Number(elFiltroCantidad.value) || Infinity; // "Todos" = value 0
+  const totalPaginas = Number.isFinite(porPagina) ? Math.max(1, Math.ceil(lotes.length / porPagina)) : 1;
+  paginaActual = Math.min(Math.max(1, paginaActual), totalPaginas);
+  const inicio = Number.isFinite(porPagina) ? (paginaActual - 1) * porPagina : 0;
+  const lotesPagina = Number.isFinite(porPagina) ? lotes.slice(inicio, inicio + porPagina) : lotes;
+
+  elPaginacion.classList.toggle("oculto", totalPaginas <= 1);
+  elPaginaAnterior.disabled = paginaActual <= 1;
+  elPaginaSiguiente.disabled = paginaActual >= totalPaginas;
+  elPaginaInfo.textContent = `Página ${paginaActual} de ${totalPaginas} (${lotes.length} lotes)`;
+
+  elVistaListaVacio.classList.toggle("oculto", getLotesActuales().length > 0);
+  // Distinto de "no hay lotes cargados": acá SÍ hay lotes, pero ninguno
+  // coincide con el sector/estado elegido — un mensaje genérico de
+  // "vacío" hubiera hecho pensar que se perdió todo lo cargado.
+  elVistaListaSinResultados.classList.toggle("oculto", getLotesActuales().length === 0 || lotes.length > 0);
+  elTablaLotes.classList.toggle("oculto", lotes.length === 0);
+  document.getElementById("vista-lista-modo").classList.toggle("oculto", lotes.length === 0);
+
+  renderTabla(lotesPagina);
+  renderGrilla(lotesPagina);
+  actualizarModoVistaLista(lotes.length > 0);
 }
 
 function reiniciarPaginaYActualizar() {

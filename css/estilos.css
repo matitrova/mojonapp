@@ -1733,6 +1733,116 @@ button:active {
   font-size: 0.9rem;
 }
 
+/* Toggle Tabla/Grilla (idea propia, ver comentario en index.html). */
+#vista-lista-modo {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+#vista-lista-modo button {
+  padding: 7px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: #fff;
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#vista-lista-modo button.activo {
+  background: var(--color-primario);
+  color: #fff;
+  border-color: var(--color-primario);
+}
+
+/* Grilla de tarjetas — misma info que la tabla, pero con foto y pensada
+   para que un comprador la recorra, no para editar/borrar en fila (eso
+   sigue siendo tarea de la tabla). */
+#grilla-lotes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.tarjeta-lote {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: var(--sombra-calida-suave);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.tarjeta-lote:hover {
+  box-shadow: 0 2px 10px rgba(56, 38, 20, 0.18);
+  transform: translateY(-1px);
+}
+
+.tarjeta-lote-foto {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  display: block;
+  background: var(--color-fondo-alterno);
+}
+
+.tarjeta-lote-cuerpo {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tarjeta-lote-titulo {
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tarjeta-lote-dato {
+  font-size: 0.82rem;
+  color: var(--color-texto-secundario);
+}
+
+.tarjeta-lote-precio {
+  font-weight: 700;
+  color: var(--color-primario);
+  font-size: 0.95rem;
+  margin-top: 2px;
+}
+
+.tarjeta-lote-estado {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.tarjeta-lote-estado.disponible {
+  background: var(--color-disponible);
+}
+
+.tarjeta-lote-estado.reservado {
+  background: var(--color-reservado);
+}
+
+.tarjeta-lote-estado.vendido {
+  background: var(--color-vendido);
+}
+
 #vista-lista-paginacion {
   display: flex;
   align-items: center;

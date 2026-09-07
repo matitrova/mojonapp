@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-01" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-02" />
 </head>
 <body>
 
@@ -1118,7 +1118,19 @@
       <p id="compartir-filtro-mensaje" class="oculto" data-testid="compartir-filtro-mensaje">Link copiado.</p>
       <p id="vista-lista-vacio" class="oculto">Todavía no hay lotes cargados.</p>
       <p id="vista-lista-sin-resultados" class="oculto">Ningún lote coincide con el filtro.</p>
-      <div class="tabla-scroll">
+      <!-- Idea propia, investigada en LandWatch/Zonaprop antes de
+           armarla (ver feedback_buscar_inspiracion_real): los dos
+           muestran tarjetas con foto, no una tabla — mejor para un
+           comprador mirando el catálogo, mientras que la tabla sigue
+           siendo más cómoda para el corredor administrando (Editar/
+           Borrar en cada fila). Por eso quedan las dos, con un toggle,
+           en vez de reemplazar una por la otra. -->
+      <div id="vista-lista-modo" data-testid="vista-lista-modo">
+        <button type="button" id="btn-modo-tabla" class="activo" data-testid="btn-modo-tabla">☰ Tabla</button>
+        <button type="button" id="btn-modo-grilla" data-testid="btn-modo-grilla">▦ Grilla</button>
+      </div>
+      <div id="grilla-lotes" class="oculto" data-testid="grilla-lotes"></div>
+      <div id="tabla-lotes-scroll" class="tabla-scroll">
         <table id="tabla-lotes" class="tabla-panel" data-testid="tabla-lotes">
           <thead>
             <tr>
@@ -1215,6 +1227,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-01"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-02"></script>
 </body>
 </html>
