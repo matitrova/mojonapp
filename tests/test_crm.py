@@ -132,6 +132,11 @@ def test_agregar_interesado_alimenta_el_crm(page, base_url, lote_sembrado):
 
         page.locator("#cerrar-ficha").click()
         _abrir_crm(page)
+        # "Todos", no "Mis contactos": el reparto automático de interesados
+        # nuevos (siguienteAsignado en crm.js) puede terminar asignándolo a
+        # OTRO corredor del equipo real (hay más de uno en este proyecto),
+        # no necesariamente a quien lo cargó.
+        page.locator("#btn-crm-vista-todas").click()
         tarjeta = page.locator(f'[data-testid="crm-tarjeta-{doc_id_contacto}"]')
         expect(tarjeta).to_be_visible()
         expect(tarjeta).to_contain_text(f"Manzana {LOTE_PRUEBA_DATOS['manzana']} — Lote {LOTE_PRUEBA_DATOS['lote']}")

@@ -264,7 +264,10 @@ export async function crearContactoDesdeInteresado({ nombre, telefono, nota, fea
           autor_email: autorEmail
         }
       ],
-      asignado_a: auth.currentUser.uid,
+      // creado_por siempre es quien realmente está cargando el
+      // interesado (lo exige firestore.rules) — asignado_a es lo que
+      // reparte el round-robin, puede terminar siendo otro corredor.
+      asignado_a: (await siguienteAsignado()) || auth.currentUser.uid,
       creado_por: auth.currentUser.uid,
       fecha_creacion: ahora,
       fecha_actualizacion: ahora
@@ -327,6 +330,43 @@ async function obtenerUsuariosPorUid() {
     usuariosPorUid = {};
   }
   return usuariosPorUid;
+}
+
+// Reparto automático de interesados nuevos entre el equipo (idea de
+// Tokko: "asignación automática de consultas") — SOLO para
+// crearContactoDesdeInteresado (un interesado nuevo agregado desde la
+// ficha de un lote), no para "+ Nuevo contacto" del CRM (esa es una
+// carga deliberada de quien la hace, tiene sentido que quede asignada a
+// esa persona). Reparte por CARGA actual (a quien menos contactos
+// activos tiene ahora mismo) en vez de una cola estricta con puntero
+// guardado aparte — no necesita una colección/regla nueva en
+// firestore.rules (que habría que pegar a mano en la Consola, ver
+// mojonapp_estado_proyecto), se auto-corrige solo si alguien está de
+// licencia, y con 1-2 corredores el resultado es el mismo de sentido
+// común: le toca al que tiene menos en danza.
+// Separada de siguienteAsignado() para poder probar la lógica de
+// selección (la parte que realmente importa que ande bien) sin depender
+// de Firestore ni de qué corredores reales existan en este proyecto —
+// export solo para eso.
+export function elegirMenosCargado(cargaPorUid) {
+  const uids = Object.keys(cargaPorUid);
+  if (uids.length === 0) return null;
+  return [...uids].sort((a, b) => cargaPorUid[a] - cargaPorUid[b])[0];
+}
+
+async function siguienteAsignado() {
+  const usuarios = await obtenerUsuariosPorUid();
+  const uids = Object.keys(usuarios);
+  if (uids.length <= 1) return auth.currentUser?.uid || null;
+
+  const snapshot = await getDocs(collection(db, COLECCION_CONTACTOS));
+  const cargaPorUid = Object.fromEntries(uids.map((uid) => [uid, 0]));
+  snapshot.docs.forEach((d) => {
+    const datos = d.data();
+    if (datos.estado === "cerrado" || datos.estado === "perdido") return;
+    if (cargaPorUid[datos.asignado_a] != null) cargaPorUid[datos.asignado_a]++;
+  });
+  return elegirMenosCargado(cargaPorUid);
 }
 
 // "Vos" para lo propio, el email real para lo ajeno, o un texto genérico
