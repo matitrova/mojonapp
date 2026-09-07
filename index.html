@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-12" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-13" />
 </head>
 <body>
 
@@ -1139,6 +1139,33 @@
           <button type="button" id="btn-borrar-contacto" class="oculto btn-peligro" data-testid="btn-borrar-contacto">Borrar contacto</button>
         </div>
         <p id="contacto-error" class="mensaje-error oculto" data-testid="contacto-error"></p>
+
+        <!-- "Fusionar con otro contacto" (idea propia — cubre el hueco ya
+             identificado en el backlog: hoy solo hay dedupe automático
+             por teléfono EXACTO al crear desde "Agregar interesado"; esto
+             cubre el resto — el mismo comprador cargado dos veces a mano,
+             con el teléfono escrito distinto, etc.). Solo visible editando
+             un contacto ya guardado, mismo criterio que "Borrar contacto"
+             (ver mostrarForm en crm.js). -->
+        <div id="crm-fusionar" class="oculto" data-testid="crm-fusionar">
+          <button type="button" id="btn-fusionar-contacto" class="btn-link" data-testid="btn-fusionar-contacto">
+            Fusionar con otro contacto…
+          </button>
+          <div id="crm-fusionar-panel" class="oculto" data-testid="crm-fusionar-panel">
+            <p class="ficha-calculadora-nota">
+              Se combinan lotes de interés y actividad de los dos contactos en este; el otro se borra. No se puede deshacer.
+            </p>
+            <select id="crm-fusionar-select" data-testid="crm-fusionar-select"></select>
+            <div class="crm-form-botones">
+              <button type="button" id="btn-fusionar-confirmar" class="btn-peligro" data-testid="btn-fusionar-confirmar">
+                Fusionar
+              </button>
+              <button type="button" id="btn-fusionar-cancelar" class="btn-link" data-testid="btn-fusionar-cancelar">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   </div>
@@ -1350,6 +1377,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-12"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-13"></script>
 </body>
 </html>

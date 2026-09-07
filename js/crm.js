@@ -397,6 +397,12 @@ const elBtnAgregarActividad = document.getElementById("btn-agregar-actividad");
 const elBtnGuardarContacto = document.getElementById("contacto-guardar-btn");
 const elBtnBorrarContacto = document.getElementById("btn-borrar-contacto");
 const elError = document.getElementById("contacto-error");
+const elCrmFusionar = document.getElementById("crm-fusionar");
+const elBtnFusionarContacto = document.getElementById("btn-fusionar-contacto");
+const elCrmFusionarPanel = document.getElementById("crm-fusionar-panel");
+const elCrmFusionarSelect = document.getElementById("crm-fusionar-select");
+const elBtnFusionarConfirmar = document.getElementById("btn-fusionar-confirmar");
+const elBtnFusionarCancelar = document.getElementById("btn-fusionar-cancelar");
 
 // Lotes de interés del contacto que se está editando/creando en este
 // momento — vive acá (no en Firestore) hasta que se guarda el formulario,
@@ -1054,6 +1060,7 @@ function mostrarForm(contacto, estadoInicial) {
     elMotivoPerdido.value = contacto.motivo_perdido || "";
     elSeguimientoInput.value = contacto.proximo_seguimiento || "";
     elBtnBorrarContacto.classList.remove("oculto");
+    elCrmFusionar.classList.remove("oculto");
   } else {
     elIdEditando.value = "";
     elFormTitulo.textContent = "Nuevo contacto";
@@ -1061,7 +1068,9 @@ function mostrarForm(contacto, estadoInicial) {
     elMotivoPerdido.value = "";
     elSeguimientoInput.value = "";
     elBtnBorrarContacto.classList.add("oculto");
+    elCrmFusionar.classList.add("oculto");
   }
+  elCrmFusionarPanel.classList.add("oculto"); // por si había quedado abierto del contacto anterior
   // Solo se llega a un contacto ajeno pasando por "Todos" primero (en
   // "Mis contactos" la propia consulta ya lo excluye), así que el cache
   // de usuarios ya está poblado a esta altura — ver cambiarModoVista y
@@ -1152,6 +1161,92 @@ elBtnBorrarContacto.addEventListener("click", async () => {
     );
   } finally {
     elBtnBorrarContacto.disabled = false;
+  }
+});
+
+// "Fusionar con otro contacto" — cubre el hueco de deduplicación manual
+// (hoy solo hay dedupe automático por teléfono EXACTO al crear desde
+// "Agregar interesado" en la ficha; esto es para el resto de los casos:
+// alguien cargado dos veces a mano, con el teléfono escrito distinto,
+// etc.). El contacto que se está editando ("este") es el que queda; el
+// elegido en el <select> se combina adentro y se borra — no al revés,
+// para que sea obvio cuál sobrevive sin tener que leer dos veces.
+elBtnFusionarContacto.addEventListener("click", () => {
+  const idEditando = elIdEditando.value;
+  if (!idEditando) return;
+  const opciones = getContactosActuales()
+    .filter((c) => c.id !== idEditando)
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  if (opciones.length === 0) {
+    window.alert("No hay otro contacto para fusionar acá.");
+    return;
+  }
+  elCrmFusionarSelect.innerHTML = opciones.map((c) => `<option value="${c.id}">${c.nombre}</option>`).join("");
+  elCrmFusionarPanel.classList.remove("oculto");
+});
+
+elBtnFusionarCancelar.addEventListener("click", () => {
+  elCrmFusionarPanel.classList.add("oculto");
+});
+
+elBtnFusionarConfirmar.addEventListener("click", async () => {
+  const idEditando = elIdEditando.value;
+  const idDuplicado = elCrmFusionarSelect.value;
+  if (!idEditando || !idDuplicado) return;
+  const actual = getContactosActuales().find((c) => c.id === idEditando);
+  const duplicado = getContactosActuales().find((c) => c.id === idDuplicado);
+  if (!actual || !duplicado) return;
+  if (
+    !window.confirm(
+      `¿Fusionar "${duplicado.nombre}" dentro de "${actual.nombre}"? Se combina el interés y la actividad de los dos, y "${duplicado.nombre}" se borra. No se puede deshacer.`
+    )
+  )
+    return;
+
+  elBtnFusionarConfirmar.disabled = true;
+  try {
+    const lotesFusionados = [...(actual.lotes_interes || [])];
+    (duplicado.lotes_interes || []).forEach((l) => {
+      if (!lotesFusionados.some((existente) => existente.id === l.id)) lotesFusionados.push(l);
+    });
+    const ahora = new Date().toISOString();
+    const actividadFusion = {
+      tipo: "nota",
+      texto: `Fusionado con "${duplicado.nombre}"${duplicado.telefono ? ` (tel. ${duplicado.telefono})` : ""}.`,
+      fecha: ahora,
+      autor_email: auth.currentUser?.email || null
+    };
+    const datos = {
+      telefono: actual.telefono || duplicado.telefono || null,
+      email: actual.email || duplicado.email || null,
+      // La más próxima de las dos, no la del contacto que sobrevive porque
+      // sí — un seguimiento ya agendado en el duplicado no debería
+      // perderse solo por estar del lado que se borra.
+      proximo_seguimiento:
+        [actual.proximo_seguimiento, duplicado.proximo_seguimiento].filter(Boolean).sort()[0] || null,
+      lotes_interes: lotesFusionados,
+      actividades: [...(actual.actividades || []), ...(duplicado.actividades || []), actividadFusion],
+      fecha_creacion: [actual.fecha_creacion, duplicado.fecha_creacion].filter(Boolean).sort()[0] || actual.fecha_creacion,
+      fecha_actualizacion: ahora
+    };
+    await updateDoc(doc(db, COLECCION_CONTACTOS, idEditando), datos);
+    await deleteDoc(doc(db, COLECCION_CONTACTOS, idDuplicado));
+    registrarAuditoria({
+      accion: "editar_contacto",
+      objetoId: idEditando,
+      objetoTitulo: actual.nombre,
+      detalle: `Fusionado con "${duplicado.nombre}"`
+    });
+    await cargarContactos();
+    renderTodo();
+    const fusionado = getContactosActuales().find((c) => c.id === idEditando);
+    mostrarForm(fusionado || null);
+  } catch (error) {
+    window.alert(
+      error.code === "permission-denied" ? "No tenés permiso para editar estos contactos." : "No se pudo fusionar."
+    );
+  } finally {
+    elBtnFusionarConfirmar.disabled = false;
   }
 });
 

@@ -2868,6 +2868,46 @@ button:active {
   color: var(--color-texto);
 }
 
+/* "Fusionar con otro contacto" — deduplicación manual (ver
+   elBtnFusionarContacto en crm.js). Separado del resto del formulario
+   con un borde arriba, mismo criterio visual que .dashboard-detalle: es
+   una acción secundaria/avanzada, no algo que compita con "Guardar". */
+#crm-fusionar {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-borde);
+}
+
+#crm-fusionar-panel {
+  margin-top: 8px;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: var(--color-fondo-alterno);
+}
+
+#crm-fusionar-panel .ficha-calculadora-nota {
+  margin: 0 0 8px;
+}
+
+#crm-fusionar-select {
+  width: 100%;
+  font: inherit;
+  color: var(--color-texto);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a6a58' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  padding-right: 28px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
 .crm-stat span {
   font-size: 0.72rem;
   color: var(--color-texto-secundario);
