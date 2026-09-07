@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-07" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-08" />
 </head>
 <body>
 
@@ -913,6 +913,19 @@
     <div id="crm-vista-kanban" data-testid="crm-vista-kanban">
       <div id="crm-stats" data-testid="crm-stats"></div>
 
+      <!-- "Automatización configurable" simple (idea propia — Tokko
+           recién ofrece "Automatizaciones configurables" desde el plan
+           Equipo, $252.320/mes): un solo clic para cerrar en bloque los
+           contactos estancados hace mucho, en vez de abrir uno por uno.
+           Oculto salvo que haya al menos un estancado (ver
+           renderAutomatizacion en crm.js). -->
+      <div id="crm-automatizacion" class="crm-automatizacion oculto" data-testid="crm-automatizacion">
+        <p id="crm-automatizacion-texto" data-testid="crm-automatizacion-texto"></p>
+        <button type="button" id="btn-cerrar-estancados" class="crm-btn-fantasma" data-testid="btn-cerrar-estancados">
+          Marcar todos como perdidos
+        </button>
+      </div>
+
       <!-- Idea propia, investigada en las funcionalidades de Tokko
            Broker antes de armarla ("Métricas de negocio... conocer la
            performance de tu equipo") — solo tiene sentido en "Todos"
@@ -1273,6 +1286,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-07"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-08"></script>
 </body>
 </html>

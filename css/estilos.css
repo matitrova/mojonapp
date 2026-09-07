@@ -2772,6 +2772,29 @@ button:active {
   color: var(--color-primario-oscuro);
 }
 
+/* Banner de "Automatización configurable" (marcar estancados como
+   perdidos en bloque) — mismo tono ámbar que .crm-stat-urgente usa para
+   "estancados", para que se lea como una alerta de gestión, no como un
+   error. */
+.crm-automatizacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-reservado) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-reservado) 35%, transparent);
+}
+
+.crm-automatizacion p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-texto);
+}
+
 .crm-stat span {
   font-size: 0.72rem;
   color: var(--color-texto-secundario);

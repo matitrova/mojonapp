@@ -352,6 +352,9 @@ const elBtnAbrir = document.getElementById("btn-abrir-crm");
 const elVistaKanban = document.getElementById("crm-vista-kanban");
 const elVistaForm = document.getElementById("crm-vista-form");
 const elStats = document.getElementById("crm-stats");
+const elAutomatizacion = document.getElementById("crm-automatizacion");
+const elAutomatizacionTexto = document.getElementById("crm-automatizacion-texto");
+const elBtnCerrarEstancados = document.getElementById("btn-cerrar-estancados");
 const elRendimientoSeccion = document.getElementById("crm-rendimiento-seccion");
 const elRendimientoCuerpo = document.getElementById("crm-rendimiento-cuerpo");
 const elSeguimientos = document.getElementById("crm-seguimientos");
@@ -685,6 +688,67 @@ function renderStats() {
   `;
 }
 
+// "Automatización configurable" (idea propia — Tokko recién ofrece esto
+// desde el plan Equipo, $252.320/mes): en vez de abrir cada contacto
+// estancado uno por uno para marcarlo "perdido" a mano, un solo clic
+// cierra a todos los que llevan +DIAS_ESTANCADO días sin novedades. Solo
+// actúa sobre lo que el usuario ya puede ver (getContactosActuales() ya
+// viene filtrado por "mias"/"todas", y firestore.rules igual rechazaría
+// cualquier escritura sin permiso real) — no es una automatización
+// server-side ("cron"), es un atajo manual configurable en el sentido de
+// que el umbral (DIAS_ESTANCADO) es un solo número fácil de ajustar.
+const MOTIVO_PERDIDO_AUTOMATICO = "Sin actividad reciente (cierre en bloque)";
+
+function renderAutomatizacion() {
+  const estancados = getContactosActuales().filter(estaEstancado);
+  elAutomatizacion.classList.toggle("oculto", estancados.length === 0);
+  if (estancados.length === 0) return;
+  elAutomatizacionTexto.textContent =
+    estancados.length === 1
+      ? "1 contacto lleva más de una semana sin novedades."
+      : `${estancados.length} contactos llevan más de una semana sin novedades.`;
+}
+
+async function marcarEstancadosComoPerdidos() {
+  const estancados = getContactosActuales().filter(estaEstancado);
+  if (estancados.length === 0) return;
+  const confirmado = window.confirm(
+    `¿Marcar ${estancados.length === 1 ? "el contacto estancado" : `los ${estancados.length} contactos estancados`} como perdidos? No se puede deshacer.`
+  );
+  if (!confirmado) return;
+
+  const ahora = new Date().toISOString();
+  let fallidos = 0;
+  for (const contacto of estancados) {
+    const estadoAnterior = contacto.estado;
+    try {
+      await updateDoc(doc(db, COLECCION_CONTACTOS, contacto.id), {
+        estado: "perdido",
+        motivo_perdido: MOTIVO_PERDIDO_AUTOMATICO,
+        fecha_actualizacion: ahora
+      });
+      contacto.estado = "perdido";
+      contacto.motivo_perdido = MOTIVO_PERDIDO_AUTOMATICO;
+      contacto.fecha_actualizacion = ahora;
+      registrarAuditoria({
+        accion: "mover_contacto",
+        objetoId: contacto.id,
+        objetoTitulo: contacto.nombre,
+        detalle: `${ETIQUETA_ETAPA[estadoAnterior] || estadoAnterior} → ${ETIQUETA_ETAPA.perdido} (${MOTIVO_PERDIDO_AUTOMATICO})`
+      });
+    } catch {
+      // Uno fallando (permiso, red) no debe frenar al resto — se cuenta
+      // y se avisa al final, mismo criterio que moverContacto pero sin
+      // revertir nada acá: los que sí se aplicaron quedan aplicados.
+      fallidos++;
+    }
+  }
+  renderTodo();
+  if (fallidos > 0) {
+    window.alert(`Se marcaron ${estancados.length - fallidos} de ${estancados.length}. ${fallidos} no se pudieron actualizar.`);
+  }
+}
+
 // "Rendimiento por corredor" (idea propia, investigada en Tokko Broker
 // antes de armarla — "Métricas de negocio... performance de tu
 // equipo"). Solo tiene sentido en "Todos": en "Mis contactos" ya es
@@ -786,6 +850,7 @@ function renderSeguimientos() {
 
 function renderTodo() {
   renderStats();
+  renderAutomatizacion();
   renderRendimientoPorCorredor();
   renderSeguimientos();
   renderKanban();
@@ -1149,6 +1214,7 @@ function exportarCsv() {
   URL.revokeObjectURL(url);
 }
 elBtnExportar.addEventListener("click", exportarCsv);
+elBtnCerrarEstancados.addEventListener("click", marcarEstancadosComoPerdidos);
 
 // ---------------------------------------------------------------------------
 // Apertura/cierre del panel.
