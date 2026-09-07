@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-06" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-07-07" />
 </head>
 <body>
 
@@ -220,6 +220,21 @@
       <dt id="ficha-cercanias-dt" class="oculto">Cercanías</dt>
       <dd id="ficha-cercanias" class="oculto" data-testid="ficha-cercanias"></dd>
     </dl>
+    <!-- Tasador automático simple (idea propia, módulo #3 del listado
+         para competir con Tokko — ninguna comparativa de CRM
+         inmobiliario relevada menciona esto ni en Tokko ni en sus
+         competidores como algo que venga incluido). Mediana del precio
+         por m² de lotes comparables reales de la misma zona (o de toda
+         la cartera si la zona no tiene suficientes) × la superficie de
+         este lote — ver tasacionEstimada en js/ficha.js. Con menos de
+         MIN_COMPARABLES lotes con precio para comparar, no se muestra
+         nada: una estimación con poquísimos datos generaría más
+         desconfianza que ayuda. -->
+    <div id="ficha-tasacion" class="oculto" data-testid="ficha-tasacion">
+      <p class="ficha-calculadora-titulo">Tasación estimada</p>
+      <p id="tasacion-rango" data-testid="tasacion-rango"></p>
+      <p class="ficha-calculadora-nota" id="tasacion-nota" data-testid="tasacion-nota"></p>
+    </div>
     <!-- Idea propia, investigada en el simulador de financiación de
          REPLUS antes de armarla (ver feedback_buscar_inspiracion_real):
          a diferencia de un crédito hipotecario, un lote en estos loteos
@@ -1258,6 +1273,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-07-06"></script>
+  <script type="module" src="js/app.js?v=2026-09-07-07"></script>
 </body>
 </html>

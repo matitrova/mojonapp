@@ -113,6 +113,61 @@ const elServicios = document.getElementById("ficha-servicios");
 const elObservaciones = document.getElementById("ficha-observaciones");
 
 // ---------------------------------------------------------------------------
+// Tasador automático simple (idea propia, módulo #3 del listado para
+// competir con Tokko) — mediana del precio por m² de lotes comparables
+// reales (misma zona, o toda la cartera si la zona no tiene
+// suficientes) multiplicada por la superficie de este lote. Mediana en
+// vez de promedio a propósito: un solo lote con un precio raro (mal
+// cargado, o una venta atípica) no debería mover el número tanto como
+// con un promedio.
+// ---------------------------------------------------------------------------
+
+const elFichaTasacion = document.getElementById("ficha-tasacion");
+const elTasacionRango = document.getElementById("tasacion-rango");
+const elTasacionNota = document.getElementById("tasacion-nota");
+const MIN_COMPARABLES_TASACION = 3;
+
+function mediana(numeros) {
+  const ordenados = [...numeros].sort((a, b) => a - b);
+  const medio = Math.floor(ordenados.length / 2);
+  return ordenados.length % 2 === 0 ? (ordenados[medio - 1] + ordenados[medio]) / 2 : ordenados[medio];
+}
+
+function tasacionEstimada(feature) {
+  const { sector, superficie_m2 } = feature.properties;
+  if (superficie_m2 == null || superficie_m2 <= 0) return null;
+
+  const comparables = getLotesActuales().filter(
+    (f) =>
+      f.id !== feature.id &&
+      f.properties.precio_usd != null &&
+      f.properties.superficie_m2 != null &&
+      f.properties.superficie_m2 > 0
+  );
+  const mismaZona = sector ? comparables.filter((f) => f.properties.sector === sector) : [];
+  const base = mismaZona.length >= MIN_COMPARABLES_TASACION ? mismaZona : comparables;
+  if (base.length < MIN_COMPARABLES_TASACION) return null;
+
+  const medianaPorM2 = mediana(base.map((f) => f.properties.precio_usd / f.properties.superficie_m2));
+  const estimado = medianaPorM2 * superficie_m2;
+  return {
+    minimo: estimado * 0.85,
+    maximo: estimado * 1.15,
+    cantidadComparables: base.length,
+    esDeLaMismaZona: base === mismaZona && mismaZona.length > 0
+  };
+}
+
+function actualizarTasacion(feature) {
+  const tasacion = tasacionEstimada(feature);
+  elFichaTasacion.classList.toggle("oculto", !tasacion);
+  if (!tasacion) return;
+  const formatear = (n) => Math.round(n).toLocaleString("es-AR");
+  elTasacionRango.innerHTML = `<strong>USD ${formatear(tasacion.minimo)} – USD ${formatear(tasacion.maximo)}</strong>`;
+  elTasacionNota.textContent = `Estimación automática comparando ${tasacion.cantidadComparables} lote${tasacion.cantidadComparables === 1 ? "" : "s"} con precio real ${tasacion.esDeLaMismaZona ? "de la misma zona" : "de la cartera"} — no reemplaza una tasación profesional.`;
+}
+
+// ---------------------------------------------------------------------------
 // Calculadora de cuotas (idea propia, investigada en el simulador de
 // financiación de REPLUS antes de armarla — ver
 // feedback_buscar_inspiracion_real). A diferencia de un crédito
@@ -446,6 +501,7 @@ export function mostrarFicha(feature) {
   elPrecio.textContent = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   elServicios.innerHTML = renderServiciosHTML(p.servicios);
   elObservaciones.textContent = p.observaciones || "Sin datos";
+  actualizarTasacion(feature);
   actualizarCalculadoraCuotas(feature);
   renderFotos(feature);
   actualizarBotonFavorito(feature.id);
