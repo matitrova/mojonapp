@@ -174,6 +174,39 @@ function ultimaActividad(contacto) {
   return [...actividades].sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))[0];
 }
 
+// Calificación de contactos (idea propia — módulo #2 del listado para
+// competir con Tokko, investigado en KiteProp/otros comparativas de
+// CRM inmobiliario antes de armarla: "calificación automática de
+// contactos" aparece como una funcionalidad que ni Tokko ofrece hoy).
+// Un puntaje simple de 5 señales, sin nada de IA — cuántas más de estas
+// cosas ciertas tenga el contacto, más "caliente" está:
+//   1) tiene teléfono cargado (se lo puede contactar de verdad)
+//   2) tiene alguna actividad registrada (ya se lo atendió una vez)
+//   3) esa actividad fue hace 3 días o menos (sigue fresco)
+//   4) tiene 2 o más lotes de interés (está comparando en serio)
+//   5) no está ni "estancado" ni "sin atender" (la gestión va sana)
+// No tiene sentido calificar un contacto ya resuelto (cerrado/perdido)
+// — la calificación es para decidir A QUIÉN LLAMAR primero, no para
+// evaluar el pasado.
+function calificacionContacto(contacto) {
+  if (contacto.estado === "cerrado" || contacto.estado === "perdido") return null;
+
+  let puntos = 0;
+  if (contacto.telefono) puntos++;
+  const ultima = ultimaActividad(contacto);
+  if (ultima) {
+    puntos++;
+    const diasUltima = Math.floor((Date.now() - new Date(ultima.fecha).getTime()) / 86400000);
+    if (diasUltima <= 3) puntos++;
+  }
+  if ((contacto.lotes_interes || []).length >= 2) puntos++;
+  if (!estaEstancado(contacto) && !estaSinAtender(contacto)) puntos++;
+
+  if (puntos >= 4) return { nivel: "caliente", etiqueta: "🔥 Caliente" };
+  if (puntos >= 2) return { nivel: "tibio", etiqueta: "🌤️ Tibio" };
+  return { nivel: "frio", etiqueta: "❄️ Frío" };
+}
+
 // ---------------------------------------------------------------------------
 // Alta automática desde "Agregar interesado" (ficha del lote). Fire-and-
 // forget, mismo criterio que registrarVistaDeLote/registrarAuditoria: si
@@ -479,6 +512,17 @@ function tarjetaContacto(contacto) {
   nombre.textContent = contacto.nombre;
   cabecera.appendChild(nombre);
   tarjeta.appendChild(cabecera);
+
+  // Calificación (idea propia, ver calificacionContacto más arriba) —
+  // en su propia línea, no adentro de la cabecera: un nombre largo no
+  // tiene que competir por espacio con esto para no quedar cortado.
+  const calificacion = calificacionContacto(contacto);
+  if (calificacion) {
+    const chip = document.createElement("p");
+    chip.className = `crm-calificacion crm-calificacion-${calificacion.nivel}`;
+    chip.textContent = calificacion.etiqueta;
+    tarjeta.appendChild(chip);
+  }
 
   const lotes = document.createElement("p");
   lotes.className = "crm-tarjeta-lotes";

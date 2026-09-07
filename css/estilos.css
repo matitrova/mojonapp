@@ -2483,6 +2483,27 @@ button:active {
   min-width: 0;
 }
 
+/* Calificación (idea propia, ver calificacionContacto en js/crm.js) —
+   3 niveles con color propio, para que "a quién llamar primero" se
+   note sin tener que leer el resto de la tarjeta. */
+.crm-calificacion {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.crm-calificacion-caliente {
+  color: var(--color-vendido);
+}
+
+.crm-calificacion-tibio {
+  color: var(--color-reservado);
+}
+
+.crm-calificacion-frio {
+  color: var(--color-texto-secundario);
+}
+
 /* Avatar con iniciales, color determinístico por nombre (ver
    colorAvatar en js/crm.js) — mismo lenguaje que Trello/Asana: identifica
    la tarjeta de un vistazo, no solo texto plano. */
