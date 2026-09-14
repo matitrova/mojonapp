@@ -20,6 +20,11 @@ permissions:
 jobs:
   chequear-sitio:
     runs-on: ubuntu-latest
+    env:
+      # Sin esto, "gh" no sabe contra qué repo operar: no hay un
+      # actions/checkout acá (no hace falta el código para esto), así
+      # que no hay ".git" del que inferir el repo.
+      GH_REPO: ${{ github.repository }}
     steps:
       - name: Pedir la home del sitio
         id: chequeo
