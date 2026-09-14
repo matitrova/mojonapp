@@ -1,0 +1,66 @@
+name: Monitoreo de disponibilidad
+
+# Chequea cada 30 minutos que https://mojonapp.com.ar/ responda 200 OK.
+# Si falla, abre un issue en este repo (una sola vez, no uno por cada
+# chequeo fallido); cuando el sitio vuelve a responder, comenta y cierra
+# ese issue solo. Pensado para enterarse de una caída de Netlify/DNS sin
+# tener que acordarse de mirar el sitio a mano.
+#
+# "workflow_dispatch" permite además correrlo a mano desde la pestaña
+# Actions, útil para probar el workflow sin esperar al próximo horario.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  chequear-sitio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pedir la home del sitio
+        id: chequeo
+        run: |
+          codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://mojonapp.com.ar/)
+          echo "Código recibido: $codigo"
+          echo "codigo=$codigo" >> "$GITHUB_OUTPUT"
+
+      - name: Asegurar que exista la etiqueta "sitio-caido"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create "sitio-caido" \
+            --color "d73a4a" \
+            --description "Detectado por el monitoreo automático de disponibilidad" \
+            --force
+
+      - name: Abrir issue si el sitio no respondió 200
+        if: steps.chequeo.outputs.codigo != '200'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existe=$(gh issue list --label "sitio-caido" --state open --json number --jq 'length')
+          if [ "$existe" -eq 0 ]; then
+            gh issue create \
+              --title "mojonapp.com.ar no responde (HTTP ${{ steps.chequeo.outputs.codigo }})" \
+              --label "sitio-caido" \
+              --body "El chequeo automático de las $(date -u +'%Y-%m-%d %H:%M UTC') recibió el código **${{ steps.chequeo.outputs.codigo }}** al pedir https://mojonapp.com.ar/. Revisar el estado del sitio en Netlify.
+
+Este issue se cierra solo apenas el sitio vuelva a responder 200."
+          else
+            echo "Ya hay un issue abierto para esta caída, no se crea uno nuevo."
+          fi
+
+      - name: Cerrar issue si el sitio volvió a responder 200
+        if: steps.chequeo.outputs.codigo == '200'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          abiertos=$(gh issue list --label "sitio-caido" --state open --json number --jq '.[].number')
+          for numero in $abiertos; do
+            gh issue comment "$numero" --body "El sitio volvió a responder 200 OK ($(date -u +'%Y-%m-%d %H:%M UTC')). Cerrando automáticamente."
+            gh issue close "$numero"
+          done
