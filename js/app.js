@@ -49,6 +49,7 @@ import {
 } from "./ficha.js";
 import "./admin.js";
 import "./auditoria.js";
+import "./ia-proximamente.js";
 import "./dibujar-area.js";
 import {
   collection,
@@ -299,6 +300,10 @@ function actualizarUIPorPermisos() {
   // hizo qué" es exclusivamente de root — esRootActual() directo, no
   // tienePermiso().
   document.getElementById("btn-abrir-auditoria").classList.toggle("oculto", !esRootActual());
+  // "Inteligencia Artificial" es una vidriera de funciones futuras que
+  // implican costo por uso (APIs pagas) — mismo criterio que Auditoría,
+  // decisión de root, no de cualquiera con administrar_usuarios.
+  document.getElementById("btn-abrir-ia").classList.toggle("oculto", !esRootActual());
   // Sectores es un permiso propio, distinto de "administrar_usuarios": un
   // corredor puede organizar su propia cartera en zonas sin depender de
   // root, y root puede sacarle ese permiso puntual sin tocarle el resto.

@@ -23,7 +23,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { getContactosActuales, getLotesActuales } from "./estado.js";
 import { registrarAuditoria } from "./auditoria.js";
-import { ETIQUETA_ACTIVIDAD, linkWhatsapp } from "./crm-metricas.js";
+import { ETIQUETA_ACTIVIDAD, linkWhatsapp, lotesSugeridos } from "./crm-metricas.js";
 import {
   COLECCION_CONTACTOS,
   cargarContactos,
@@ -59,6 +59,8 @@ const elListaLotesInteres = document.getElementById("crm-lista-lotes-interes");
 const elLotesInteresVacio = document.getElementById("crm-lotes-interes-vacio");
 const elSelectLote = document.getElementById("crm-select-lote");
 const elBtnAgregarLoteInteres = document.getElementById("btn-agregar-lote-interes");
+const elCrmSugeridos = document.getElementById("crm-sugeridos");
+const elListaSugeridos = document.getElementById("crm-lista-sugeridos");
 const elListaEtiquetas = document.getElementById("crm-lista-etiquetas");
 const elEtiquetasVacio = document.getElementById("crm-etiquetas-vacio");
 const elInputEtiqueta = document.getElementById("crm-input-etiqueta");
@@ -112,6 +114,7 @@ function renderListaLotesInteres() {
     botonQuitar.addEventListener("click", () => {
       lotesInteresEnEdicion = lotesInteresEnEdicion.filter((l) => l.id !== lote.id);
       renderListaLotesInteres();
+      renderLotesSugeridos();
     });
     li.appendChild(botonQuitar);
 
@@ -123,6 +126,46 @@ function renderListaLotesInteres() {
 function poblarSelectLotes() {
   const lotes = getLotesActuales();
   elSelectLote.innerHTML = lotes.map((f) => `<option value="${f.id}">${tituloLote(f.properties)}</option>`).join("");
+}
+
+// Matching lote↔interesado por reglas (zona/precio/superficie de los lotes
+// de interés ya cargados) — cero costo, no llama a ningún servicio externo.
+// Se recalcula cada vez que cambian los lotes de interés en edición.
+function renderLotesSugeridos() {
+  const sugerencias = lotesSugeridos(lotesInteresEnEdicion);
+  elCrmSugeridos.classList.toggle("oculto", sugerencias.length === 0);
+  elListaSugeridos.innerHTML = "";
+  sugerencias.forEach(({ feature, motivos }) => {
+    const li = document.createElement("li");
+    li.className = "crm-chip-sugerido";
+
+    const info = document.createElement("div");
+    info.className = "crm-chip-sugerido-info";
+    const titulo = document.createElement("span");
+    titulo.className = "crm-chip-titulo";
+    titulo.textContent = tituloLote(feature.properties);
+    info.appendChild(titulo);
+    if (motivos.length > 0) {
+      const razon = document.createElement("span");
+      razon.className = "crm-chip-sugerido-motivo";
+      razon.textContent = motivos.join(", ");
+      info.appendChild(razon);
+    }
+    li.appendChild(info);
+
+    const botonAgregar = document.createElement("button");
+    botonAgregar.type = "button";
+    botonAgregar.className = "crm-chip-agregar";
+    botonAgregar.textContent = "+ Agregar";
+    botonAgregar.addEventListener("click", () => {
+      lotesInteresEnEdicion.push({ id: feature.id, titulo: tituloLote(feature.properties) });
+      renderListaLotesInteres();
+      renderLotesSugeridos();
+    });
+    li.appendChild(botonAgregar);
+
+    elListaSugeridos.appendChild(li);
+  });
 }
 
 // "Asignado a" — reasignar es elegir otro corredor de la lista y guardar,
@@ -155,6 +198,7 @@ elBtnAgregarLoteInteres.addEventListener("click", () => {
   if (!feature) return;
   lotesInteresEnEdicion.push({ id: loteId, titulo: tituloLote(feature.properties) });
   renderListaLotesInteres();
+  renderLotesSugeridos();
 });
 
 // ---------------------------------------------------------------------------
@@ -364,6 +408,7 @@ export function mostrarForm(contacto, estadoInicial) {
   poblarSelectLotes();
   lotesInteresEnEdicion = contacto ? [...(contacto.lotes_interes || [])] : [];
   renderListaLotesInteres();
+  renderLotesSugeridos();
   etiquetasEnEdicion = contacto ? [...(contacto.etiquetas || [])] : [];
   renderListaEtiquetas();
   elInputEtiqueta.value = "";

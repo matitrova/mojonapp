@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-03" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-04" />
 </head>
 <body>
 
@@ -127,6 +127,11 @@
                aparte con esRootActual() directo — quién hizo qué es algo que
                solo root ve, ni siquiera un corredor con administrar_usuarios. -->
           <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria">Auditoría</button>
+          <!-- Vidriera de funciones de IA todavía no conectadas a ningún
+               servicio pago (ver panel-ia más abajo) — mismo criterio de
+               visibilidad que Auditoría, decisión de root por el costo
+               que implicaría activarlas de verdad. -->
+          <button type="button" class="drawer-item oculto" id="btn-abrir-ia" data-testid="btn-abrir-ia">Inteligencia Artificial</button>
         </div>
       </div>
 
@@ -709,6 +714,66 @@
     <p id="auditoria-error" class="mensaje-error oculto" data-testid="auditoria-error"></p>
   </div>
 
+  <!-- Panel "Inteligencia Artificial" (solo root) — vidriera de
+       funciones ya diseñadas pero TODAVÍA NO conectadas a ningún
+       servicio pago (OpenAI, WhatsApp Business API). Ningún botón de
+       acá dispara una llamada real ni tiene costo — es 100%
+       informativo, para que la estructura quede lista para el día que
+       se decida activarlas de verdad. Ver js/ia-proximamente.js. -->
+  <div id="panel-ia" class="oculto panel-pantalla-completa" data-testid="panel-ia">
+    <div class="panel-header">
+      <h2>Inteligencia Artificial</h2>
+      <button id="cerrar-panel-ia" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <p class="dashboard-ayuda">
+      Estas funciones ya están pensadas y con su lugar armado en la app, pero necesitan una API paga
+      (OpenAI y/o WhatsApp Business) para funcionar de verdad — hoy no hacen ninguna llamada ni tienen
+      ningún costo. Cuando quieras activar alguna en serio, se conecta sin tener que rehacer nada de esto.
+    </p>
+    <div class="ia-tarjetas">
+      <div class="ia-tarjeta">
+        <p class="ia-tarjeta-titulo">📝 Descripciones redactadas con IA</p>
+        <p class="ia-tarjeta-desc">
+          Una versión más natural del texto que hoy arma "Copiar descripción para portales" por plantilla —
+          la misma idea, pero redactada por un modelo de lenguaje en vez de campos fijos.
+        </p>
+        <span class="ia-badge">Próximamente</span>
+      </div>
+      <div class="ia-tarjeta">
+        <p class="ia-tarjeta-titulo">🎙️ Actualizar por nota de voz de WhatsApp</p>
+        <p class="ia-tarjeta-desc">
+          Mandás un audio contando una novedad ("visité a Juan, quedó en pensarlo, agendame el jueves") y el
+          sistema registra la actividad y el próximo seguimiento solo, sin abrir la app.
+        </p>
+        <span class="ia-badge">Próximamente</span>
+      </div>
+      <div class="ia-tarjeta">
+        <p class="ia-tarjeta-titulo">💬 Sugerencias de respuesta para WhatsApp</p>
+        <p class="ia-tarjeta-desc">
+          Tres borradores de respuesta listos para elegir, armados con los datos reales del lote y de la
+          conversación con ese contacto.
+        </p>
+        <span class="ia-badge">Próximamente</span>
+      </div>
+      <div class="ia-tarjeta">
+        <p class="ia-tarjeta-titulo">📧 Alta automática de leads por email</p>
+        <p class="ia-tarjeta-desc">
+          Las consultas que llegan por mail desde los portales (ZonaProp, MercadoLibre) se convierten solas
+          en un contacto nuevo del CRM, sin copiar y pegar a mano.
+        </p>
+        <span class="ia-badge">Próximamente</span>
+      </div>
+      <div class="ia-tarjeta">
+        <p class="ia-tarjeta-titulo">🗣️ Resúmenes automáticos de conversaciones</p>
+        <p class="ia-tarjeta-desc">
+          Un resumen de 3-4 líneas de una conversación larga de WhatsApp: qué buscaba el interesado, qué se le
+          ofreció, y qué quedó pendiente.
+        </p>
+        <span class="ia-badge">Próximamente</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Panel "Sectores": el catálogo de nombres que ofrece el combo de
        Sector/zona al cargar o editar un lote — para que no cada
        corredor invente su propia variante del mismo nombre a mano. -->
@@ -1138,6 +1203,20 @@
           </div>
         </div>
 
+        <!-- "Lotes sugeridos" (idea propia — matching lote↔interesado por
+             reglas, sin IA ni costo): infiere el perfil de este contacto a
+             partir de los lotes que YA marcó como interés (zona más
+             frecuente, precio y superficie promedio) y sugiere otros
+             lotes disponibles parecidos que todavía no vio. Se oculta
+             entera sin lotes de interés cargados — sin datos propios no
+             hay nada de qué inferir. Ver lotesSugeridos en
+             crm-metricas.js. -->
+        <div id="crm-sugeridos" class="oculto" data-testid="crm-sugeridos">
+          <p class="crm-subtitulo">Lotes sugeridos</p>
+          <p class="ficha-calculadora-nota">Según los lotes de interés ya cargados — no usa ningún servicio externo.</p>
+          <ul id="crm-lista-sugeridos" data-testid="crm-lista-sugeridos"></ul>
+        </div>
+
         <!-- Etiquetas libres (idea propia — "financiamiento", "urgente",
              "referido", lo que haga falta): a diferencia de "lotes de
              interés" no salen de un catálogo fijo, se escriben a mano.
@@ -1428,6 +1507,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-14-03"></script>
+  <script type="module" src="js/app.js?v=2026-09-14-04"></script>
 </body>
 </html>

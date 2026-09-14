@@ -204,3 +204,76 @@ export function calcularMetricas(contactos) {
     .reduce((total, c) => total + valorPotencialContacto(c), 0);
   return { total, nuevosEstaSemana, tasaConversion, estancados, sinAtender, valorPipelineActivo };
 }
+
+// ---------------------------------------------------------------------------
+// Matching lote↔interesado por reglas simples (idea propia, investigada
+// en varios CRM inmobiliarios antes de armarla: todos plantean esto con
+// un LLM y un formulario aparte de "presupuesto/preferencias" del
+// contacto — acá se infiere el perfil directo de los lotes que YA marcó
+// como interés, sin pedirle nada nuevo a nadie ni depender de una API
+// paga. Cero costo, funciona con los datos que ya existen.
+// ---------------------------------------------------------------------------
+
+function promedio(numeros) {
+  return numeros.reduce((suma, n) => suma + n, 0) / numeros.length;
+}
+
+function valorMasFrecuente(valores) {
+  if (valores.length === 0) return null;
+  const conteos = new Map();
+  valores.forEach((v) => conteos.set(v, (conteos.get(v) || 0) + 1));
+  return [...conteos.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
+// lotesInteres: array de {id, titulo} (mismo formato que contacto.
+// lotes_interes) — se pasa suelto en vez de un contacto entero para que
+// sirva tanto con un contacto ya guardado como con el borrador que se
+// está armando en el formulario (todavía sin id de documento).
+export function lotesSugeridos(lotesInteres, limite = 5) {
+  const interes = (lotesInteres || [])
+    .map((li) => getLotesActuales().find((f) => f.id === li.id))
+    .filter(Boolean);
+  if (interes.length === 0) return [];
+
+  const zonaFrecuente = valorMasFrecuente(interes.map((f) => f.properties.sector).filter(Boolean));
+  const precios = interes.map((f) => f.properties.precio_usd).filter((v) => v != null);
+  const superficies = interes.map((f) => f.properties.superficie_m2).filter((v) => v != null);
+  const precioRef = precios.length > 0 ? promedio(precios) : null;
+  const superficieRef = superficies.length > 0 ? promedio(superficies) : null;
+
+  const yaVistos = new Set(interes.map((f) => f.id));
+  const candidatos = getLotesActuales().filter((f) => f.properties.estado === "disponible" && !yaVistos.has(f.id));
+
+  return candidatos
+    .map((f) => {
+      const p = f.properties;
+      let puntos = 0;
+      const motivos = [];
+      if (zonaFrecuente && p.sector === zonaFrecuente) {
+        puntos += 3;
+        motivos.push("misma zona");
+      }
+      if (precioRef != null && p.precio_usd != null) {
+        const diferencia = Math.abs(p.precio_usd - precioRef) / precioRef;
+        if (diferencia <= 0.15) {
+          puntos += 2;
+          motivos.push("precio similar");
+        } else if (diferencia <= 0.3) {
+          puntos += 1;
+        }
+      }
+      if (superficieRef != null && p.superficie_m2 != null) {
+        const diferencia = Math.abs(p.superficie_m2 - superficieRef) / superficieRef;
+        if (diferencia <= 0.2) {
+          puntos += 2;
+          motivos.push("superficie similar");
+        } else if (diferencia <= 0.4) {
+          puntos += 1;
+        }
+      }
+      return { feature: f, puntos, motivos };
+    })
+    .filter((x) => x.puntos > 0)
+    .sort((a, b) => b.puntos - a.puntos)
+    .slice(0, limite);
+}
