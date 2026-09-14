@@ -29,7 +29,9 @@ jobs:
       - name: Pedir la home del sitio
         id: chequeo
         run: |
-          codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://mojonapp.com.ar/)
+          # SIMULACRO TEMPORAL: ruta inexistente para forzar un 404 y probar
+          # que el workflow abre el issue. Revertir a "/" apenas se verifique.
+          codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://mojonapp.com.ar/simulacro-caida-test-uptime-monitor)
           echo "Código recibido: $codigo"
           echo "codigo=$codigo" >> "$GITHUB_OUTPUT"
 
