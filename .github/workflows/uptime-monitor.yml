@@ -49,7 +49,7 @@ jobs:
               --label "sitio-caido" \
               --body "El chequeo automático de las $(date -u +'%Y-%m-%d %H:%M UTC') recibió el código **${{ steps.chequeo.outputs.codigo }}** al pedir https://mojonapp.com.ar/. Revisar el estado del sitio en Netlify.
 
-Este issue se cierra solo apenas el sitio vuelva a responder 200."
+          Este issue se cierra solo apenas el sitio vuelva a responder 200."
           else
             echo "Ya hay un issue abierto para esta caída, no se crea uno nuevo."
           fi
