@@ -97,6 +97,19 @@ export function setContactosActuales(v) {
   contactosActuales = v;
 }
 
+// "mias" | "todas" — a qué contactos alcanza cargarContactos() (query
+// scope) y cómo se pinta el kanban (ej. la línea "de quién es" en cada
+// tarjeta). Vive acá porque lo necesitan tanto la capa de datos del CRM
+// como su UI, una vez separadas en módulos distintos. Se reinicia a
+// "mias" cada vez que se abre el panel (default seguro).
+let modoVistaContactos = "mias";
+export function getModoVista() {
+  return modoVistaContactos;
+}
+export function setModoVista(v) {
+  modoVistaContactos = v;
+}
+
 // Id de navigator.geolocation.watchPosition, para poder cancelarlo.
 let watchId = null;
 export function getWatchId() {

@@ -24,19 +24,14 @@ import { db, auth } from "./firebase-config.js";
 import {
   collection,
   doc,
-  getDocs,
   addDoc,
   updateDoc,
   deleteDoc,
-  arrayUnion,
-  query,
-  where,
-  limit
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-import { getContactosActuales, setContactosActuales, getLotesActuales } from "./estado.js";
+import { getContactosActuales, getLotesActuales, getModoVista, setModoVista } from "./estado.js";
 import { centroideDePoligono } from "./geometria.js";
 import { registrarAuditoria } from "./auditoria.js";
-import { esRootActual, tienePermiso } from "./permisos.js";
 // Primera etapa de la modularización de este archivo (venía con 1643
 // líneas) — constantes y lógica pura sin Firestore/DOM, movidas a su
 // propio módulo testeable. Ver el plan en curso.
@@ -54,21 +49,28 @@ import {
   estaSinAtender,
   ultimaActividad,
   calificacionContacto,
-  elegirMenosCargado,
   valorPotencialContacto,
   formatoUsdCompacto,
   calcularMetricas
 } from "./crm-metricas.js";
-
-const COLECCION_CONTACTOS = "contactos";
-
-// Techo de lo que se le pide a Firestore de una sola vez: una consulta sin
-// límite crece en costo (y en tiempo de carga) al mismo ritmo que la
-// cartera — con esto, aunque la agencia llegue a tener miles de contactos
-// algún día, abrir el CRM sigue siendo una sola lectura acotada. 500
-// contactos activos es un techo cómodo para una inmobiliaria chica/mediana
-// durante años, no un límite real del día a día.
-const LIMITE_CONTACTOS = 500;
+// tests/test_crm_round_robin.py importa elegirMenosCargado de crm.js (no
+// se movió ese test, solo la función) — reexportada para no romperlo.
+export { elegirMenosCargado } from "./crm-metricas.js";
+// Segunda etapa de la modularización: capa de datos (Firestore), sin DOM.
+// crm.js reexporta crearContactoDesdeInteresado/cargarContactos para que
+// ficha.js/dashboard.js/vista-lista.js sigan importándolas de acá sin
+// cambiar nada.
+import {
+  COLECCION_CONTACTOS,
+  configurarDatosCrm,
+  crearContactoDesdeInteresado,
+  cargarContactos,
+  puedeVerTodosLosContactos,
+  obtenerUsuariosPorUid,
+  obtenerUsuariosPorUidCache,
+  textoAsignado
+} from "./crm-datos.js";
+export { crearContactoDesdeInteresado, cargarContactos };
 
 // Un seguimiento agendado entra a la lista de "Seguimientos" del panel si
 // ya venció o si es hoy o en los próximos N días — mismo umbral "urgente"
@@ -81,178 +83,7 @@ let mapa, mostrarFicha, tituloLote;
 // este módulo.
 export function configurarCrm(deps) {
   ({ mapa, mostrarFicha, tituloLote } = deps);
-}
-
-function puedeVerTodosLosContactos() {
-  return esRootActual() || tienePermiso("ver_todos_los_contactos");
-}
-
-// ---------------------------------------------------------------------------
-// Alta automática desde "Agregar interesado" (ficha del lote). Fire-and-
-// forget, mismo criterio que registrarVistaDeLote/registrarAuditoria: si
-// falla acá (sin conexión, etc.) el interesado ya se guardó en el lote de
-// todas formas — esto solo alimenta el pipeline central, no reemplaza a
-// aquel guardado ni bloquea el flujo si algo sale mal.
-//
-// Si ya existe un contacto con el mismo teléfono, no se crea uno nuevo: se
-// le suma este lote a "lotes de interés" (si todavía no lo tenía) y queda
-// una actividad automática registrando el interés nuevo — el mismo
-// comprador preguntando por otro lote no debería aparecer duplicado en el
-// pipeline, pero tampoco perderse sin dejar rastro. Sin teléfono no hay
-// forma confiable de saber si es la misma persona, así que en ese caso
-// siempre crea un contacto nuevo.
-export async function crearContactoDesdeInteresado({ nombre, telefono, nota, feature }) {
-  if (!auth.currentUser) return;
-  try {
-    const loteInteres = { id: feature.id, titulo: tituloLote(feature.properties) };
-    const ahora = new Date().toISOString();
-    const autorEmail = auth.currentUser.email || null;
-
-    if (telefono) {
-      const coincidencias = await getDocs(
-        query(collection(db, COLECCION_CONTACTOS), where("telefono", "==", telefono))
-      );
-      if (!coincidencias.empty) {
-        const docExistente = coincidencias.docs[0];
-        const datos = docExistente.data();
-        const yaLoTiene = (datos.lotes_interes || []).some((l) => l.id === loteInteres.id);
-        if (!yaLoTiene) {
-          const textoActividad = `También preguntó por ${loteInteres.titulo}.${nota ? ` "${nota}"` : ""}`;
-          await updateDoc(doc(db, COLECCION_CONTACTOS, docExistente.id), {
-            lotes_interes: [...(datos.lotes_interes || []), loteInteres],
-            actividades: arrayUnion({ tipo: "nota", texto: textoActividad, fecha: ahora, autor_email: autorEmail }),
-            fecha_actualizacion: ahora
-          });
-        }
-        return;
-      }
-    }
-
-    await addDoc(collection(db, COLECCION_CONTACTOS), {
-      nombre,
-      telefono: telefono || null,
-      email: null,
-      estado: "nuevo",
-      motivo_perdido: null,
-      proximo_seguimiento: null,
-      lotes_interes: [loteInteres],
-      actividades: [
-        {
-          tipo: "nota",
-          texto: nota || `Interesado en ${loteInteres.titulo}.`,
-          fecha: ahora,
-          autor_email: autorEmail
-        }
-      ],
-      // creado_por siempre es quien realmente está cargando el
-      // interesado (lo exige firestore.rules) — asignado_a es lo que
-      // reparte el round-robin, puede terminar siendo otro corredor.
-      asignado_a: (await siguienteAsignado()) || auth.currentUser.uid,
-      creado_por: auth.currentUser.uid,
-      fecha_creacion: ahora,
-      fecha_actualizacion: ahora
-    });
-  } catch {
-    // Crear un contacto no depende del permiso "gestionar_contactos" (ver
-    // firestore.rules) — si igual falla acá (sin conexión, la actualización
-    // de un contacto ajeno sin ese permiso) no se avisa nada: el
-    // interesado ya quedó guardado en el lote de todas formas.
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Datos: qué contactos trae cargarContactos() depende del modo de vista
-// ("mias" | "todas") — ver más abajo, junto al toggle de la barra de
-// herramientas. Se ordena en el cliente por última actualización en vez de
-// con orderBy() en la consulta a propósito: combinar where("asignado_a",...)
-// con orderBy("fecha_actualizacion") pediría un índice compuesto, y este
-// proyecto no tiene Firebase CLI para crearlo por código — solo a mano en
-// la Consola. Ordenar acá evita esa dependencia sin perder la función.
-// ---------------------------------------------------------------------------
-
-let modoVista = "mias"; // se reinicia a "mias" cada vez que se abre el panel
-
-export async function cargarContactos() {
-  try {
-    const verTodas = modoVista === "todas" && puedeVerTodosLosContactos();
-    const base = collection(db, COLECCION_CONTACTOS);
-    const consulta = verTodas
-      ? query(base, limit(LIMITE_CONTACTOS))
-      : query(base, where("asignado_a", "==", auth.currentUser?.uid || "__sin_sesion__"), limit(LIMITE_CONTACTOS));
-    const snapshot = await getDocs(consulta);
-    const contactos = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-    contactos.sort((a, b) => (b.fecha_actualizacion || "").localeCompare(a.fecha_actualizacion || ""));
-    setContactosActuales(contactos);
-  } catch {
-    // Si falla (reglas viejas, sin conexión, etc.) el panel queda vacío en
-    // vez de romper — mismo criterio que cargarSectores/cargarBarrios.
-    setContactosActuales([]);
-  }
-}
-
-// Uid → email de cada corredor, para poder mostrar "de quién es" un
-// contacto en la vista "Todos" — sin esto, "Todos" mezcla la cartera de
-// todo el equipo sin forma de distinguir una tarjeta de otra más que por
-// contenido. Se resuelve una sola vez por sesión (lazy, recién la primera
-// vez que hace falta) y se cachea: la lista de corredores de una
-// inmobiliaria chica cambia muy de vez en cuando, no vale la pena
-// releerla en cada toggle. "usuarios" es de lectura abierta a cualquier
-// logueado (ver firestore.rules), mismo permiso que ya usa admin.js para
-// resolver el propio perfil.
-let usuariosPorUid = null;
-
-async function obtenerUsuariosPorUid() {
-  if (usuariosPorUid) return usuariosPorUid;
-  try {
-    const snapshot = await getDocs(collection(db, "usuarios"));
-    usuariosPorUid = Object.fromEntries(snapshot.docs.map((d) => [d.id, d.data().email || d.id]));
-  } catch {
-    usuariosPorUid = {};
-  }
-  return usuariosPorUid;
-}
-
-// Reparto automático de interesados nuevos entre el equipo (idea de
-// Tokko: "asignación automática de consultas") — SOLO para
-// crearContactoDesdeInteresado (un interesado nuevo agregado desde la
-// ficha de un lote), no para "+ Nuevo contacto" del CRM (esa es una
-// carga deliberada de quien la hace, tiene sentido que quede asignada a
-// esa persona). Reparte por CARGA actual (a quien menos contactos
-// activos tiene ahora mismo) en vez de una cola estricta con puntero
-// guardado aparte — no necesita una colección/regla nueva en
-// firestore.rules (que habría que pegar a mano en la Consola, ver
-// mojonapp_estado_proyecto), se auto-corrige solo si alguien está de
-// licencia, y con 1-2 corredores el resultado es el mismo de sentido
-// común: le toca al que tiene menos en danza. `elegirMenosCargado`
-// (la parte que realmente importa que ande bien) vive en
-// crm-metricas.js, sin Firestore — se reexporta de acá para no romper
-// tests/test_crm_round_robin.py, que la importa de crm.js.
-export { elegirMenosCargado };
-
-async function siguienteAsignado() {
-  const usuarios = await obtenerUsuariosPorUid();
-  const uids = Object.keys(usuarios);
-  if (uids.length <= 1) return auth.currentUser?.uid || null;
-
-  const snapshot = await getDocs(collection(db, COLECCION_CONTACTOS));
-  const cargaPorUid = Object.fromEntries(uids.map((uid) => [uid, 0]));
-  snapshot.docs.forEach((d) => {
-    const datos = d.data();
-    if (datos.estado === "cerrado" || datos.estado === "perdido") return;
-    if (cargaPorUid[datos.asignado_a] != null) cargaPorUid[datos.asignado_a]++;
-  });
-  return elegirMenosCargado(cargaPorUid);
-}
-
-// "Vos" para lo propio, el email real para lo ajeno, o un texto genérico
-// si por lo que sea no se pudo resolver (corredor borrado después, cache
-// todavía sin poblar). Solo tiene sentido llamarlo con el cache ya
-// poblado (ver cambiarModoVista) — sin eso, cualquier contacto ajeno
-// mostraría el genérico hasta el próximo render.
-function textoAsignado(contacto) {
-  if (!contacto.asignado_a) return "Sin asignar";
-  if (contacto.asignado_a === auth.currentUser?.uid) return "Vos";
-  return usuariosPorUid?.[contacto.asignado_a] || "Otro corredor";
+  configurarDatosCrm({ tituloLote });
 }
 
 // ---------------------------------------------------------------------------
@@ -498,7 +329,7 @@ function tarjetaContacto(contacto) {
 
   // Solo en "Todos": en "Mis contactos" siempre serías vos, no aporta
   // nada aclararlo tarjeta por tarjeta.
-  if (modoVista === "todas") {
+  if (getModoVista() === "todas") {
     const asignado = document.createElement("p");
     asignado.className = "crm-tarjeta-asignado";
     asignado.textContent = `👤 ${textoAsignado(contacto)}`;
@@ -735,11 +566,12 @@ async function marcarEstancadosComoPerdidos() {
 // obvio de quién son (las tarjetas de arriba alcanzan), comparar contra
 // nadie no aporta nada.
 function renderRendimientoPorCorredor() {
-  const enTodas = modoVista === "todas";
+  const enTodas = getModoVista() === "todas";
   elRendimientoSeccion.classList.toggle("oculto", !enTodas);
   if (!enTodas) return;
 
   const contactos = getContactosActuales();
+  const usuariosPorUid = obtenerUsuariosPorUidCache();
   const porUid = new Map();
   contactos.forEach((c) => {
     const uid = c.asignado_a || "__sin_asignar__";
@@ -753,7 +585,7 @@ function renderRendimientoPorCorredor() {
       const sinAtender = propios.filter(estaSinAtender).length;
       const tasa = propios.length > 0 ? Math.round((cerrados / propios.length) * 100) : 0;
       const nombreCorredor =
-        uid === "__sin_asignar__" ? "Sin asignar" : uid === auth.currentUser?.uid ? "Vos" : usuariosPorUid?.[uid] || uid;
+        uid === "__sin_asignar__" ? "Sin asignar" : uid === auth.currentUser?.uid ? "Vos" : usuariosPorUid[uid] || uid;
       return { nombreCorredor, total: propios.length, cerrados, tasa, sinAtender };
     })
     .sort((a, b) => b.total - a.total);
@@ -892,7 +724,7 @@ function poblarSelectAsignado(valorActual) {
   elCampoAsignado.classList.toggle("oculto", !puede);
   if (!puede) return;
 
-  const usuarios = usuariosPorUid || {};
+  const usuarios = obtenerUsuariosPorUidCache();
   const opciones = Object.entries(usuarios).sort((a, b) => a[1].localeCompare(b[1]));
   let html = opciones.map(([uid, email]) => `<option value="${uid}">${email}</option>`).join("");
   const valorFinal = valorActual || auth.currentUser?.uid;
@@ -1197,7 +1029,7 @@ formulario.addEventListener("submit", async (evento) => {
         objetoId: idEditando,
         objetoTitulo: datos.nombre,
         detalle: reasignado
-          ? `Reasignado de ${textoAsignado(contactoPrevio)} a ${usuariosPorUid?.[datos.asignado_a] || datos.asignado_a}`
+          ? `Reasignado de ${textoAsignado(contactoPrevio)} a ${obtenerUsuariosPorUidCache()[datos.asignado_a] || datos.asignado_a}`
           : null
       });
     } else {
@@ -1356,15 +1188,15 @@ elFiltroEtiqueta.addEventListener("change", () => {
 });
 
 async function cambiarModoVista(nuevoModo) {
-  if (nuevoModo === modoVista) return;
-  modoVista = nuevoModo;
-  elBtnVistaMias.classList.toggle("activo", modoVista === "mias");
-  elBtnVistaTodas.classList.toggle("activo", modoVista === "todas");
+  if (nuevoModo === getModoVista()) return;
+  setModoVista(nuevoModo);
+  elBtnVistaMias.classList.toggle("activo", nuevoModo === "mias");
+  elBtnVistaTodas.classList.toggle("activo", nuevoModo === "todas");
   // Se resuelve ANTES de renderizar (no en paralelo): renderKanban() ya
   // llama a textoAsignado() por cada tarjeta en "Todos", y sin el cache
   // poblado a tiempo todas mostrarían "Otro corredor" hasta el próximo
   // render.
-  if (modoVista === "todas") await obtenerUsuariosPorUid();
+  if (nuevoModo === "todas") await obtenerUsuariosPorUid();
   await cargarContactos();
   renderTodo();
 }
@@ -1427,7 +1259,7 @@ async function abrirPanelCrm() {
   // Siempre arranca en "Mis contactos" (default seguro, aunque tenga el
   // permiso de ver todos) — mismo criterio que cualquier vista con
   // alcance: el corredor ve primero lo suyo, y elige ampliar si hace falta.
-  modoVista = "mias";
+  setModoVista("mias");
   elBtnVistaMias.classList.add("activo");
   elBtnVistaTodas.classList.remove("activo");
   elFiltroVista.classList.toggle("oculto", !puedeVerTodosLosContactos());
