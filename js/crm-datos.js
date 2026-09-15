@@ -109,6 +109,12 @@ export async function crearContactoDesdeInteresado({ nombre, telefono, nota, fea
       // reparte el round-robin, puede terminar siendo otro corredor.
       asignado_a: (await siguienteAsignado()) || auth.currentUser.uid,
       creado_por: auth.currentUser.uid,
+      // "Origen del lead" (idea propia — versión gratis de la
+      // "centralización de leads" de Tokko, sin canales pagos: saber si
+      // un contacto salió de mirar un lote puntual o de un alta manual
+      // en el CRM ya dice algo real sobre qué genera consultas). Se fija
+      // solo, nunca se le pide nada a nadie.
+      origen: "ficha",
       fecha_creacion: ahora,
       fecha_actualizacion: ahora
     });

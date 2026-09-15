@@ -561,6 +561,10 @@ formulario.addEventListener("submit", async (evento) => {
       if (!datos.asignado_a) datos.asignado_a = auth.currentUser.uid;
       datos.creado_por = auth.currentUser.uid;
       datos.fecha_creacion = datos.fecha_actualizacion;
+      // "Origen del lead" (ver mismo criterio en crearContactoDesdeInteresado,
+      // crm-datos.js) — este es el alta manual desde "+ Nuevo contacto",
+      // sin pasar por la ficha de ningún lote puntual.
+      datos.origen = "manual";
       const nuevoRef = await addDoc(collection(db, COLECCION_CONTACTOS), datos);
       registrarAuditoria({ accion: "crear_contacto", objetoId: nuevoRef.id, objetoTitulo: datos.nombre });
     }

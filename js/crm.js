@@ -120,14 +120,16 @@ const elBtnExportar = document.getElementById("btn-exportar-contactos");
 const elVolver = document.getElementById("crm-volver");
 const elFiltroCalificacion = document.getElementById("crm-filtro-calificacion");
 const elFiltroEtiqueta = document.getElementById("crm-filtro-etiqueta");
+const elFiltroOrigen = document.getElementById("crm-filtro-origen");
 
 // Filtro de texto de la barra de herramientas (nombre o teléfono) — se
 // aplica en el cliente sobre lo ya cargado, no perfora Firestore de nuevo
-// por cada letra tipeada. filtroCalificacion/filtroEtiqueta son
-// combinables con el texto y entre sí (ver contactosFiltrados).
+// por cada letra tipeada. filtroCalificacion/filtroEtiqueta/filtroOrigen
+// son combinables con el texto y entre sí (ver contactosFiltrados).
 let terminoBusqueda = "";
 let filtroCalificacion = "";
 let filtroEtiqueta = "";
+let filtroOrigen = "";
 
 function textoHaceDias(fechaIso) {
   if (!fechaIso) return "";
@@ -236,6 +238,20 @@ function tarjetaContacto(contacto) {
   nombre.className = "crm-tarjeta-nombre";
   nombre.textContent = contacto.nombre;
   cabecera.appendChild(nombre);
+
+  // "Origen del lead" (idea propia — versión gratis de "centralización
+  // de leads" de Tokko): un ícono chico, no un chip grande, para no
+  // competir con la calificación que ya ocupa su propia línea. Los
+  // contactos de antes de este cambio no tienen "origen" guardado —
+  // "manual" es el default más neutro (no se puede afirmar que salieron
+  // de una ficha si nunca se guardó ese dato).
+  const origenIcono = document.createElement("span");
+  origenIcono.className = "crm-tarjeta-origen";
+  const esDesdeFicha = (contacto.origen || "manual") === "ficha";
+  origenIcono.textContent = esDesdeFicha ? "🌐" : "✍️";
+  origenIcono.title = esDesdeFicha ? "Origen: desde un lote" : "Origen: alta manual";
+  cabecera.appendChild(origenIcono);
+
   tarjeta.appendChild(cabecera);
 
   // Calificación (idea propia, ver calificacionContacto más arriba) —
@@ -364,6 +380,9 @@ function contactosFiltrados() {
     }
     if (filtroEtiqueta) {
       if (!(c.etiquetas || []).includes(filtroEtiqueta)) return false;
+    }
+    if (filtroOrigen) {
+      if ((c.origen || "manual") !== filtroOrigen) return false;
     }
     return true;
   });
@@ -647,6 +666,11 @@ elFiltroEtiqueta.addEventListener("change", () => {
   renderKanban();
 });
 
+elFiltroOrigen.addEventListener("change", () => {
+  filtroOrigen = elFiltroOrigen.value;
+  renderKanban();
+});
+
 async function cambiarModoVista(nuevoModo) {
   if (nuevoModo === getModoVista()) return;
   setModoVista(nuevoModo);
@@ -672,13 +696,16 @@ function escaparCsv(valor) {
 }
 
 function exportarCsv() {
-  const filas = [["Nombre", "Teléfono", "Email", "Estado", "Próximo seguimiento", "Lotes de interés", "Última actualización"]];
+  const filas = [
+    ["Nombre", "Teléfono", "Email", "Estado", "Origen", "Próximo seguimiento", "Lotes de interés", "Última actualización"]
+  ];
   getContactosActuales().forEach((c) => {
     filas.push([
       c.nombre || "",
       c.telefono || "",
       c.email || "",
       ETIQUETA_ETAPA[c.estado] || c.estado || "",
+      (c.origen || "manual") === "ficha" ? "Desde un lote" : "Alta manual",
       c.proximo_seguimiento || "",
       (c.lotes_interes || []).map((l) => l.titulo).join(" | "),
       c.fecha_actualizacion || ""
@@ -730,6 +757,8 @@ async function abrirPanelCrm() {
   elFiltroCalificacion.value = "";
   filtroCalificacion = "";
   filtroEtiqueta = ""; // el <select> se repuebla en renderTodo() más abajo
+  elFiltroOrigen.value = "";
+  filtroOrigen = "";
 
   // Se precarga acá (no solo al pasar a "Todos") para que el <select>
   // "Asignado a" del formulario ya tenga los corredores listos aunque el

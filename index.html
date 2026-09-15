@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-02" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-03" />
 </head>
 <body>
 
@@ -1168,6 +1168,15 @@
           <select id="crm-filtro-etiqueta" data-testid="crm-filtro-etiqueta">
             <option value="">Toda etiqueta</option>
           </select>
+          <!-- "Origen del lead" (idea propia — versión gratis de
+               "centralización de leads": saber si un contacto salió de
+               mirar un lote puntual o de un alta manual). Ver
+               tarjetaContacto/contactosFiltrados en crm.js. -->
+          <select id="crm-filtro-origen" data-testid="crm-filtro-origen">
+            <option value="">Todo origen</option>
+            <option value="ficha">🌐 Desde un lote</option>
+            <option value="manual">✍️ Alta manual</option>
+          </select>
           <!-- Oculto por defecto: solo aparece con el permiso
                "ver_todos_los_contactos" — sin él, el corredor ve
                directamente sus propios contactos, sin ningún control que
@@ -1616,6 +1625,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-15-02"></script>
+  <script type="module" src="js/app.js?v=2026-09-15-03"></script>
 </body>
 </html>

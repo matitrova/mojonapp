@@ -2803,6 +2803,12 @@ body.con-nav-secciones .hoja-inferior {
   letter-spacing: 0.01em;
 }
 
+.crm-tarjeta-origen {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
 .crm-tarjeta-nombre {
   margin: 0;
   font-weight: 700;
