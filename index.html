@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-04" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-05" />
 </head>
 <body>
 
@@ -1206,6 +1206,17 @@
       <h3 id="crm-form-titulo" data-testid="crm-form-titulo"></h3>
       <form id="formulario-contacto">
         <input type="hidden" id="contacto-id-editando" />
+
+        <!-- Nota fijada (idea propia #3 de la lista inspirada en Tokko
+             Broker — un recordatorio corto SIEMPRE visible arriba de
+             todo, tipo nota pegada, distinto del historial de
+             "Actividad" que ya existe. Se guarda junto con el resto del
+             formulario, sin botón de guardar aparte. -->
+        <label class="crm-campo crm-nota-fijada" data-testid="crm-nota-fijada">
+          📌 Nota fijada
+          <textarea id="contacto-nota-fijada" rows="2" placeholder="Un recordatorio siempre visible para este contacto…" data-testid="contacto-nota-fijada"></textarea>
+        </label>
+
         <label class="crm-campo">
           Nombre
           <input type="text" id="contacto-nombre" required data-testid="contacto-nombre" />
@@ -1636,6 +1647,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-15-04"></script>
+  <script type="module" src="js/app.js?v=2026-09-15-05"></script>
 </body>
 </html>

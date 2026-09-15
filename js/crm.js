@@ -270,6 +270,16 @@ function tarjetaContacto(contacto) {
   lotes.textContent = textoLotesResumen(contacto.lotes_interes || []);
   tarjeta.appendChild(lotes);
 
+  // "Nota fijada" (idea propia #3 de la lista inspirada en Tokko Broker)
+  // — se lee de un vistazo sin tener que abrir el contacto, mismo
+  // criterio que "última actividad" más abajo.
+  if (contacto.nota_fijada) {
+    const nota = document.createElement("p");
+    nota.className = "crm-tarjeta-nota-fijada";
+    nota.textContent = `📌 ${contacto.nota_fijada}`;
+    tarjeta.appendChild(nota);
+  }
+
   // Etiquetas libres, como chips chicos — mismo criterio que Trello: se
   // leen de un vistazo sin tener que abrir el contacto.
   if ((contacto.etiquetas || []).length > 0) {

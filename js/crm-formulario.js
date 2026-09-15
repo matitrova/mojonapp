@@ -42,6 +42,7 @@ const elVistaForm = document.getElementById("crm-vista-form");
 const formulario = document.getElementById("formulario-contacto");
 const elFormTitulo = document.getElementById("crm-form-titulo");
 const elIdEditando = document.getElementById("contacto-id-editando");
+const elNotaFijada = document.getElementById("contacto-nota-fijada");
 const elNombre = document.getElementById("contacto-nombre");
 const elTelefono = document.getElementById("contacto-telefono");
 const elWhatsapp = document.getElementById("contacto-whatsapp");
@@ -508,6 +509,7 @@ elBtnAbrirDuplicado.addEventListener("click", () => {
 // el contacto en vez de forzar siempre "Nuevo".
 export function mostrarForm(contacto, estadoInicial) {
   formulario.reset();
+  elNotaFijada.value = contacto ? contacto.nota_fijada || "" : "";
   elError.classList.add("oculto");
   elAvisoDuplicado.classList.add("oculto"); // se vuelve a evaluar recién cuando se tipea algo
   poblarSelectLotes();
@@ -570,6 +572,7 @@ formulario.addEventListener("submit", async (evento) => {
     estado,
     motivo_perdido: estado === "perdido" ? elMotivoPerdido.value.trim() || null : null,
     proximo_seguimiento: elSeguimientoInput.value || null,
+    nota_fijada: elNotaFijada.value.trim() || null,
     lotes_interes: lotesInteresEnEdicion,
     etiquetas: etiquetasEnEdicion,
     fecha_actualizacion: new Date().toISOString()
@@ -707,6 +710,10 @@ elBtnFusionarConfirmar.addEventListener("click", async () => {
       // perderse solo por estar del lado que se borra.
       proximo_seguimiento:
         [actual.proximo_seguimiento, duplicado.proximo_seguimiento].filter(Boolean).sort()[0] || null,
+      // Misma idea que teléfono/email: la del que sobrevive si tiene una
+      // propia, si no la del que se borra — no se pierde el recordatorio
+      // solo por estar del lado que se fusiona.
+      nota_fijada: actual.nota_fijada || duplicado.nota_fijada || null,
       lotes_interes: lotesFusionados,
       etiquetas: etiquetasFusionadas,
       actividades: [...(actual.actividades || []), ...(duplicado.actividades || []), actividadFusion],

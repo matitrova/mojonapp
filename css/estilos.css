@@ -2952,6 +2952,32 @@ body.con-nav-secciones .hoja-inferior {
   resize: vertical;
 }
 
+/* "Nota fijada" — look de nota pegada (fondo cálido propio), para que
+   se distinga a simple vista del resto de los campos del formulario. */
+.crm-nota-fijada {
+  background: var(--color-acento-suave);
+  border-radius: var(--radio-mediano);
+  padding: 8px 10px;
+  color: var(--color-acento);
+}
+
+.crm-nota-fijada textarea {
+  min-height: 44px;
+  background: #fff;
+}
+
+/* Indicador chico en la tarjeta del kanban — mismo criterio que
+   .crm-tarjeta-ultima-actividad (una línea, texto recortado), para que
+   una nota larga no infle la tarjeta. */
+.crm-tarjeta-nota-fijada {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--color-acento);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .crm-subtitulo {
   margin: 4px 0 6px;
   font-size: 0.85rem;
