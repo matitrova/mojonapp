@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-10" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-01" />
 </head>
 <body>
 
@@ -895,6 +895,23 @@
         <p id="dashboard-seguimientos-vacio" class="dashboard-vacio oculto">No tenés seguimientos pendientes.</p>
       </section>
 
+      <!-- "Visitas de hoy" (idea propia #4 de "el mapa como una cualidad
+           del CRM" — literalmente "pineadas" en el mapa): contactos en
+           etapa "Visita" con el seguimiento agendado para hoy, ver
+           visitasDeHoy en crm-metricas.js. Un lote por fila (una visita
+           puede cubrir más de un lote de interés); la última fila
+           "Ver la ruta en el mapa →" (mismo patrón que filaVerTodos en
+           dashboard.js) las pinea todas juntas de una. Mismo permiso
+           que "Seguimientos pendientes". -->
+      <section id="dashboard-visitas-seccion" class="dashboard-seccion oculto">
+        <div class="dashboard-seccion-titulo">
+          <h3>Visitas agendadas para hoy</h3>
+          <span id="dashboard-visitas-contador" class="dashboard-contador oculto"></span>
+        </div>
+        <ul id="dashboard-visitas" class="dashboard-lista" data-testid="dashboard-visitas"></ul>
+        <p id="dashboard-visitas-vacio" class="dashboard-vacio oculto">No tenés visitas agendadas para hoy.</p>
+      </section>
+
       <section class="dashboard-seccion">
         <div class="dashboard-seccion-titulo">
           <h3>Reservas por vencer</h3>
@@ -1587,6 +1604,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-14-10"></script>
+  <script type="module" src="js/app.js?v=2026-09-15-01"></script>
 </body>
 </html>

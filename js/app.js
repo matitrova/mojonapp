@@ -361,6 +361,9 @@ function actualizarUIPorPermisos() {
   // botón "CRM" del drawer, para no mostrar un resumen que apunta a una
   // pantalla a la que ese corredor no puede entrar.
   document.getElementById("dashboard-seguimientos-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
+  // "Visitas de hoy" (idea #4 de "el mapa como una cualidad del CRM")
+  // — mismo permiso que "Seguimientos pendientes".
+  document.getElementById("dashboard-visitas-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
   // "Ventas" (pedido explícito: que el dashboard ayude a vender más, no
   // solo a llevar el inventario de lotes) — mismo permiso que el resto
   // de lo que depende del pipeline del CRM.

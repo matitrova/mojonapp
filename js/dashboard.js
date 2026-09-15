@@ -24,7 +24,14 @@ import { cargarContactos, contactosParaSeguimiento, abrirContactoEnCrm } from ".
 // métricas/template que ya se ven en "#crm-stats" del panel CRM, sin
 // dependencia circular: crm-metricas.js es lógica pura, no importa nada
 // de este archivo.
-import { calcularMetricas, contactosPorEtapa, motivosPerdidaFrecuentes, demandaPorZona, htmlResumenVentas } from "./crm-metricas.js";
+import {
+  calcularMetricas,
+  contactosPorEtapa,
+  motivosPerdidaFrecuentes,
+  demandaPorZona,
+  visitasDeHoy,
+  htmlResumenVentas
+} from "./crm-metricas.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -124,13 +131,13 @@ document.getElementById("drawer-menu").addEventListener("click", (evento) => {
 // dashboard (reservas por vencer, incompletos, rankings) — mismo criterio
 // que abrir desde "Ver como lista": centra el mapa primero para que la
 // ficha no se abra sobre un punto fuera de la vista actual.
-function irAFichaDesdeDashboard(feature) {
+function irAFichaDesdeDashboard(feature, contactoOrigen = null) {
   elPanelDashboard.classList.add("oculto");
   document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
   document.getElementById("nav-tab-mapa").classList.add("activo");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
-  mostrarFicha(feature);
+  mostrarFicha(feature, contactoOrigen);
 }
 
 // "y N más" al pie de una lista recortada por MAX_FILAS_LISTA — lleva a
@@ -319,6 +326,82 @@ function renderSeguimientosCrm() {
   actualizarContador("dashboard-seguimientos-contador", pendientes.length);
 }
 
+// "Visitas de hoy" (idea propia #4 de "el mapa como una cualidad del
+// CRM", literalmente "pineadas" — ver visitasDeHoy en crm-metricas.js):
+// una fila por parada (contacto + lote de interés), y una última fila
+// "Ver la ruta en el mapa" que las pinea todas juntas de una — mismo
+// patrón que filaVerTodos más arriba.
+let capaVisitasHoy = null;
+
+function verVisitasEnElMapa(paradas) {
+  const marcadores = paradas
+    .map((parada) => {
+      const feature = getLotesActuales().find((f) => f.id === parada.loteId);
+      if (!feature) return null;
+      const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+      return { parada, feature, marcador: L.marker([lat, lon]) };
+    })
+    .filter(Boolean);
+  if (marcadores.length === 0) {
+    window.alert("Ninguno de esos lotes existe ya.");
+    return;
+  }
+
+  if (capaVisitasHoy) mapa.removeLayer(capaVisitasHoy);
+  marcadores.forEach(({ parada, feature, marcador }, i) => {
+    marcador.bindTooltip(`${i + 1}. ${parada.contactoNombre} — ${parada.loteTitulo}`, { permanent: false });
+    marcador.on("click", () => irAFichaDesdeDashboard(feature, { id: parada.contactoId, nombre: parada.contactoNombre }));
+  });
+  capaVisitasHoy = L.layerGroup(marcadores.map((m) => m.marcador)).addTo(mapa);
+
+  elPanelDashboard.classList.add("oculto");
+  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
+  document.getElementById("nav-tab-mapa").classList.add("activo");
+  mapa.fitBounds(L.featureGroup(marcadores.map((m) => m.marcador)).getBounds(), { padding: [40, 40], maxZoom: 17 });
+}
+
+function renderVisitasDeHoy() {
+  const paradas = visitasDeHoy(getContactosActuales());
+  const elVisitas = document.getElementById("dashboard-visitas");
+  elVisitas.innerHTML = "";
+  paradas.forEach((parada) => {
+    const li = document.createElement("li");
+    const grupo = document.createElement("span");
+    grupo.className = "dashboard-lote-titulo-grupo";
+    const titulo = document.createElement("span");
+    titulo.className = "dashboard-lote-titulo";
+    titulo.textContent = `${parada.contactoNombre} — ${parada.loteTitulo}`;
+    grupo.appendChild(titulo);
+    li.appendChild(grupo);
+
+    if (parada.zona) {
+      const badge = document.createElement("span");
+      badge.className = "dashboard-badge";
+      badge.textContent = parada.zona;
+      li.appendChild(badge);
+    }
+
+    li.addEventListener("click", () => {
+      const feature = getLotesActuales().find((f) => f.id === parada.loteId);
+      if (!feature) {
+        window.alert("Este lote ya no existe.");
+        return;
+      }
+      irAFichaDesdeDashboard(feature, { id: parada.contactoId, nombre: parada.contactoNombre });
+    });
+    elVisitas.appendChild(li);
+  });
+  if (paradas.length > 0) {
+    const li = document.createElement("li");
+    li.className = "dashboard-ver-todos";
+    li.textContent = "Ver la ruta en el mapa →";
+    li.addEventListener("click", () => verVisitasEnElMapa(paradas));
+    elVisitas.appendChild(li);
+  }
+  document.getElementById("dashboard-visitas-vacio").classList.toggle("oculto", paradas.length > 0);
+  actualizarContador("dashboard-visitas-contador", paradas.length);
+}
+
 // "Ventas" (pedido explícito del usuario: que el dashboard sea
 // información que ayude a vender más, no solo inventario de lotes) —
 // mismas 6 tarjetas que "#crm-stats" en el panel CRM (mismo template,
@@ -386,6 +469,7 @@ export function renderDashboard() {
   const total = getLotesActuales().length;
 
   renderSeguimientosCrm();
+  renderVisitasDeHoy();
   renderVentas();
 
   const elInventario = document.getElementById("dashboard-inventario");

@@ -283,6 +283,31 @@ export function demandaPorZona(contactos) {
   return porZona;
 }
 
+// Ruta de visitas de hoy (idea propia #4 de "el mapa como una cualidad
+// del CRM" — literalmente "pineadas", ver renderVisitasDeHoy en
+// dashboard.js): contactos en etapa "Visita" con el seguimiento
+// agendado para HOY. No hay un campo de "fecha de visita" propio en el
+// contacto — se reusa proximo_seguimiento (mismo campo que ya arma
+// "Seguimientos pendientes") en vez de sumar uno nuevo a Firestore. Una
+// "parada" por cada lote de interés del contacto (una visita puede
+// cubrir más de un lote), ordenadas por zona para sugerir un recorrido
+// razonable sin necesitar ninguna API de ruteo real.
+export function visitasDeHoy(contactos) {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const paradas = [];
+  contactos
+    .filter((c) => c.estado === "visita" && c.proximo_seguimiento === hoy)
+    .forEach((c) => {
+      (c.lotes_interes || []).forEach((li) => {
+        const zona = getLotesActuales().find((f) => f.id === li.id)?.properties?.sector || null;
+        paradas.push({ contactoId: c.id, contactoNombre: c.nombre, loteId: li.id, loteTitulo: li.titulo, zona });
+      });
+    });
+  return paradas.sort(
+    (a, b) => (a.zona || "").localeCompare(b.zona || "") || a.contactoNombre.localeCompare(b.contactoNombre)
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Matching lote↔interesado por reglas simples (idea propia, investigada
 // en varios CRM inmobiliarios antes de armarla: todos plantean esto con
