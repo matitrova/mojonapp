@@ -59,6 +59,9 @@ def test_agregar_y_quitar_etiqueta_persiste(page, base_url):
         _loguearse(page, base_url)
         _abrir_crm(page)
         page.locator(f'[data-testid="crm-tarjeta-{doc_id}"]').click()
+        # Etiquetas quedó en la pestaña "Actividad" (ver Parte B del
+        # timeline unificado + formulario en pestañas).
+        page.locator("#crm-tab-actividad").click()
 
         page.locator("#crm-input-etiqueta").fill("urgente")
         page.locator("#btn-agregar-etiqueta").click()
@@ -71,6 +74,7 @@ def test_agregar_y_quitar_etiqueta_persiste(page, base_url):
 
         # Reabrir y quitarla.
         tarjeta.click()
+        page.locator("#crm-tab-actividad").click()
         page.locator("#crm-lista-etiquetas .crm-chip-quitar").click()
         expect(page.locator("#crm-lista-etiquetas")).not_to_contain_text("urgente")
         page.locator('[data-testid="contacto-guardar"]').click()

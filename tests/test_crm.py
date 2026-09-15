@@ -162,8 +162,11 @@ def test_agregar_actividad_y_seguimiento_para_hoy(page, base_url):
 
         page.locator(f'[data-testid="crm-tarjeta-{doc_id}"]').click()
 
-        # La actividad se guarda con su propio botón, no con "Guardar" del
-        # resto del formulario (ver elBtnAgregarActividad en js/crm.js).
+        # La actividad quedó en la pestaña "Actividad" (ver Parte B del
+        # timeline unificado + formulario en pestañas). Se guarda con su
+        # propio botón, no con "Guardar" del resto del formulario (ver
+        # elBtnAgregarActividad en js/crm-formulario.js).
+        page.locator("#crm-tab-actividad").click()
         page.locator("#actividad-tipo").select_option("llamada")
         page.locator("#actividad-texto").fill("Llamada de prueba, pidió más fotos.")
         page.locator("#btn-agregar-actividad").click()
@@ -172,8 +175,9 @@ def test_agregar_actividad_y_seguimiento_para_hoy(page, base_url):
         # cargar la próxima sin arrastrar la anterior.
         expect(page.locator("#actividad-texto")).to_have_value("")
 
-        # "Próximo seguimiento" hoy → tiene que aparecer en la sección
-        # "Seguimientos" del pipeline al volver.
+        # "Próximo seguimiento" está en la pestaña "Datos" → tiene que
+        # aparecer en la sección "Seguimientos" del pipeline al volver.
+        page.locator("#crm-tab-datos").click()
         page.locator("#contacto-seguimiento").fill(date.today().isoformat())
         page.locator("#contacto-guardar-btn").click()
         expect(page.locator("#crm-vista-kanban")).to_be_visible()

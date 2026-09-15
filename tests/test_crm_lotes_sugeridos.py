@@ -93,6 +93,10 @@ def test_sugiere_por_zona_precio_y_superficie_similares_y_agregarlo_lo_mueve_a_i
         _loguearse(page, base_url)
         _abrir_crm(page)
         page.locator(f'[data-testid="crm-tarjeta-{contacto_id}"]').click()
+        # Lotes sugeridos quedó en la pestaña "Lotes" (ver Parte B del
+        # timeline unificado + formulario en pestañas) — hace falta
+        # visibilidad real para el .click() de "+ Agregar" más abajo.
+        page.locator("#crm-tab-lotes").click()
 
         elLista = page.locator("#crm-lista-sugeridos")
         expect(elLista).to_contain_text(f"Lote MATCH-{marcador}")

@@ -80,6 +80,9 @@ def test_ir_al_lote_desde_el_crm_muestra_volver_y_regresa_al_contacto(page, base
         _loguearse(page, base_url)
         _abrir_crm(page)
         page.locator(f'[data-testid="crm-tarjeta-{contacto_id}"]').click()
+        # "Lotes de interés" quedó en la pestaña "Lotes" (ver Parte B del
+        # timeline unificado + formulario en pestañas).
+        page.locator("#crm-tab-lotes").click()
 
         page.locator("#crm-lista-lotes-interes .crm-chip-titulo").click()
         elVolver = page.locator("#ficha-volver-contacto")

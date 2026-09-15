@@ -100,6 +100,10 @@ def test_con_lote_de_interes_el_mini_mapa_muestra_el_poligono_y_lleva_a_la_ficha
         _loguearse(page, base_url)
         _abrir_crm(page)
         page.locator(f'[data-testid="crm-tarjeta-{contacto_id}"]').click()
+        # El mini-mapa quedó en la pestaña "Lotes" (ver Parte B del
+        # timeline unificado + formulario en pestañas) — "Datos" es la
+        # que se muestra por default al abrir un contacto.
+        page.locator("#crm-tab-lotes").click()
 
         elMiniMapa = page.locator("#crm-mini-mapa")
         expect(elMiniMapa).to_be_visible()
