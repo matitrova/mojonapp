@@ -49,7 +49,15 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-07" />
+<!-- Nunito Sans (pedido explícito del usuario: que la app se vea/sienta
+     como Tokko Broker) — con font-display:swap el texto arranca con la
+     fuente del sistema y cambia sola cuando termina de cargar, nunca
+     queda en blanco esperando; en conexión rural lenta, en el peor caso
+     se ve un instante con la fuente de siempre. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-09" />
 </head>
 <body>
 
@@ -156,7 +164,18 @@
     </div>
   </nav>
 
+  <!-- El mapa pasa a ser UNA sección más (pedido explícito del usuario:
+       "que el mapa no sea lo principal, sino una sección más del
+       sistema") — antes era el fondo permanente de toda la app, con
+       cada pantalla (Dashboard/CRM/Lista/etc.) tapándolo por encima.
+       #seccion-mapa se oculta/muestra igual que cualquier otro panel —
+       ver el MutationObserver sobre "nav-tab-mapa" en js/app.js, que
+       sigue el mismo estado que ya prende/apaga esa pestaña en
+       dashboard.js/crm.js/vista-lista.js sin tener que tocar esos 13
+       lugares uno por uno. -->
+  <div id="seccion-mapa">
   <div id="mapa"></div>
+  </div>
 
   <!-- Solo se muestra en la primera carga de la app (ver
        primeraCargaDeLotesHecha en app.js) — sin esto, mientras responde
@@ -1675,9 +1694,18 @@
     <button type="button" id="nav-tab-crm" class="nav-tab oculto" data-testid="nav-tab-crm">
       <span class="nav-tab-icono">👥</span><span class="nav-tab-texto">Contactos</span>
     </button>
+    <!-- Todo lo que antes solo vivía en el menú ☰ (Seguridad, Zonas y
+         barrios, Cargar lotes, Catastro, Favoritos, Dibujar área...) —
+         mismo criterio que el ícono de configuración/"Mi empresa" de
+         Tokko, que tampoco pone cada herramienta como ítem de primer
+         nivel. Abre el mismo #drawer-menu de siempre, sin tocar su
+         contenido ni su lógica — ver btn-nav-mas en js/app.js. -->
+    <button type="button" id="nav-tab-mas" class="nav-tab" data-testid="nav-tab-mas">
+      <span class="nav-tab-icono">⋯</span><span class="nav-tab-texto">Más</span>
+    </button>
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-15-07"></script>
+  <script type="module" src="js/app.js?v=2026-09-15-09"></script>
 </body>
 </html>

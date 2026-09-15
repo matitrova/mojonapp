@@ -244,6 +244,28 @@ document.getElementById("nav-tab-dashboard").addEventListener("click", () => {
 document.getElementById("nav-tab-crm").addEventListener("click", () => {
   irASeccion("crm", () => document.getElementById("btn-abrir-crm").click());
 });
+// "Más" (herramientas que antes solo vivían en el ☰): primero se asegura
+// de estar en la sección Mapa — exactamente el mismo supuesto de siempre
+// (el drawer se abre ENCIMA del mapa, cada botón de ahí asume que está
+// visible detrás) — y recién ahí abre el drawer de siempre, sin tocar su
+// contenido.
+document.getElementById("nav-tab-mas").addEventListener("click", () => {
+  irASeccion("mapa", volverAlMapa);
+  abrirDrawer();
+});
+
+// #seccion-mapa se sigue solo del estado de "nav-tab-mapa" en vez de
+// tocar cada uno de los ~13 lugares que ya prenden/apagan esa clase
+// "activo" (dashboard.js/crm.js/vista-lista.js/acá arriba) — más seguro
+// que perseguir cada call site a mano. El mapa arranca visible (sin
+// sesión, es el catálogo público de siempre); con sesión, pasa a
+// ocultarse/mostrarse como cualquier otra sección.
+const elNavTabMapa = document.getElementById("nav-tab-mapa");
+const elSeccionMapa = document.getElementById("seccion-mapa");
+function sincronizarSeccionMapa() {
+  elSeccionMapa.classList.toggle("oculto", !elNavTabMapa.classList.contains("activo"));
+}
+new MutationObserver(sincronizarSeccionMapa).observe(elNavTabMapa, { attributes: true, attributeFilter: ["class"] });
 
 // Wiring de los módulos que necesitan mapa/mostrarFicha/etc. — todos
 // estos valores ya están disponibles como imports acá arriba (mapa.js,
