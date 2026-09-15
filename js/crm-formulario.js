@@ -23,7 +23,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { getContactosActuales, getLotesActuales } from "./estado.js";
 import { registrarAuditoria } from "./auditoria.js";
-import { ETIQUETA_ACTIVIDAD, linkWhatsapp, lotesSugeridos, plantillasMensaje } from "./crm-metricas.js";
+import {
+  ETIQUETA_ACTIVIDAD,
+  TIPOS_ACTIVIDAD_AUTOMATICA,
+  actividadesAutomaticas,
+  linkWhatsapp,
+  lotesSugeridos,
+  plantillasMensaje
+} from "./crm-metricas.js";
 import {
   COLECCION_CONTACTOS,
   cargarContactos,
@@ -345,7 +352,7 @@ function renderActividades(contacto) {
   elListaActividades.innerHTML = "";
   actividades.forEach((actividad) => {
     const li = document.createElement("li");
-    li.className = "crm-actividad";
+    li.className = TIPOS_ACTIVIDAD_AUTOMATICA.includes(actividad.tipo) ? "crm-actividad crm-actividad-automatica" : "crm-actividad";
 
     const cabecera = document.createElement("div");
     cabecera.className = "crm-actividad-cabecera";
@@ -588,6 +595,12 @@ formulario.addEventListener("submit", async (evento) => {
   try {
     if (idEditando) {
       const contactoPrevio = getContactosActuales().find((c) => c.id === idEditando);
+      if (contactoPrevio) {
+        const nuevasAutomaticas = actividadesAutomaticas(contactoPrevio, datos, auth.currentUser?.email);
+        if (nuevasAutomaticas.length > 0) {
+          datos.actividades = [...(contactoPrevio.actividades || []), ...nuevasAutomaticas];
+        }
+      }
       await updateDoc(doc(db, COLECCION_CONTACTOS, idEditando), datos);
       const reasignado = datos.asignado_a && contactoPrevio && datos.asignado_a !== contactoPrevio.asignado_a;
       registrarAuditoria({
@@ -599,7 +612,11 @@ formulario.addEventListener("submit", async (evento) => {
           : null
       });
     } else {
-      datos.actividades = [];
+      // Primera entrada del timeline — mismo espíritu que el "NUEVO CONTACTO"
+      // que Tokko deja como primer evento de la línea de tiempo del contacto.
+      datos.actividades = [
+        { tipo: "contacto_creado", texto: "Contacto creado", fecha: datos.fecha_actualizacion, autor_email: auth.currentUser?.email }
+      ];
       if (!datos.asignado_a) datos.asignado_a = auth.currentUser.uid;
       datos.creado_por = auth.currentUser.uid;
       datos.fecha_creacion = datos.fecha_actualizacion;

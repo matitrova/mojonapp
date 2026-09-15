@@ -35,8 +35,43 @@ export const ETIQUETA_ACTIVIDAD = {
   llamada: "📞 Llamada",
   whatsapp: "💬 WhatsApp",
   visita: "🚗 Visita",
-  email: "✉️ Email"
+  email: "✉️ Email",
+  cambio_etapa: "🔄 Cambio de etapa",
+  lote_agregado: "📍 Lote agregado",
+  lote_quitado: "📍 Lote quitado",
+  contacto_creado: "✨ Contacto creado"
 };
+
+export const TIPOS_ACTIVIDAD_AUTOMATICA = ["cambio_etapa", "lote_agregado", "lote_quitado", "contacto_creado"];
+
+export function actividadesAutomaticas(contactoPrevio, datosNuevos, autorEmail) {
+  const actividades = [];
+  const fecha = new Date().toISOString();
+
+  if (contactoPrevio.estado !== datosNuevos.estado) {
+    const etapaAnterior = ETIQUETA_ETAPA[contactoPrevio.estado] || contactoPrevio.estado;
+    const etapaNueva = ETIQUETA_ETAPA[datosNuevos.estado] || datosNuevos.estado;
+    actividades.push({ tipo: "cambio_etapa", texto: `${etapaAnterior} → ${etapaNueva}`, fecha, autor_email: autorEmail });
+  }
+
+  const lotesPrevios = contactoPrevio.lotes_interes || [];
+  const lotesNuevos = datosNuevos.lotes_interes || [];
+  const idsPrevios = lotesPrevios.map((l) => l.id);
+  const idsNuevos = lotesNuevos.map((l) => l.id);
+
+  for (const lote of lotesNuevos) {
+    if (!idsPrevios.includes(lote.id)) {
+      actividades.push({ tipo: "lote_agregado", texto: lote.titulo || lote.id, fecha, autor_email: autorEmail });
+    }
+  }
+  for (const lote of lotesPrevios) {
+    if (!idsNuevos.includes(lote.id)) {
+      actividades.push({ tipo: "lote_quitado", texto: lote.titulo || lote.id, fecha, autor_email: autorEmail });
+    }
+  }
+
+  return actividades;
+}
 
 // Sin actualizarse en más de esta cantidad de días (y sin estar ya
 // cerrado/perdido), un contacto se marca "estancado" — mismo espíritu que

@@ -3506,6 +3506,17 @@ body.con-nav-secciones .hoja-inferior {
   white-space: pre-wrap;
 }
 
+.crm-actividad-automatica {
+  background: transparent;
+  border: 1px dashed var(--color-borde);
+}
+
+.crm-actividad-automatica .crm-actividad-tipo {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--color-texto-secundario);
+}
+
 #crm-agregar-actividad {
   display: flex;
   flex-direction: column;
