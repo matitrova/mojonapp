@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-04" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-05" />
 </head>
 <body>
 
@@ -856,6 +856,20 @@
     </div>
 
     <div id="dashboard-contenido">
+      <!-- "Ventas" (pedido explícito del usuario: "apenas inicie sesión
+           que tenga un dashboard con información importante para él y
+           que le sirva para mejorar sus ventas") — mismas 6 tarjetas
+           que "#crm-stats" en el panel CRM (ver htmlResumenVentas en
+           crm-metricas.js), primer bloque de todo el Dashboard: es lo
+           más importante, va antes que el inventario de lotes. Solo
+           con permiso "gestionar_contactos" (ver actualizarUIPorPermisos
+           en app.js) — un corredor sin ese permiso no gestiona el
+           pipeline, esta sección no le aporta nada. -->
+      <section id="dashboard-ventas-seccion" class="dashboard-seccion oculto">
+        <h3>Ventas</h3>
+        <div id="dashboard-ventas-stats" data-testid="dashboard-ventas-stats"></div>
+      </section>
+
       <section class="dashboard-seccion">
         <h3>Inventario</h3>
         <div id="dashboard-inventario" class="dashboard-tarjetas" data-testid="dashboard-inventario"></div>
@@ -906,6 +920,26 @@
            pantallas separadas. -->
       <details id="dashboard-metricas-detalle" class="dashboard-detalle">
         <summary>Ver métricas y estadísticas</summary>
+
+        <!-- "Ventas" (idea propia, pedido explícito: que el dashboard
+             ayude a vender más, no solo a llevar el inventario de
+             lotes) — embudo por etapa y motivos de pérdida más
+             frecuentes, dentro del <details> junto con el resto de
+             "para repasar de vez en cuando" (ver comentario de arriba).
+             Las 6 tarjetas rápidas SÍ van arriba de todo, sin
+             colapsar — ver #dashboard-ventas-seccion más arriba. Solo
+             con sesión + permiso "gestionar_contactos" (ver
+             actualizarUIPorPermisos en app.js). -->
+        <section id="dashboard-embudo-seccion" class="dashboard-seccion oculto">
+          <h3>Embudo por etapa</h3>
+          <div id="dashboard-embudo" class="dashboard-embudo" data-testid="dashboard-embudo"></div>
+        </section>
+
+        <section id="dashboard-motivos-perdida-seccion" class="dashboard-seccion oculto">
+          <h3>Motivos de pérdida más frecuentes</h3>
+          <ul id="dashboard-motivos-perdida" class="dashboard-lista" data-testid="dashboard-motivos-perdida"></ul>
+          <p id="dashboard-motivos-perdida-vacio" class="dashboard-vacio oculto">Todavía no hay contactos perdidos con motivo cargado.</p>
+        </section>
 
         <section class="dashboard-seccion">
           <h3>Más consultados</h3>
@@ -1507,6 +1541,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-14-04"></script>
+  <script type="module" src="js/app.js?v=2026-09-14-05"></script>
 </body>
 </html>

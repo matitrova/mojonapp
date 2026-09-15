@@ -2372,6 +2372,34 @@ button:active {
   border-radius: 999px;
 }
 
+/* "Embudo por etapa" (Dashboard → Ventas) — misma barra de
+   .dashboard-precio-bar-track/fill que "Resumen por zona", coloreada
+   por etapa (ver contactosPorEtapa/COLOR_ETAPA en crm-metricas.js). */
+.dashboard-embudo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-embudo-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-embudo-etiqueta {
+  flex: 0 0 90px;
+  font-size: 0.82rem;
+  color: var(--color-texto-secundario);
+}
+
+.dashboard-embudo-cantidad {
+  flex: 0 0 24px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--color-primario-oscuro);
+}
+
 /* Panel "Auditoría" — ver js/auditoria.js. Mismo lenguaje visual que las
    filas de dashboard-lista (tarjeta con sombra suave), pero sin ser
    clickeable — es un registro de solo lectura, no navega a ningún lado. */
@@ -2937,7 +2965,11 @@ button:active {
    buscador/filtro de vista, historial de actividad, WhatsApp directo.
    --------------------------------------------------------------------- */
 
-#crm-stats {
+/* #dashboard-ventas-stats (sección "Ventas" del Dashboard) reusa el
+   mismo layout — mismo template de tarjetas, ver htmlResumenVentas en
+   crm-metricas.js. */
+#crm-stats,
+#dashboard-ventas-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;

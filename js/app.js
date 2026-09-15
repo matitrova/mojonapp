@@ -318,6 +318,12 @@ function actualizarUIPorPermisos() {
   // botón "CRM" del drawer, para no mostrar un resumen que apunta a una
   // pantalla a la que ese corredor no puede entrar.
   document.getElementById("dashboard-seguimientos-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
+  // "Ventas" (pedido explícito: que el dashboard ayude a vender más, no
+  // solo a llevar el inventario de lotes) — mismo permiso que el resto
+  // de lo que depende del pipeline del CRM.
+  document.getElementById("dashboard-ventas-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
+  document.getElementById("dashboard-embudo-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
+  document.getElementById("dashboard-motivos-perdida-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
 }
 
 onAuthStateChanged(auth, async (usuario) => {
@@ -330,6 +336,24 @@ onAuthStateChanged(auth, async (usuario) => {
     document.getElementById("drawer-sesion-activa").classList.remove("oculto");
     elSesionEmail.textContent = usuario.email;
     actualizarUIPorPermisos();
+    // Aterrizaje real al iniciar sesión (pedido explícito: "apenas
+    // inicie sesión que tenga un dashboard con información importante
+    // para él"): el login manual YA abre el Dashboard (ver
+    // formularioLogin más arriba), pero Firebase Auth persiste la
+    // sesión por default — si el corredor simplemente reabre la app
+    // (sin volver a pasar por el formulario), este onAuthStateChanged
+    // es el único lugar donde se resuelve que ya está logueado. No
+    // pisa un deep link deliberado (`?lote=`, `?vista=lista`, ver
+    // abrirLoteDesdeUrlSiCorresponde/aplicarFiltrosDesdeUrlSiCorresponde)
+    // ni el modo embed (mismo criterio que ficha.js con modo-embed), y
+    // no hace nada si el Dashboard ya está abierto (login manual).
+    if (
+      location.search === "" &&
+      !document.documentElement.classList.contains("modo-embed") &&
+      document.getElementById("panel-dashboard").classList.contains("oculto")
+    ) {
+      abrirPanelDashboard();
+    }
     // El catálogo de zonas/barrios necesita sesión para leerse (ver
     // firestore.rules), así que se carga acá y no al arrancar la app.
     await cargarSectores();

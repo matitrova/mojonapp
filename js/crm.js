@@ -46,7 +46,8 @@ import {
   calificacionContacto,
   valorPotencialContacto,
   formatoUsdCompacto,
-  calcularMetricas
+  calcularMetricas,
+  htmlResumenVentas
 } from "./crm-metricas.js";
 // tests/test_crm_round_robin.py importa elegirMenosCargado de crm.js (no
 // se movió ese test, solo la función) — reexportada para no romperlo.
@@ -439,15 +440,11 @@ function renderKanban() {
 }
 
 function renderStats() {
-  const m = calcularMetricas(getContactosActuales());
-  elStats.innerHTML = `
-    <div class="crm-stat"><strong>${m.total}</strong><span>Contactos</span></div>
-    <div class="crm-stat"><strong>${m.nuevosEstaSemana}</strong><span>Nuevos (7 días)</span></div>
-    <div class="crm-stat"><strong>${m.tasaConversion == null ? "—" : `${m.tasaConversion}%`}</strong><span>Conversión a cerrado</span></div>
-    <div class="crm-stat crm-stat-urgente"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span></div>
-    <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span></div>
-    <div class="crm-stat crm-stat-valor"><strong>${formatoUsdCompacto(m.valorPipelineActivo) || "—"}</strong><span>Valor en pipeline</span></div>
-  `;
+  // Mismo template que "Ventas" en el Dashboard (ver renderVentas en
+  // dashboard.js) — htmlResumenVentas vive en crm-metricas.js para que
+  // los dos lados muestren exactamente el mismo número, sin mantener
+  // dos copias del mismo markup.
+  elStats.innerHTML = htmlResumenVentas(calcularMetricas(getContactosActuales()));
 }
 
 // "Automatización configurable" (idea propia — Tokko recién ofrece esto

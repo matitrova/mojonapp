@@ -63,11 +63,13 @@ def test_marcar_un_portal_persiste_al_recargar(page, base_url):
         # el mensaje "Guardado." antes de recargar, porque el updateDoc
         # es asíncrono y un reload inmediato podría ganarle de mano.
         expect(page.locator("#portales-mensaje")).to_contain_text("Guardado")
-        # A diferencia del login (que abre el Dashboard automático), un
-        # reload con la sesión ya persistida (Firebase Auth) no lo vuelve
-        # a abrir solo — nada que cerrar acá.
+        # Un reload con la sesión ya persistida (Firebase Auth) vuelve a
+        # abrir el Dashboard solo, igual que el login manual (ver
+        # onAuthStateChanged en app.js) — hay que cerrarlo antes de
+        # poder llegar a la ficha por el drawer.
         page.reload()
         expect(page.locator("#sesion-activa")).to_be_visible()
+        page.locator("#cerrar-panel-dashboard").click()
         _abrir_ficha_desde_lista(page, doc_id)
 
         expect(page.locator("#portal-zonaprop")).to_be_checked()

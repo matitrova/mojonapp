@@ -205,6 +205,56 @@ export function calcularMetricas(contactos) {
   return { total, nuevosEstaSemana, tasaConversion, estancados, sinAtender, valorPipelineActivo };
 }
 
+// Template de las 6 tarjetas de métricas — usado tanto por "#crm-stats"
+// (panel CRM, ver renderStats en crm.js) como por "Ventas" en el
+// Dashboard (ver renderVentas en dashboard.js): mismo número, mismo
+// lugar de un solo lado, ya no dos templates iguales mantenidos a mano
+// por separado.
+export function htmlResumenVentas(m) {
+  return `
+    <div class="crm-stat"><strong>${m.total}</strong><span>Contactos</span></div>
+    <div class="crm-stat"><strong>${m.nuevosEstaSemana}</strong><span>Nuevos (7 días)</span></div>
+    <div class="crm-stat"><strong>${m.tasaConversion == null ? "—" : `${m.tasaConversion}%`}</strong><span>Conversión a cerrado</span></div>
+    <div class="crm-stat crm-stat-urgente"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span></div>
+    <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span></div>
+    <div class="crm-stat crm-stat-valor"><strong>${formatoUsdCompacto(m.valorPipelineActivo) || "—"}</strong><span>Valor en pipeline</span></div>
+  `;
+}
+
+// Embudo por etapa (idea propia — dónde se atascan los leads, no solo
+// cuántos hay en total): mismo orden/color que las columnas del kanban
+// (ETAPAS/COLOR_ETAPA de arriba), expuesto como dato reusable en vez de
+// quedar calculado inline dentro de renderKanban().
+export function contactosPorEtapa(contactos) {
+  return ETAPAS.map(({ clave, etiqueta, color }) => ({
+    clave,
+    etiqueta,
+    color,
+    cantidad: contactos.filter((c) => c.estado === clave).length
+  }));
+}
+
+// Motivos de pérdida más frecuentes (idea propia — el dato de
+// "motivo_perdido" ya se captura al marcar un contacto como Perdido,
+// pero hasta ahora no se resumía en ningún lado; saber que "el 40% de
+// lo que se pierde es por precio" es justo el tipo de información que
+// ayuda a vender más, sin necesitar ningún dato nuevo). Texto libre, se
+// agrupa por coincidencia exacta (trim, sin fuzzy) — igual que las
+// etiquetas libres del CRM.
+export function motivosPerdidaFrecuentes(contactos, limite = 3) {
+  const conteos = new Map();
+  contactos
+    .filter((c) => c.estado === "perdido" && c.motivo_perdido && c.motivo_perdido.trim())
+    .forEach((c) => {
+      const motivo = c.motivo_perdido.trim();
+      conteos.set(motivo, (conteos.get(motivo) || 0) + 1);
+    });
+  return [...conteos.entries()]
+    .map(([motivo, cantidad]) => ({ motivo, cantidad }))
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .slice(0, limite);
+}
+
 // ---------------------------------------------------------------------------
 // Matching lote↔interesado por reglas simples (idea propia, investigada
 // en varios CRM inmobiliarios antes de armarla: todos plantean esto con

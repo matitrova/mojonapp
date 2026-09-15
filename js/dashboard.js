@@ -19,6 +19,12 @@ import { centroideDePoligono } from "./geometria.js";
 // contacto tocado. Sin dependencia circular: crm.js no importa nada de
 // acá.
 import { cargarContactos, contactosParaSeguimiento, abrirContactoEnCrm } from "./crm.js";
+// "Ventas" (pedido explícito: que el dashboard sea información que
+// ayude a vender más, no solo inventario de lotes) — reusa las mismas
+// métricas/template que ya se ven en "#crm-stats" del panel CRM, sin
+// dependencia circular: crm-metricas.js es lógica pura, no importa nada
+// de este archivo.
+import { calcularMetricas, contactosPorEtapa, motivosPerdidaFrecuentes, htmlResumenVentas } from "./crm-metricas.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -80,7 +86,10 @@ export function abrirPanelDashboard() {
   // mismo criterio que el refresco de renderDashboard() al terminar
   // cargarLotesDesdeFirestore() en app.js.
   cargarContactos().then(() => {
-    if (!elPanelDashboard.classList.contains("oculto")) renderSeguimientosCrm();
+    if (!elPanelDashboard.classList.contains("oculto")) {
+      renderSeguimientosCrm();
+      renderVentas();
+    }
   });
 }
 
@@ -292,11 +301,74 @@ function renderSeguimientosCrm() {
   actualizarContador("dashboard-seguimientos-contador", pendientes.length);
 }
 
+// "Ventas" (pedido explícito del usuario: que el dashboard sea
+// información que ayude a vender más, no solo inventario de lotes) —
+// mismas 6 tarjetas que "#crm-stats" en el panel CRM (mismo template,
+// ver htmlResumenVentas en crm-metricas.js), más embudo por etapa y
+// motivos de pérdida más frecuentes (estos dos, dentro del <details>
+// colapsado junto con "Más consultados"/"Con más interesados"/"Resumen
+// por zona" — mismo criterio ya usado ahí: es para repasar de vez en
+// cuando, no una alerta urgente que tenga que verse apenas se abre el
+// panel).
+function renderVentas() {
+  const contactos = getContactosActuales();
+  document.getElementById("dashboard-ventas-stats").innerHTML = htmlResumenVentas(calcularMetricas(contactos));
+
+  const elEmbudo = document.getElementById("dashboard-embudo");
+  elEmbudo.innerHTML = "";
+  const etapas = contactosPorEtapa(contactos);
+  const maxCantidad = Math.max(1, ...etapas.map((e) => e.cantidad));
+  etapas.forEach(({ etiqueta, color, cantidad }) => {
+    const fila = document.createElement("div");
+    fila.className = "dashboard-embudo-fila";
+
+    const elEtiqueta = document.createElement("span");
+    elEtiqueta.className = "dashboard-embudo-etiqueta";
+    elEtiqueta.textContent = etiqueta;
+    fila.appendChild(elEtiqueta);
+
+    const track = document.createElement("div");
+    track.className = "dashboard-precio-bar-track";
+    const fill = document.createElement("div");
+    fill.className = "dashboard-precio-bar-fill";
+    fill.style.width = `${(cantidad / maxCantidad) * 100}%`;
+    fill.style.background = color;
+    track.appendChild(fill);
+    fila.appendChild(track);
+
+    const elCantidad = document.createElement("span");
+    elCantidad.className = "dashboard-embudo-cantidad";
+    elCantidad.textContent = cantidad;
+    fila.appendChild(elCantidad);
+
+    elEmbudo.appendChild(fila);
+  });
+
+  // motivo_perdido es texto libre que escribe el corredor — textContent,
+  // no innerHTML, mismo criterio que el nombre del contacto más arriba.
+  const elMotivos = document.getElementById("dashboard-motivos-perdida");
+  elMotivos.innerHTML = "";
+  const motivos = motivosPerdidaFrecuentes(contactos);
+  motivos.forEach(({ motivo, cantidad }) => {
+    const li = document.createElement("li");
+    const texto = document.createElement("span");
+    texto.textContent = motivo;
+    li.appendChild(texto);
+    const badge = document.createElement("span");
+    badge.className = "dashboard-badge";
+    badge.textContent = cantidad;
+    li.appendChild(badge);
+    elMotivos.appendChild(li);
+  });
+  document.getElementById("dashboard-motivos-perdida-vacio").classList.toggle("oculto", motivos.length > 0);
+}
+
 export function renderDashboard() {
   const m = calcularMetricasDashboard();
   const total = getLotesActuales().length;
 
   renderSeguimientosCrm();
+  renderVentas();
 
   const elInventario = document.getElementById("dashboard-inventario");
   elInventario.innerHTML = `

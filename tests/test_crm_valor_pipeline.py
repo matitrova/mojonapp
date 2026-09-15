@@ -56,7 +56,7 @@ def test_valor_pipeline_suma_precio_de_lotes_de_interes_activos(page, base_url):
     # la cartera".
     _loguearse(page, base_url)
     _abrir_crm(page)
-    valor_antes = _valor_a_numero(page.locator(".crm-stat-valor strong").inner_text())
+    valor_antes = _valor_a_numero(page.locator("#crm-stats .crm-stat-valor strong").inner_text())
     columna_contactado = page.locator('[data-testid="crm-columna-valor-contactado"]')
     valor_columna_antes = _valor_a_numero(columna_contactado.inner_text()) if columna_contactado.count() else 0
 
@@ -108,10 +108,15 @@ def test_valor_pipeline_suma_precio_de_lotes_de_interes_activos(page, base_url):
     try:
         page.reload()
         expect(page.locator("#sesion-activa")).to_be_visible()
+        # Un reload con la sesión ya persistida (Firebase Auth) vuelve a
+        # abrir el Dashboard solo, igual que el login manual (ver
+        # onAuthStateChanged en app.js) — hay que cerrarlo antes de
+        # poder llegar al CRM por el drawer.
+        page.locator("#cerrar-panel-dashboard").click()
         _abrir_crm(page)
 
-        expect(page.locator(".crm-stat-valor strong")).to_be_visible()
-        valor_despues = _valor_a_numero(page.locator(".crm-stat-valor strong").inner_text())
+        expect(page.locator("#crm-stats .crm-stat-valor strong")).to_be_visible()
+        valor_despues = _valor_a_numero(page.locator("#crm-stats .crm-stat-valor strong").inner_text())
         assert valor_despues - valor_antes == 40000
 
         columna_contactado = page.locator('[data-testid="crm-columna-valor-contactado"]')
