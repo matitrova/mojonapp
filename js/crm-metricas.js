@@ -283,6 +283,24 @@ export function demandaPorZona(contactos) {
   return porZona;
 }
 
+// Interés de pipeline por lote (idea propia #5 de "el mapa como una
+// cualidad del CRM" — resaltar el mapa por pipeline activo, ver
+// activarInteresCrm en js/mapa.js): cuántos contactos ACTIVOS (ni
+// cerrado ni perdido) tienen ESE lote puntual como lote de interés.
+// Mismo criterio de "activo" que demandaPorZona/calcularMetricas, pero
+// por lote en vez de por zona. Devuelve { [loteId]: cantidad }.
+export function interesPorLote(contactos) {
+  const porLote = {};
+  contactos
+    .filter((c) => c.estado !== "cerrado" && c.estado !== "perdido")
+    .forEach((c) => {
+      (c.lotes_interes || []).forEach((li) => {
+        porLote[li.id] = (porLote[li.id] || 0) + 1;
+      });
+    });
+  return porLote;
+}
+
 // Ruta de visitas de hoy (idea propia #4 de "el mapa como una cualidad
 // del CRM" — literalmente "pineadas", ver renderVisitasDeHoy en
 // dashboard.js): contactos en etapa "Visita" con el seguimiento

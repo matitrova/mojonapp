@@ -33,10 +33,15 @@ import {
   normalizarParcelaBuenosAires,
   primerAnilloDeGeometria
 } from "./catastro-normalizacion.js";
-import { getMiPerfil, setLotesActuales, getModoCaptura, onSesionCerrada } from "./estado.js";
+import { getMiPerfil, getLotesActuales, getContactosActuales, setLotesActuales, getModoCaptura, onSesionCerrada } from "./estado.js";
 import { esRootActual, tienePermiso } from "./permisos.js";
 import { actualizarVistaLista } from "./vista-lista.js";
 import { bboxDelMapaVisible, cargarParcelaEnFormLote } from "./cargar-lote.js";
+// "Interés del CRM" (idea propia #5, ver más abajo) — crm-datos.js y
+// crm-metricas.js no dependen de este módulo (ni de ficha.js/crm.js),
+// así que importarlos acá de una sola dirección no crea ningún ciclo.
+import { cargarContactos } from "./crm-datos.js";
+import { interesPorLote } from "./crm-metricas.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -612,6 +617,65 @@ elBtnVerCatastroCercano.addEventListener("click", () => {
 elBtnFlotanteCatastro.addEventListener("click", desactivarCatastroCercano);
 
 onSesionCerrada(desactivarCatastroCercano);
+
+// ---------------------------------------------------------------------------
+// "Interés del CRM" en el mapa (idea propia #5 de "el mapa como una
+// cualidad del CRM"): resalta, no filtra — los lotes sin interés se ven
+// exactamente igual que siempre, no se pierde nada de vista. Un pin
+// chico con la cantidad de contactos ACTIVOS interesados (interesPorLote
+// en crm-metricas.js) sobre cada lote que corresponda; tocarlo abre la
+// ficha real, igual que tocar el polígono. Mismo patrón que "Ver
+// catastro cercano": botón del drawer + botón flotante para apagarlo
+// rápido, apagado solo al cerrar sesión.
+// ---------------------------------------------------------------------------
+
+const elBtnVerInteresCrm = document.getElementById("btn-ver-interes-crm");
+const elBtnFlotanteInteresCrm = document.getElementById("btn-flotante-interes-crm");
+let interesCrmActivo = false;
+let capaInteresCrm = null;
+
+async function activarInteresCrm() {
+  await cargarContactos();
+  const interes = interesPorLote(getContactosActuales());
+  const marcadores = getLotesActuales()
+    .filter((f) => interes[f.id] > 0)
+    .map((f) => {
+      const { lat, lon } = centroideDePoligono(f.geometry.coordinates[0]);
+      const cantidad = interes[f.id];
+      const marcador = L.marker([lat, lon], {
+        icon: L.divIcon({ className: "marcador-interes-crm", html: `<span>${cantidad}</span>`, iconSize: [22, 22] })
+      });
+      marcador.on("click", () => mostrarFicha(f));
+      return marcador;
+    });
+  if (capaInteresCrm) mapa.removeLayer(capaInteresCrm);
+  capaInteresCrm = L.layerGroup(marcadores).addTo(mapa);
+}
+
+function desactivarInteresCrm() {
+  interesCrmActivo = false;
+  elBtnVerInteresCrm.classList.remove("activo");
+  elBtnFlotanteInteresCrm.classList.add("oculto");
+  if (capaInteresCrm) {
+    mapa.removeLayer(capaInteresCrm);
+    capaInteresCrm = null;
+  }
+}
+
+elBtnVerInteresCrm.addEventListener("click", async () => {
+  interesCrmActivo = !interesCrmActivo;
+  elBtnVerInteresCrm.classList.toggle("activo", interesCrmActivo);
+  if (interesCrmActivo) {
+    elBtnFlotanteInteresCrm.classList.remove("oculto");
+    await activarInteresCrm();
+  } else {
+    desactivarInteresCrm();
+  }
+});
+
+elBtnFlotanteInteresCrm.addEventListener("click", desactivarInteresCrm);
+
+onSesionCerrada(desactivarInteresCrm);
 
 // Debounce: paneando/haciendo zoom rápido, "moveend" puede disparar
 // varias veces seguidas — sin esto, cada una lanzaba su propio par de

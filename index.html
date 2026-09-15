@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-01" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-02" />
 </head>
 <body>
 
@@ -91,6 +91,14 @@
            (o root), mismo criterio que btn-abrir-auditoria — ver
            actualizarUIPorPermisos() en app.js. -->
       <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm">CRM</button>
+      <!-- "Interés del CRM" (idea propia #5 de "el mapa como una
+           cualidad del CRM" — resaltar, no filtrar: los lotes sin
+           interés se ven exactamente igual que siempre, no se pierde
+           nada de vista). Un pin chico con la cantidad de contactos
+           activos interesados sobre cada lote que corresponda, ver
+           activarInteresCrm en js/mapa.js. Mismo permiso/criterio de
+           oculto que btn-abrir-crm. -->
+      <button type="button" class="drawer-item oculto" id="btn-ver-interes-crm" data-testid="btn-ver-interes-crm">📌 Interés del CRM en el mapa</button>
 
       <div class="drawer-grupo">
         <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-cargar-lotes">
@@ -184,6 +192,10 @@
   <!-- Apagar "Ver catastro cercano" sin tener que abrir el menú de nuevo
        (mismo lugar donde se prendió) — solo visible mientras está activo. -->
   <button id="btn-flotante-catastro" class="oculto" data-testid="btn-flotante-catastro">✕ Ocultar catastro</button>
+
+  <!-- Mismo criterio que btn-flotante-catastro: apagar "Interés del CRM"
+       sin volver a abrir el drawer. -->
+  <button id="btn-flotante-interes-crm" class="oculto" data-testid="btn-flotante-interes-crm">✕ Ocultar interés del CRM</button>
 
   <div id="leyenda-legal">
     Las ubicaciones son orientativas y no reemplazan una mensura profesional.
@@ -1604,6 +1616,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-15-01"></script>
+  <script type="module" src="js/app.js?v=2026-09-15-02"></script>
 </body>
 </html>

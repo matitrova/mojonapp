@@ -274,6 +274,63 @@ button:active {
   background: var(--color-primario-oscuro);
 }
 
+/* "Ver catastro cercano" es una herramienta pública (sin sesión
+   también) — con la barra de secciones (solo con sesión, ver
+   con-nav-secciones en app.js) encima del mapa, este botón quedaba
+   tapado detrás sin este ajuste (bug real encontrado de paso armando
+   "Interés del CRM", ver btn-flotante-interes-crm más abajo). */
+body.con-nav-secciones #btn-flotante-catastro {
+  bottom: 130px;
+}
+
+/* Mismo criterio que #btn-flotante-catastro, apilado arriba por si los
+   dos toggles están activos a la vez. */
+#btn-flotante-interes-crm {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Este toggle requiere sesión siempre (gestionar_contactos), así que
+     la barra de secciones (ver con-nav-secciones en app.js) está
+     garantizado que ya está mostrándose — a diferencia de
+     #btn-flotante-catastro, no hace falta la variante condicional.
+     184px en vez de 130px: apilado arriba del de catastro por si los
+     dos toggles están activos a la vez. */
+  bottom: 184px;
+  z-index: 1100;
+  background: var(--color-acento);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--sombra-calida);
+}
+
+#btn-flotante-interes-crm:hover {
+  background: var(--color-primario-oscuro);
+}
+
+/* Pin chico de "Interés del CRM" sobre el mapa (ver activarInteresCrm en
+   js/mapa.js) — círculo lleno en el acento con la cantidad de
+   contactos activos interesados, mismo lenguaje que el resto de badges
+   numéricos de la app. */
+.marcador-interes-crm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-acento);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 2px solid #fff;
+  box-shadow: var(--sombra-calida-suave);
+}
+
 /* Barra flotante del editor de forma del lote — ver iniciarEdicionPoligono
    en app.js. Arriba del mapa (no abajo, para no tapar el dedo/mouse
    mientras se arrastra una esquina cerca del borde inferior). */
