@@ -59,6 +59,12 @@ const elBtnEnviarPlantilla = document.getElementById("crm-btn-enviar-plantilla")
 const elAvisoDuplicado = document.getElementById("crm-aviso-duplicado");
 const elAvisoDuplicadoTexto = document.getElementById("crm-aviso-duplicado-texto");
 const elBtnAbrirDuplicado = document.getElementById("btn-abrir-duplicado");
+const elTabDatos = document.getElementById("crm-tab-datos");
+const elTabLotes = document.getElementById("crm-tab-lotes");
+const elTabActividad = document.getElementById("crm-tab-actividad");
+const elPanelDatos = document.getElementById("crm-panel-datos");
+const elPanelLotes = document.getElementById("crm-panel-lotes");
+const elPanelActividad = document.getElementById("crm-panel-actividad");
 const elEmail = document.getElementById("contacto-email");
 const elEstado = document.getElementById("contacto-estado");
 const elCampoMotivoPerdido = document.getElementById("crm-campo-motivo-perdido");
@@ -109,6 +115,42 @@ let etiquetasEnEdicion = [];
 function contactoOrigenActual() {
   return elIdEditando.value ? { id: elIdEditando.value, nombre: elNombre.value } : null;
 }
+
+// ---------------------------------------------------------------------------
+// Pestañas Datos/Lotes/Actividad (mismo patrón .tabs-admin/.tab-admin que
+// Usuarios/Perfiles en js/admin.js — ver mostrarTabUsuarios/mostrarTabPerfiles).
+// ---------------------------------------------------------------------------
+
+function mostrarTabDatos() {
+  elTabDatos.classList.add("activo");
+  elTabLotes.classList.remove("activo");
+  elTabActividad.classList.remove("activo");
+  elPanelDatos.classList.remove("oculto");
+  elPanelLotes.classList.add("oculto");
+  elPanelActividad.classList.add("oculto");
+}
+
+function mostrarTabLotes() {
+  elTabLotes.classList.add("activo");
+  elTabDatos.classList.remove("activo");
+  elTabActividad.classList.remove("activo");
+  elPanelLotes.classList.remove("oculto");
+  elPanelDatos.classList.add("oculto");
+  elPanelActividad.classList.add("oculto");
+}
+
+function mostrarTabActividad() {
+  elTabActividad.classList.add("activo");
+  elTabDatos.classList.remove("activo");
+  elTabLotes.classList.remove("activo");
+  elPanelActividad.classList.remove("oculto");
+  elPanelDatos.classList.add("oculto");
+  elPanelLotes.classList.add("oculto");
+}
+
+elTabDatos.addEventListener("click", mostrarTabDatos);
+elTabLotes.addEventListener("click", mostrarTabLotes);
+elTabActividad.addEventListener("click", mostrarTabActividad);
 
 // ---------------------------------------------------------------------------
 // Lotes de interés.
@@ -516,6 +558,7 @@ elBtnAbrirDuplicado.addEventListener("click", () => {
 // el contacto en vez de forzar siempre "Nuevo".
 export function mostrarForm(contacto, estadoInicial) {
   formulario.reset();
+  mostrarTabDatos(); // no queda en la pestaña que tenía seleccionada el contacto anterior
   elNotaFijada.value = contacto ? contacto.nota_fijada || "" : "";
   elError.classList.add("oculto");
   elAvisoDuplicado.classList.add("oculto"); // se vuelve a evaluar recién cuando se tipea algo

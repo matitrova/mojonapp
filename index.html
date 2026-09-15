@@ -1221,6 +1221,36 @@
           Nombre
           <input type="text" id="contacto-nombre" required data-testid="contacto-nombre" />
         </label>
+
+        <!-- Aviso de posible duplicado (idea propia — complementa
+             "Fusionar con otro contacto…": mejor avisar ANTES de crear
+             dos veces a la misma persona que limpiarlo después). Solo
+             al dar de alta (no editando uno existente, ver
+             actualizarAvisoDuplicado en crm.js) — compara nombre y
+             teléfono contra lo ya cargado, en el cliente, sin pegarle a
+             Firestore de nuevo por cada letra tipeada. Siempre visible
+             (fuera de las pestañas), no depende de en qué pestaña esté
+             el corredor. -->
+        <div id="crm-aviso-duplicado" class="oculto" data-testid="crm-aviso-duplicado">
+          <p id="crm-aviso-duplicado-texto" data-testid="crm-aviso-duplicado-texto"></p>
+          <button type="button" id="btn-abrir-duplicado" class="btn-link" data-testid="btn-abrir-duplicado">
+            Abrir ese contacto en vez de crear uno nuevo
+          </button>
+        </div>
+
+        <!-- Formulario en pestañas (copiado del criterio de Tokko Broker
+             y del patrón .tabs-admin/.tab-admin ya usado en Usuarios/
+             Perfiles, js/admin.js) — separa datos de contacto, lotes de
+             interés y el timeline de actividad, que juntos ya no entraban
+             en un solo scroll cómodo. Ningún id de campo existente cambió,
+             solo quedaron agrupados. -->
+        <div class="tabs-admin">
+          <button type="button" id="crm-tab-datos" class="tab-admin activo" data-testid="crm-tab-datos">Datos</button>
+          <button type="button" id="crm-tab-lotes" class="tab-admin" data-testid="crm-tab-lotes">Lotes</button>
+          <button type="button" id="crm-tab-actividad" class="tab-admin" data-testid="crm-tab-actividad">Actividad</button>
+        </div>
+
+        <div id="crm-panel-datos" data-testid="crm-panel-datos">
         <label class="crm-campo">
           Teléfono
           <div class="crm-campo-con-boton">
@@ -1242,20 +1272,6 @@
         <div id="crm-plantillas-whatsapp" class="oculto crm-agregar-lote" data-testid="crm-plantillas-whatsapp">
           <select id="crm-select-plantilla" data-testid="crm-select-plantilla"></select>
           <a id="crm-btn-enviar-plantilla" class="btn-secundario crm-btn-chico" target="_blank" rel="noopener" data-testid="crm-btn-enviar-plantilla">💬 Enviar</a>
-        </div>
-
-        <!-- Aviso de posible duplicado (idea propia — complementa
-             "Fusionar con otro contacto…": mejor avisar ANTES de crear
-             dos veces a la misma persona que limpiarlo después). Solo
-             al dar de alta (no editando uno existente, ver
-             actualizarAvisoDuplicado en crm.js) — compara nombre y
-             teléfono contra lo ya cargado, en el cliente, sin pegarle a
-             Firestore de nuevo por cada letra tipeada. -->
-        <div id="crm-aviso-duplicado" class="oculto" data-testid="crm-aviso-duplicado">
-          <p id="crm-aviso-duplicado-texto" data-testid="crm-aviso-duplicado-texto"></p>
-          <button type="button" id="btn-abrir-duplicado" class="btn-link" data-testid="btn-abrir-duplicado">
-            Abrir ese contacto en vez de crear uno nuevo
-          </button>
         </div>
 
         <label class="crm-campo">
@@ -1295,7 +1311,9 @@
           Próximo seguimiento
           <input type="date" id="contacto-seguimiento" data-testid="contacto-seguimiento" />
         </label>
+        </div><!-- /crm-panel-datos -->
 
+        <div id="crm-panel-lotes" class="oculto" data-testid="crm-panel-lotes">
         <div id="crm-lotes-interes" data-testid="crm-lotes-interes">
           <p class="crm-subtitulo">Lotes de interés</p>
           <ul id="crm-lista-lotes-interes" data-testid="crm-lista-lotes-interes"></ul>
@@ -1329,7 +1347,9 @@
           <p class="ficha-calculadora-nota">Según los lotes de interés ya cargados — no usa ningún servicio externo.</p>
           <ul id="crm-lista-sugeridos" data-testid="crm-lista-sugeridos"></ul>
         </div>
+        </div><!-- /crm-panel-lotes -->
 
+        <div id="crm-panel-actividad" class="oculto" data-testid="crm-panel-actividad">
         <!-- Etiquetas libres (idea propia — "financiamiento", "urgente",
              "referido", lo que haga falta): a diferencia de "lotes de
              interés" no salen de un catálogo fijo, se escriben a mano.
@@ -1376,6 +1396,7 @@
           </div>
           <p id="crm-actividad-primero-guardar" class="dashboard-vacio" data-testid="crm-actividad-primero-guardar">Guardá el contacto primero para poder registrar actividad.</p>
         </div>
+        </div><!-- /crm-panel-actividad -->
 
         <div class="crm-form-botones">
           <button type="submit" id="contacto-guardar-btn" class="crm-btn-primario" data-testid="contacto-guardar">Guardar</button>
