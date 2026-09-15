@@ -23,7 +23,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { getContactosActuales, getLotesActuales } from "./estado.js";
 import { registrarAuditoria } from "./auditoria.js";
-import { ETIQUETA_ACTIVIDAD, linkWhatsapp, lotesSugeridos } from "./crm-metricas.js";
+import { ETIQUETA_ACTIVIDAD, linkWhatsapp, lotesSugeridos, plantillasMensaje } from "./crm-metricas.js";
 import {
   COLECCION_CONTACTOS,
   cargarContactos,
@@ -45,6 +45,9 @@ const elIdEditando = document.getElementById("contacto-id-editando");
 const elNombre = document.getElementById("contacto-nombre");
 const elTelefono = document.getElementById("contacto-telefono");
 const elWhatsapp = document.getElementById("contacto-whatsapp");
+const elPlantillasWhatsapp = document.getElementById("crm-plantillas-whatsapp");
+const elSelectPlantilla = document.getElementById("crm-select-plantilla");
+const elBtnEnviarPlantilla = document.getElementById("crm-btn-enviar-plantilla");
 const elAvisoDuplicado = document.getElementById("crm-aviso-duplicado");
 const elAvisoDuplicadoTexto = document.getElementById("crm-aviso-duplicado-texto");
 const elBtnAbrirDuplicado = document.getElementById("btn-abrir-duplicado");
@@ -126,6 +129,7 @@ function renderListaLotesInteres() {
       renderListaLotesInteres();
       renderLotesSugeridos();
       renderMiniMapa();
+      actualizarPlantillasWhatsapp();
     });
     li.appendChild(botonQuitar);
 
@@ -226,6 +230,7 @@ function renderLotesSugeridos() {
       renderListaLotesInteres();
       renderLotesSugeridos();
       renderMiniMapa();
+      actualizarPlantillasWhatsapp();
     });
     li.appendChild(botonAgregar);
 
@@ -265,6 +270,7 @@ elBtnAgregarLoteInteres.addEventListener("click", () => {
   renderListaLotesInteres();
   renderLotesSugeridos();
   renderMiniMapa();
+  actualizarPlantillasWhatsapp();
 });
 
 // ---------------------------------------------------------------------------
@@ -413,13 +419,46 @@ function actualizarBotonWhatsapp() {
   const link = linkWhatsapp(elTelefono.value);
   elWhatsapp.classList.toggle("oculto", !link);
   if (link) elWhatsapp.href = link;
+  actualizarPlantillasWhatsapp();
 }
 elTelefono.addEventListener("input", actualizarBotonWhatsapp);
+
+// Plantillas de WhatsApp con datos precargados (idea propia — versión
+// gratis de los "envíos automáticos" de Tokko Broker: wa.me ya soporta
+// precargar el texto con ?text=, sin API de WhatsApp Business). Se
+// recalculan con lo que hay en el FORMULARIO en este momento (no un
+// contacto ya guardado) para que sigan el borrador mientras se completa
+// el alta — mismo criterio que "Lotes sugeridos".
+let plantillasActuales = [];
+
+function actualizarLinkPlantilla() {
+  const plantilla = plantillasActuales.find((p) => p.id === elSelectPlantilla.value);
+  if (plantilla) elBtnEnviarPlantilla.href = linkWhatsapp(elTelefono.value, plantilla.texto);
+}
+elSelectPlantilla.addEventListener("change", actualizarLinkPlantilla);
+
+function actualizarPlantillasWhatsapp() {
+  const hayWhatsapp = !elWhatsapp.classList.contains("oculto");
+  elPlantillasWhatsapp.classList.toggle("oculto", !hayWhatsapp);
+  if (!hayWhatsapp) return;
+  plantillasActuales = plantillasMensaje({
+    nombre: elNombre.value,
+    lotesInteres: lotesInteresEnEdicion,
+    estado: elEstado.value,
+    proximoSeguimiento: elSeguimientoInput.value
+  });
+  elSelectPlantilla.innerHTML = plantillasActuales.map((p) => `<option value="${p.id}">${p.etiqueta}</option>`).join("");
+  actualizarLinkPlantilla();
+}
 
 function actualizarVisibilidadMotivoPerdido() {
   elCampoMotivoPerdido.classList.toggle("oculto", elEstado.value !== "perdido");
 }
 elEstado.addEventListener("change", actualizarVisibilidadMotivoPerdido);
+// "Recordatorio de visita" (plantillasMensaje) depende de la etapa y de
+// la fecha agendada — se recalculan si cualquiera de las dos cambia.
+elEstado.addEventListener("change", actualizarPlantillasWhatsapp);
+elSeguimientoInput.addEventListener("change", actualizarPlantillasWhatsapp);
 
 // Aviso de posible duplicado (idea propia — complementa "Fusionar con
 // otro contacto…": mejor avisar ANTES de cargar dos veces a la misma

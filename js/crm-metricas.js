@@ -89,9 +89,52 @@ export function normalizarTelefonoWhatsapp(telefono) {
   return `549${soloDigitos}`;
 }
 
-export function linkWhatsapp(telefono) {
+// "mensaje" es opcional (compatible con el uso ya existente, el botón
+// "💬 WhatsApp" que abre el chat en blanco) — wa.me ya soporta precargar
+// el texto con ?text=, sin necesitar la API de WhatsApp Business.
+export function linkWhatsapp(telefono, mensaje) {
   const numero = normalizarTelefonoWhatsapp(telefono);
-  return numero ? `https://wa.me/${numero}` : null;
+  if (!numero) return null;
+  const base = `https://wa.me/${numero}`;
+  return mensaje ? `${base}?text=${encodeURIComponent(mensaje)}` : base;
+}
+
+// Plantillas de mensaje con datos precargados (idea propia — versión
+// gratis de los "envíos automáticos" de Tokko Broker: sin API paga,
+// alcanza con armar el texto y dejar que wa.me lo precargue). Recibe un
+// objeto liviano en vez de un contacto completo de Firestore, para que
+// también sirva con el borrador que se está completando en el
+// formulario (todavía sin guardar, sin id). "Recordatorio de visita"
+// solo aparece con etapa "Visita" Y fecha agendada — sin eso no hay
+// nada real que confirmar.
+export function plantillasMensaje({ nombre, lotesInteres, estado, proximoSeguimiento }) {
+  const saludo = `Hola${(nombre || "").trim() ? ` ${nombre.trim()}` : ""}!`;
+  const lote = (lotesInteres || [])[0]?.titulo || null;
+  const plantillas = [
+    {
+      id: "seguimiento",
+      etiqueta: "Seguimiento",
+      texto: lote
+        ? `${saludo} Te escribo para saber si seguís interesado en ${lote}. ¿Charlamos?`
+        : `${saludo} Te escribo para retomar contacto. ¿Cómo estás?`
+    },
+    {
+      id: "bienvenida",
+      etiqueta: "Primer contacto",
+      texto: lote
+        ? `${saludo} Gracias por tu interés en ${lote}. Cualquier duda, estoy a disposición.`
+        : `${saludo} Gracias por contactarte. Cualquier duda, estoy a disposición.`
+    }
+  ];
+  if (estado === "visita" && proximoSeguimiento) {
+    const fecha = new Date(`${proximoSeguimiento}T00:00:00`).toLocaleDateString("es-AR");
+    plantillas.push({
+      id: "recordatorio_visita",
+      etiqueta: "Recordatorio de visita",
+      texto: `${saludo} Te confirmo la visita${lote ? ` a ${lote}` : ""} para el ${fecha}. Cualquier cambio, avisame.`
+    });
+  }
+  return plantillas;
 }
 
 export function estaEstancado(contacto) {

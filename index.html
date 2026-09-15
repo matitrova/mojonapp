@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-03" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-04" />
 </head>
 <body>
 
@@ -1222,6 +1222,17 @@
           </div>
         </label>
 
+        <!-- Plantillas de WhatsApp con datos precargados (idea propia —
+             versión gratis de los "envíos automáticos" de Tokko Broker:
+             sin API de WhatsApp Business, wa.me ya soporta precargar el
+             texto con ?text=). Oculto sin teléfono cargado, mismo
+             criterio que el botón de arriba. Ver plantillasMensaje en
+             crm-metricas.js. -->
+        <div id="crm-plantillas-whatsapp" class="oculto crm-agregar-lote" data-testid="crm-plantillas-whatsapp">
+          <select id="crm-select-plantilla" data-testid="crm-select-plantilla"></select>
+          <a id="crm-btn-enviar-plantilla" class="btn-secundario crm-btn-chico" target="_blank" rel="noopener" data-testid="crm-btn-enviar-plantilla">💬 Enviar</a>
+        </div>
+
         <!-- Aviso de posible duplicado (idea propia — complementa
              "Fusionar con otro contacto…": mejor avisar ANTES de crear
              dos veces a la misma persona que limpiarlo después). Solo
@@ -1625,6 +1636,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-15-03"></script>
+  <script type="module" src="js/app.js?v=2026-09-15-04"></script>
 </body>
 </html>
