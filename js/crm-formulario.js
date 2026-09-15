@@ -59,6 +59,7 @@ const elListaLotesInteres = document.getElementById("crm-lista-lotes-interes");
 const elLotesInteresVacio = document.getElementById("crm-lotes-interes-vacio");
 const elSelectLote = document.getElementById("crm-select-lote");
 const elBtnAgregarLoteInteres = document.getElementById("btn-agregar-lote-interes");
+const elMiniMapa = document.getElementById("crm-mini-mapa");
 const elCrmSugeridos = document.getElementById("crm-sugeridos");
 const elListaSugeridos = document.getElementById("crm-lista-sugeridos");
 const elListaEtiquetas = document.getElementById("crm-lista-etiquetas");
@@ -115,6 +116,7 @@ function renderListaLotesInteres() {
       lotesInteresEnEdicion = lotesInteresEnEdicion.filter((l) => l.id !== lote.id);
       renderListaLotesInteres();
       renderLotesSugeridos();
+      renderMiniMapa();
     });
     li.appendChild(botonQuitar);
 
@@ -126,6 +128,59 @@ function renderListaLotesInteres() {
 function poblarSelectLotes() {
   const lotes = getLotesActuales();
   elSelectLote.innerHTML = lotes.map((f) => `<option value="${f.id}">${tituloLote(f.properties)}</option>`).join("");
+}
+
+// Mini-mapa de "Lotes de interés" (idea propia — "el mapa como una
+// cualidad del CRM", no una pantalla aparte que hay que ir a buscar):
+// mismo satelital que el mapa principal (Esri World Imagery), un solo
+// polígono o varios, sin controles — solo para ubicar de un vistazo
+// dónde está el interés de este contacto. Se crea una ÚNICA instancia
+// de Leaflet (nunca una por render — "Map container is already
+// initialized" si se repite) y se reusa, actualizando solo la capa de
+// polígonos. `invalidateSize()` es necesario porque el contenedor pudo
+// haber estado en display:none (oculto) la última vez que se calculó
+// su tamaño.
+let miniMapa = null;
+let capaMiniMapa = null;
+
+function renderMiniMapa() {
+  const features = lotesInteresEnEdicion
+    .map((li) => getLotesActuales().find((f) => f.id === li.id))
+    .filter(Boolean);
+  elMiniMapa.classList.toggle("oculto", features.length === 0);
+  if (features.length === 0) return;
+
+  if (!miniMapa) {
+    miniMapa = L.map("crm-mini-mapa", {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false
+    });
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 20,
+      maxNativeZoom: 18
+    }).addTo(miniMapa);
+  }
+
+  if (capaMiniMapa) miniMapa.removeLayer(capaMiniMapa);
+  capaMiniMapa = L.geoJSON(
+    { type: "FeatureCollection", features },
+    {
+      style: { color: "#ffffff", weight: 2, fillColor: "#c1663f", fillOpacity: 0.55 },
+      onEachFeature: (feature, layer) => {
+        layer.on("click", () => irALoteDesdeCrm(feature.id));
+      }
+    }
+  ).addTo(miniMapa);
+
+  requestAnimationFrame(() => {
+    miniMapa.invalidateSize();
+    miniMapa.fitBounds(capaMiniMapa.getBounds(), { padding: [12, 12], maxZoom: 18 });
+  });
 }
 
 // Matching lote↔interesado por reglas (zona/precio/superficie de los lotes
@@ -161,6 +216,7 @@ function renderLotesSugeridos() {
       lotesInteresEnEdicion.push({ id: feature.id, titulo: tituloLote(feature.properties) });
       renderListaLotesInteres();
       renderLotesSugeridos();
+      renderMiniMapa();
     });
     li.appendChild(botonAgregar);
 
@@ -199,6 +255,7 @@ elBtnAgregarLoteInteres.addEventListener("click", () => {
   lotesInteresEnEdicion.push({ id: loteId, titulo: tituloLote(feature.properties) });
   renderListaLotesInteres();
   renderLotesSugeridos();
+  renderMiniMapa();
 });
 
 // ---------------------------------------------------------------------------
@@ -447,6 +504,10 @@ export function mostrarForm(contacto, estadoInicial) {
 
   elVistaKanban.classList.add("oculto");
   elVistaForm.classList.remove("oculto");
+  // Recién acá el formulario (y el contenedor del mini-mapa) ya está
+  // visible de verdad — Leaflet necesita el layout real para calcular
+  // tamaño/tiles, no alcanza con togglear la clase antes.
+  renderMiniMapa();
 }
 
 formulario.addEventListener("submit", async (evento) => {
