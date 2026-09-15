@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-05" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-06" />
 </head>
 <body>
 
@@ -1540,7 +1540,31 @@
     <p id="nav-mensaje" data-testid="nav-mensaje">Buscando tu ubicación&hellip;</p>
   </div>
 
+  <!-- Barra de secciones persistente (pedido explícito: "que haya una
+       sección dashboard principal, otra mapa... todo bien separado", en
+       vez de tener que cerrar cada panel con la X para volver). Solo las
+       4 pantallas de uso diario — el resto sigue en el drawer, sin
+       cambios. Oculta hasta que hay sesión (ver actualizarUIPorPermisos/
+       onAuthStateChanged en app.js) — un visitante anónimo sigue viendo
+       la app igual que siempre. Los botones "×" de cada panel se dejan
+       funcionando tal cual estaban: esto es un camino ADICIONAL, no un
+       reemplazo. -->
+  <nav id="nav-secciones" class="oculto" data-testid="nav-secciones">
+    <button type="button" id="nav-tab-mapa" class="nav-tab activo" data-testid="nav-tab-mapa">
+      <span class="nav-tab-icono">🗺️</span><span class="nav-tab-texto">Mapa</span>
+    </button>
+    <button type="button" id="nav-tab-lista" class="nav-tab" data-testid="nav-tab-lista">
+      <span class="nav-tab-icono">📋</span><span class="nav-tab-texto">Lista</span>
+    </button>
+    <button type="button" id="nav-tab-dashboard" class="nav-tab" data-testid="nav-tab-dashboard">
+      <span class="nav-tab-icono">📊</span><span class="nav-tab-texto">Dashboard</span>
+    </button>
+    <button type="button" id="nav-tab-crm" class="nav-tab oculto" data-testid="nav-tab-crm">
+      <span class="nav-tab-icono">👥</span><span class="nav-tab-texto">CRM</span>
+    </button>
+  </nav>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-14-05"></script>
+  <script type="module" src="js/app.js?v=2026-09-14-06"></script>
 </body>
 </html>

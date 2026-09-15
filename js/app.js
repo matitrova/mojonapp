@@ -173,6 +173,49 @@ document.querySelectorAll(".drawer-grupo-titulo").forEach((boton) => {
   });
 });
 
+// Barra de secciones persistente (Mapa | Lista | Dashboard | CRM) — ver
+// index.html/estilos.css. Cada botón dispara la MISMA función que ya
+// abre esa pantalla hoy (ningún estado nuevo que sincronizar a mano);
+// los "×" de cada panel se dejan funcionando tal cual estaban, esto es
+// un camino adicional, no un reemplazo.
+function volverAlMapa() {
+  [
+    "panel-admin",
+    "panel-auditoria",
+    "panel-ia",
+    "panel-sectores",
+    "panel-barrios",
+    "panel-dashboard",
+    "panel-favoritos",
+    "panel-comparar-lotes",
+    "panel-cartel-qr",
+    "panel-ficha-imprimir",
+    "panel-crm",
+    "vista-lista"
+  ].forEach((id) => document.getElementById(id).classList.add("oculto"));
+  document.getElementById("btn-ver-lista").classList.remove("activo");
+  // A propósito NO toca "ficha-lote" — mirar una ficha con el mapa de
+  // fondo ya es "estar en el Mapa", no hace falta cerrarla para volver.
+  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
+  document.getElementById("nav-tab-mapa").classList.add("activo");
+}
+
+document.getElementById("nav-tab-mapa").addEventListener("click", volverAlMapa);
+document.getElementById("nav-tab-lista").addEventListener("click", () => {
+  // "Ver como lista" es un toggle (ver vista-lista.js) — solo se
+  // reenvía el click si todavía está cerrado, para no cerrarlo por
+  // error si ya era la sección activa.
+  if (document.getElementById("vista-lista").classList.contains("oculto")) {
+    document.getElementById("btn-ver-lista").click();
+  }
+});
+document.getElementById("nav-tab-dashboard").addEventListener("click", () => {
+  document.getElementById("btn-abrir-dashboard").click();
+});
+document.getElementById("nav-tab-crm").addEventListener("click", () => {
+  document.getElementById("btn-abrir-crm").click();
+});
+
 // Wiring de los módulos que necesitan mapa/mostrarFicha/etc. — todos
 // estos valores ya están disponibles como imports acá arriba (mapa.js,
 // ficha.js, permisos.js, catalogos.js no tienen ninguna dependencia
@@ -324,6 +367,9 @@ function actualizarUIPorPermisos() {
   document.getElementById("dashboard-ventas-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
   document.getElementById("dashboard-embudo-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
   document.getElementById("dashboard-motivos-perdida-seccion").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
+  // Tab "CRM" de la barra de secciones — mismo permiso que el botón del
+  // drawer (#btn-abrir-crm).
+  document.getElementById("nav-tab-crm").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
 }
 
 onAuthStateChanged(auth, async (usuario) => {
@@ -336,6 +382,13 @@ onAuthStateChanged(auth, async (usuario) => {
     document.getElementById("drawer-sesion-activa").classList.remove("oculto");
     elSesionEmail.textContent = usuario.email;
     actualizarUIPorPermisos();
+    // Barra de secciones persistente (Mapa | Lista | Dashboard | CRM) —
+    // solo con sesión, nunca para un visitante anónimo ni en modo embed
+    // (mismo criterio que #encabezado ahí).
+    if (!document.documentElement.classList.contains("modo-embed")) {
+      document.getElementById("nav-secciones").classList.remove("oculto");
+      document.body.classList.add("con-nav-secciones");
+    }
     // Aterrizaje real al iniciar sesión (pedido explícito: "apenas
     // inicie sesión que tenga un dashboard con información importante
     // para él"): el login manual YA abre el Dashboard (ver
@@ -366,6 +419,9 @@ onAuthStateChanged(auth, async (usuario) => {
     elBtnAbrirLogin.classList.remove("oculto");
     elSesionActiva.classList.add("oculto");
     document.getElementById("drawer-sesion-activa").classList.add("oculto");
+    document.getElementById("nav-secciones").classList.add("oculto");
+    document.body.classList.remove("con-nav-secciones");
+    volverAlMapa();
     setSectoresActuales([]);
     setBarriosActuales([]);
     // Cerrar sesión apaga todas las herramientas de corredor, no solo

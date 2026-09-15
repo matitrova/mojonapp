@@ -1663,6 +1663,59 @@ button:active {
   overflow-y: auto;
 }
 
+/* Barra de secciones persistente (Mapa | Lista | Dashboard | CRM) —
+   z-index más alto que .panel-pantalla-completa (1700) para quedar
+   siempre encima de cualquier pantalla, mismo criterio de altura de
+   "pulgar" que una bottom-nav de app de celular. Con sesión activa, la
+   clase "con-nav-secciones" en <body> (ver onAuthStateChanged en
+   app.js) le suma su alto al padding-bottom que .panel-pantalla-completa/
+   .hoja-inferior ya reservan para el safe-area, así ningún contenido
+   queda tapado detrás. */
+#nav-secciones {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1800;
+  display: flex;
+  background: var(--color-fondo);
+  border-top: 1px solid var(--color-borde);
+  box-shadow: var(--sombra-calida-suave);
+  padding-bottom: 20px; /* safe-area del celular */
+}
+
+.nav-tab {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  padding: 8px 4px;
+  color: var(--color-texto-secundario);
+  font: inherit;
+  cursor: pointer;
+}
+
+.nav-tab-icono {
+  font-size: 1.1rem;
+}
+
+.nav-tab-texto {
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.nav-tab.activo {
+  color: var(--color-acento);
+}
+
+body.con-nav-secciones .panel-pantalla-completa,
+body.con-nav-secciones .hoja-inferior {
+  padding-bottom: calc(34px + 16px + 60px);
+}
+
 /* Sticky en vez de static: estos 5 paneles pueden tener bastante para
    scrollear (grilla de lotes, tabla de usuarios, el Dashboard) y el
    header (con el botón de cerrar) se quedaba arriba del todo — para

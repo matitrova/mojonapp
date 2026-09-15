@@ -75,6 +75,11 @@ export function abrirPanelDashboard() {
   document.getElementById("ficha-lote").classList.add("oculto");
   renderDashboard();
   elPanelDashboard.classList.remove("oculto");
+  // Resalta "Dashboard" en la barra de secciones persistente (ver
+  // index.html/app.js) — puro DOM, sin import nuevo, mismo criterio que
+  // el resto de esta función para tocar elementos de otros módulos.
+  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
+  document.getElementById("nav-tab-dashboard").classList.add("activo");
 
   // A diferencia de getLotesActuales() (ya en memoria desde que arrancó
   // la app), los contactos del CRM recién se piden la primera vez que
@@ -96,6 +101,8 @@ export function abrirPanelDashboard() {
 elBtnAbrirDashboard.addEventListener("click", abrirPanelDashboard);
 document.getElementById("cerrar-panel-dashboard").addEventListener("click", () => {
   elPanelDashboard.classList.add("oculto");
+  document.getElementById("nav-tab-dashboard").classList.remove("activo");
+  document.getElementById("nav-tab-mapa").classList.add("activo");
 });
 
 // Cualquier navegación desde el menú lateral (Cargar lote, +Manzana,
@@ -117,6 +124,8 @@ document.getElementById("drawer-menu").addEventListener("click", (evento) => {
 // ficha no se abra sobre un punto fuera de la vista actual.
 function irAFichaDesdeDashboard(feature) {
   elPanelDashboard.classList.add("oculto");
+  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
+  document.getElementById("nav-tab-mapa").classList.add("activo");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
   mostrarFicha(feature);

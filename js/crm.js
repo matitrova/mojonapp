@@ -155,6 +155,8 @@ function irALoteDesdeCrm(loteId) {
     return;
   }
   elPanel.classList.add("oculto");
+  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
+  document.getElementById("nav-tab-mapa").classList.add("activo");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
   mostrarFicha(feature);
@@ -713,6 +715,8 @@ async function abrirPanelCrm() {
   document.getElementById("ficha-lote").classList.add("oculto");
   mostrarKanban();
   elPanel.classList.remove("oculto");
+  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
+  document.getElementById("nav-tab-crm").classList.add("activo");
 
   // Siempre arranca en "Mis contactos" (default seguro, aunque tenga el
   // permiso de ver todos) — mismo criterio que cualquier vista con
@@ -753,6 +757,8 @@ export async function abrirContactoEnCrm(contactoId) {
 
 document.getElementById("cerrar-panel-crm").addEventListener("click", () => {
   elPanel.classList.add("oculto");
+  document.getElementById("nav-tab-crm").classList.remove("activo");
+  document.getElementById("nav-tab-mapa").classList.add("activo");
 });
 
 // Cualquier otra navegación desde el menú lateral (Dashboard, Ver como

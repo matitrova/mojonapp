@@ -570,6 +570,8 @@ function abrirPanelVistaLista() {
   mostrarListaLotesGrilla(); // siempre arranca en la lista, no en edición
   elVistaLista.classList.remove("oculto");
   elBtnVerLista.classList.add("activo");
+  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
+  document.getElementById("nav-tab-lista").classList.add("activo");
 }
 
 elBtnVerLista.addEventListener("click", () => {
@@ -579,11 +581,15 @@ elBtnVerLista.addEventListener("click", () => {
   } else {
     elVistaLista.classList.add("oculto");
     elBtnVerLista.classList.remove("activo");
+    document.getElementById("nav-tab-lista").classList.remove("activo");
+    document.getElementById("nav-tab-mapa").classList.add("activo");
   }
 });
 document.getElementById("cerrar-vista-lista").addEventListener("click", () => {
   elVistaLista.classList.add("oculto");
   elBtnVerLista.classList.remove("activo");
+  document.getElementById("nav-tab-lista").classList.remove("activo");
+  document.getElementById("nav-tab-mapa").classList.add("activo");
 });
 
 // "Compartir este filtro": mismo criterio que "Compartir este lote"
