@@ -148,7 +148,7 @@ function textoLotesResumen(lotes) {
 // mapa primero para que la ficha no se abra sobre un punto fuera de la
 // vista actual. Si el lote ya no existe (se borró después) no hay nada
 // que mostrar.
-function irALoteDesdeCrm(loteId) {
+function irALoteDesdeCrm(loteId, contactoOrigen = null) {
   const feature = getLotesActuales().find((f) => f.id === loteId);
   if (!feature) {
     window.alert("Este lote ya no existe.");
@@ -159,7 +159,7 @@ function irALoteDesdeCrm(loteId) {
   document.getElementById("nav-tab-mapa").classList.add("activo");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
-  mostrarFicha(feature);
+  mostrarFicha(feature, contactoOrigen);
 }
 
 async function moverContacto(contacto, nuevoEstado) {

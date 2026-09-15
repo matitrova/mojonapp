@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-08" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-09" />
 </head>
 <body>
 
@@ -196,6 +196,11 @@
          localStorage del propio navegador, no en Firestore: funciona
          para cualquiera que mire el mapa, con o sin sesión. -->
     <button id="btn-favorito" class="btn-favorito" aria-label="Guardar en favoritos" data-testid="btn-favorito">🤍</button>
+    <!-- Idea propia #2 de "el mapa como una cualidad del CRM": no perder
+         el contexto al saltar de un contacto a esta ficha (desde el
+         mini-mapa o el chip de "Lotes de interés") — solo aparece
+         cuando se llegó así, ver mostrarFicha/irALoteDesdeCrm. -->
+    <button id="ficha-volver-contacto" class="oculto btn-link" type="button" data-testid="ficha-volver-contacto"></button>
     <h2 id="ficha-titulo" data-testid="ficha-titulo"></h2>
     <dl class="ficha-datos">
       <dt>Zona</dt>
@@ -1578,6 +1583,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-14-08"></script>
+  <script type="module" src="js/app.js?v=2026-09-14-09"></script>
 </body>
 </html>

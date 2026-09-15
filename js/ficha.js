@@ -121,6 +121,27 @@ const elFichaCompradorDt = document.getElementById("ficha-comprador-dt");
 const elFichaCompradorDd = document.getElementById("ficha-comprador-dd");
 const elFichaComprador = document.getElementById("ficha-comprador");
 
+// "← Volver a [contacto]" (idea propia #2 de "el mapa como una cualidad
+// del CRM"): cuando se llega a esta ficha desde un contacto puntual
+// (mini-mapa o chip de "Lotes de interés" en crm-formulario.js, ver
+// irALoteDesdeCrm en crm.js), no perder ese contexto — un solo click
+// vuelve directo al formulario de ESE contacto (abrirContactoEnCrm, la
+// misma función que ya usa "Vendido a" arriba). Recibe {id, nombre}
+// sueltos (mismo criterio liviano que lotes_interes: [{id, titulo}]),
+// no hace falta buscar el contacto completo en memoria para esto.
+const elFichaVolverContacto = document.getElementById("ficha-volver-contacto");
+
+function actualizarVolverContacto(contactoOrigen) {
+  if (!contactoOrigen) {
+    elFichaVolverContacto.classList.add("oculto");
+    elFichaVolverContacto.onclick = null;
+    return;
+  }
+  elFichaVolverContacto.textContent = `← Volver a ${contactoOrigen.nombre}`;
+  elFichaVolverContacto.classList.remove("oculto");
+  elFichaVolverContacto.onclick = () => abrirContactoEnCrm(contactoOrigen.id);
+}
+
 function actualizarComprador(feature) {
   const { estado, comprador_contacto_id, comprador_nombre } = feature.properties;
   const mostrar = estado === "vendido" && !!comprador_contacto_id && !!comprador_nombre;
@@ -503,10 +524,11 @@ export function contenidoTooltipLote(feature) {
   `;
 }
 
-export function mostrarFicha(feature) {
+export function mostrarFicha(feature, contactoOrigen = null) {
   setLoteSeleccionado(feature);
   const p = feature.properties;
 
+  actualizarVolverContacto(contactoOrigen);
   elTitulo.innerHTML = `${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}`;
   elSector.textContent = p.sector || "Sin datos";
   elBarrio.textContent = p.barrio || "Sin datos";

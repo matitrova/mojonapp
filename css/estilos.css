@@ -598,6 +598,11 @@ button:active {
   color: var(--color-texto);
 }
 
+#ficha-volver-contacto {
+  display: block;
+  margin-bottom: 6px;
+}
+
 #ficha-titulo {
   margin: 0 84px 10px 0;
   font-size: 1.15rem;

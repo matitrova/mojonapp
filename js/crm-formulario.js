@@ -90,6 +90,15 @@ const elBtnFusionarCancelar = document.getElementById("btn-fusionar-cancelar");
 let lotesInteresEnEdicion = [];
 let etiquetasEnEdicion = [];
 
+// {id, nombre} del contacto que se está editando ahora mismo, o null si
+// es un alta nueva (todavía sin guardar/sin id) — se le pasa a
+// irALoteDesdeCrm para que la ficha de destino pueda mostrar "← Volver
+// a [contacto]" (idea propia #2 de "el mapa como una cualidad del
+// CRM"). Sin id todavía no tiene sentido "volver" a nada.
+function contactoOrigenActual() {
+  return elIdEditando.value ? { id: elIdEditando.value, nombre: elNombre.value } : null;
+}
+
 // ---------------------------------------------------------------------------
 // Lotes de interés.
 // ---------------------------------------------------------------------------
@@ -104,7 +113,7 @@ function renderListaLotesInteres() {
     botonTitulo.type = "button";
     botonTitulo.className = "crm-chip-titulo";
     botonTitulo.textContent = lote.titulo;
-    botonTitulo.addEventListener("click", () => irALoteDesdeCrm(lote.id));
+    botonTitulo.addEventListener("click", () => irALoteDesdeCrm(lote.id, contactoOrigenActual()));
     li.appendChild(botonTitulo);
 
     const botonQuitar = document.createElement("button");
@@ -172,7 +181,7 @@ function renderMiniMapa() {
     {
       style: { color: "#ffffff", weight: 2, fillColor: "#c1663f", fillOpacity: 0.55 },
       onEachFeature: (feature, layer) => {
-        layer.on("click", () => irALoteDesdeCrm(feature.id));
+        layer.on("click", () => irALoteDesdeCrm(feature.id, contactoOrigenActual()));
       }
     }
   ).addTo(miniMapa);
