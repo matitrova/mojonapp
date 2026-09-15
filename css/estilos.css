@@ -1678,10 +1678,12 @@ button:active {
   bottom: 0;
   z-index: 1800;
   display: flex;
+  gap: 6px;
   background: var(--color-fondo);
   border-top: 1px solid var(--color-borde);
-  box-shadow: var(--sombra-calida-suave);
-  padding-bottom: 20px; /* safe-area del celular */
+  border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  box-shadow: var(--sombra-calida);
+  padding: 10px 8px calc(10px + 14px); /* safe-area del celular */
 }
 
 .nav-tab {
@@ -1689,17 +1691,21 @@ button:active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 3px;
   background: none;
   border: none;
-  padding: 8px 4px;
+  border-radius: var(--radio-mediano);
+  padding: 7px 4px;
   color: var(--color-texto-secundario);
   font: inherit;
   cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .nav-tab-icono {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .nav-tab-texto {
@@ -1708,6 +1714,7 @@ button:active {
 }
 
 .nav-tab.activo {
+  background: color-mix(in srgb, var(--color-acento) 14%, transparent);
   color: var(--color-acento);
 }
 

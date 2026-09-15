@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-06" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-07" />
 </head>
 <body>
 
@@ -1559,12 +1559,15 @@
     <button type="button" id="nav-tab-dashboard" class="nav-tab" data-testid="nav-tab-dashboard">
       <span class="nav-tab-icono">📊</span><span class="nav-tab-texto">Dashboard</span>
     </button>
+    <!-- Texto "Contactos" en vez de "CRM" (pedido explícito del usuario,
+         "no me gusta que diga eso") — el id/data-testid se quedan como
+         estaban para no romper nada que ya apunte a "nav-tab-crm". -->
     <button type="button" id="nav-tab-crm" class="nav-tab oculto" data-testid="nav-tab-crm">
-      <span class="nav-tab-icono">👥</span><span class="nav-tab-texto">CRM</span>
+      <span class="nav-tab-icono">👥</span><span class="nav-tab-texto">Contactos</span>
     </button>
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-14-06"></script>
+  <script type="module" src="js/app.js?v=2026-09-14-07"></script>
 </body>
 </html>
