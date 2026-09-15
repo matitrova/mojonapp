@@ -2647,6 +2647,110 @@ body.con-nav-secciones .hoja-inferior {
    de 3px arriba del mismo color — mismo lenguaje que Pipedrive/HubSpot:
    las 6 columnas se distinguen entre sí de un vistazo, sin depender de
    leer el título de cada una. */
+/* Vista "Tabla" del pipeline (mezcla de la tabla de "Oportunidades" de
+   Tokko Broker + nuestro propio modelo de datos, ver renderTablaContactos
+   en crm.js) — pensada a propósito con densidad de escritorio (filas
+   compactas, varias columnas), no una lista de tarjetas mobile
+   reempaquetada como filas. Alternativa al kanban, no lo reemplaza. */
+#crm-modo-vista {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#crm-modo-vista button {
+  padding: 7px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: #fff;
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#crm-modo-vista button.activo {
+  background: var(--color-primario);
+  color: #fff;
+  border-color: var(--color-primario);
+}
+
+.crm-tabla-etapa {
+  margin-bottom: 2px;
+  border: 1px solid var(--color-borde);
+  border-radius: 3px;
+}
+
+.crm-tabla-grupo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-primario-oscuro);
+  background: color-mix(in srgb, var(--stage-color) 10%, var(--color-fondo-alterno));
+  border-left: 4px solid var(--stage-color);
+}
+
+.crm-tabla-grupo-valor {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-texto-secundario);
+  font-size: 0.78rem;
+}
+
+.crm-tabla-etapa table {
+  margin: 0;
+}
+
+.crm-tabla-etapa tbody tr {
+  cursor: pointer;
+}
+
+.crm-tabla-etapa tbody tr:hover {
+  background: color-mix(in srgb, var(--stage-color) 10%, var(--color-fondo-alterno));
+}
+
+.crm-tabla-contacto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.crm-vigencia-barra {
+  width: 100%;
+  min-width: 70px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-fondo-alterno);
+  overflow: hidden;
+}
+
+.crm-vigencia-relleno {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.crm-vigencia-fresco {
+  background: var(--color-disponible);
+}
+
+.crm-vigencia-atencion {
+  background: var(--color-reservado);
+}
+
+.crm-vigencia-vencido {
+  background: var(--color-vendido);
+}
+
 .crm-columna {
   flex: 0 0 226px;
   display: flex;

@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-06" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-15-07" />
 </head>
 <body>
 
@@ -1153,6 +1153,15 @@
       </div>
 
       <div id="crm-toolbar" data-testid="crm-toolbar">
+        <!-- Kanban (default, mejor para arrastrar/mover en el celular) vs
+             Tabla (inspirada en "Oportunidades" de Tokko Broker, agrupada
+             por etapa — más densa, pensada para escritorio). Alternativa,
+             no reemplazo: ver renderTablaContactos/actualizarModoVistaCrm
+             en crm.js. -->
+        <div id="crm-modo-vista" data-testid="crm-modo-vista">
+          <button type="button" id="btn-crm-modo-kanban" class="activo" data-testid="btn-crm-modo-kanban">Kanban</button>
+          <button type="button" id="btn-crm-modo-tabla" data-testid="btn-crm-modo-tabla">Tabla</button>
+        </div>
         <div id="crm-toolbar-filtros">
           <input type="search" id="crm-buscar" placeholder="Buscar por nombre o teléfono…" data-testid="crm-buscar" />
           <!-- Filtros combinables con la búsqueda de texto y entre sí
@@ -1197,6 +1206,7 @@
       </div>
 
       <div id="crm-kanban" data-testid="crm-kanban"></div>
+      <div id="crm-tabla" class="oculto" data-testid="crm-tabla"></div>
       <p id="crm-vacio" class="oculto" data-testid="crm-vacio">Todavía no hay contactos cargados.</p>
       <p id="crm-sin-resultados" class="oculto dashboard-vacio" data-testid="crm-sin-resultados">Ningún contacto coincide con la búsqueda.</p>
     </div>
@@ -1668,6 +1678,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-15-06"></script>
+  <script type="module" src="js/app.js?v=2026-09-15-07"></script>
 </body>
 </html>

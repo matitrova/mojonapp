@@ -180,6 +180,23 @@ export function estaEstancado(contacto) {
   return dias >= DIAS_ESTANCADO;
 }
 
+// "Vigencia" (idea de Tokko Broker, columna del mismo nombre en su tabla
+// de Oportunidades) — versión propia como porcentaje/nivel en vez de un
+// dato fijo, para poder pintarla como barra sin depender de un campo
+// nuevo en Firestore: reusa el mismo "días desde la última actualización"
+// que ya usa estaEstancado, solo expresado como progreso hacia ese mismo
+// umbral en vez de un booleano. No aplica a cerrado/perdido (ya resueltos,
+// mismo criterio de exclusión que calificacionContacto).
+export function vigenciaContacto(contacto) {
+  if (contacto.estado === "cerrado" || contacto.estado === "perdido") return null;
+  const fecha = contacto.fecha_actualizacion || contacto.fecha_creacion;
+  if (!fecha) return null;
+  const dias = Math.floor((Date.now() - new Date(fecha).getTime()) / 86400000);
+  const porcentaje = Math.min(100, Math.round((dias / DIAS_ESTANCADO) * 100));
+  const nivel = porcentaje < 50 ? "fresco" : porcentaje < 100 ? "atencion" : "vencido";
+  return { porcentaje, nivel };
+}
+
 export function estaSinAtender(contacto) {
   if (contacto.estado !== "nuevo") return false;
   if ((contacto.actividades || []).length > 0) return false;

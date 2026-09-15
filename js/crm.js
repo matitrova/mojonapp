@@ -47,7 +47,8 @@ import {
   valorPotencialContacto,
   formatoUsdCompacto,
   calcularMetricas,
-  htmlResumenVentas
+  htmlResumenVentas,
+  vigenciaContacto
 } from "./crm-metricas.js";
 // tests/test_crm_round_robin.py importa elegirMenosCargado de crm.js (no
 // se movió ese test, solo la función) — reexportada para no romperlo.
@@ -113,6 +114,9 @@ const elFiltroVista = document.getElementById("crm-filtro-vista");
 const elBtnVistaMias = document.getElementById("btn-crm-vista-mias");
 const elBtnVistaTodas = document.getElementById("btn-crm-vista-todas");
 const elKanban = document.getElementById("crm-kanban");
+const elTabla = document.getElementById("crm-tabla");
+const elBtnModoKanban = document.getElementById("btn-crm-modo-kanban");
+const elBtnModoTablaCrm = document.getElementById("btn-crm-modo-tabla");
 const elVacio = document.getElementById("crm-vacio");
 const elSinResultados = document.getElementById("crm-sin-resultados");
 const elBtnAgregarContacto = document.getElementById("btn-agregar-contacto");
@@ -130,6 +134,12 @@ let terminoBusqueda = "";
 let filtroCalificacion = "";
 let filtroEtiqueta = "";
 let filtroOrigen = "";
+
+// Kanban (default, mejor para arrastrar/mover en el celular) vs Tabla
+// (inspirada en "Oportunidades" de Tokko Broker — agrupada por etapa,
+// pensada para escritorio). No persiste entre sesiones, mismo criterio
+// que modoVistaLista en vista-lista.js.
+let modoVistaKanban = "kanban";
 
 function textoHaceDias(fechaIso) {
   if (!fechaIso) return "";
@@ -470,6 +480,157 @@ function renderKanban() {
   });
 }
 
+// Fila de la vista "Tabla" (ver comentario de renderTablaContactos) —
+// mismos datos que tarjetaContacto, en un renglón compacto en vez de una
+// tarjeta: pensada con densidad de escritorio real (sistema de gestión),
+// no una tarjeta mobile reempaquetada como fila.
+function filaContacto(contacto) {
+  const fila = document.createElement("tr");
+  fila.dataset.testid = `crm-fila-${contacto.id}`;
+
+  const celdaContacto = document.createElement("td");
+  const envoltorio = document.createElement("div");
+  envoltorio.className = "crm-tabla-contacto";
+  const avatar = document.createElement("span");
+  avatar.className = "crm-avatar";
+  avatar.textContent = iniciales(contacto.nombre);
+  avatar.style.background = colorAvatar(contacto.nombre);
+  envoltorio.appendChild(avatar);
+  const nombre = document.createElement("span");
+  nombre.textContent = contacto.nombre;
+  envoltorio.appendChild(nombre);
+  const calificacion = calificacionContacto(contacto);
+  if (calificacion) {
+    const chip = document.createElement("span");
+    chip.className = `crm-calificacion crm-calificacion-${calificacion.nivel}`;
+    chip.textContent = calificacion.etiqueta;
+    envoltorio.appendChild(chip);
+  }
+  celdaContacto.appendChild(envoltorio);
+  fila.appendChild(celdaContacto);
+
+  const celdaLotes = document.createElement("td");
+  celdaLotes.textContent = textoLotesResumen(contacto.lotes_interes || []);
+  fila.appendChild(celdaLotes);
+
+  // "Vigencia" (idea de Tokko Broker, mismo nombre de columna en su
+  // tabla de Oportunidades) — ver vigenciaContacto en crm-metricas.js.
+  const celdaVigencia = document.createElement("td");
+  const vigencia = vigenciaContacto(contacto);
+  if (vigencia) {
+    const barra = document.createElement("div");
+    barra.className = "crm-vigencia-barra";
+    const relleno = document.createElement("div");
+    relleno.className = `crm-vigencia-relleno crm-vigencia-${vigencia.nivel}`;
+    relleno.style.width = `${vigencia.porcentaje}%`;
+    barra.appendChild(relleno);
+    celdaVigencia.appendChild(barra);
+  } else {
+    celdaVigencia.textContent = "—";
+  }
+  fila.appendChild(celdaVigencia);
+
+  const celdaActividad = document.createElement("td");
+  const ultima = ultimaActividad(contacto);
+  if (ultima) {
+    const textoCorto = ultima.texto && ultima.texto.length > 42 ? `${ultima.texto.slice(0, 42)}…` : ultima.texto;
+    celdaActividad.textContent = `${ETIQUETA_ACTIVIDAD[ultima.tipo] || ultima.tipo}${textoCorto ? `: ${textoCorto}` : ""}`;
+  } else {
+    celdaActividad.textContent = "—";
+  }
+  fila.appendChild(celdaActividad);
+
+  // Solo en "Todos", mismo criterio que tarjetaContacto.
+  if (getModoVista() === "todas") {
+    const celdaAsignado = document.createElement("td");
+    celdaAsignado.textContent = textoAsignado(contacto);
+    fila.appendChild(celdaAsignado);
+  }
+
+  fila.addEventListener("click", () => mostrarForm(contacto));
+  return fila;
+}
+
+// Vista "Tabla" del pipeline (mezcla de "Oportunidades" de Tokko Broker +
+// nuestro propio modelo de datos) — agrupada por etapa como el kanban,
+// pero como tabla densa de escritorio en vez de columnas de tarjetas:
+// alternativa, no reemplazo (ver actualizarModoVistaCrm). Cada etapa es
+// un <details> colapsable, con la misma cabecera de color/contador/valor
+// que ya calcula renderKanban.
+function renderTablaContactos() {
+  const filtrados = contactosFiltrados();
+  const enTodas = getModoVista() === "todas";
+  elTabla.innerHTML = "";
+  ETAPAS.forEach(({ clave, etiqueta, color }) => {
+    const deEstaEtapa = filtrados.filter((c) => c.estado === clave);
+    const valorEtapa = deEstaEtapa.reduce((total, c) => total + valorPotencialContacto(c), 0);
+
+    const detalle = document.createElement("details");
+    detalle.className = "crm-tabla-etapa";
+    detalle.open = deEstaEtapa.length > 0;
+    detalle.style.setProperty("--stage-color", color);
+    detalle.dataset.testid = `crm-tabla-etapa-${clave}`;
+
+    const resumen = document.createElement("summary");
+    resumen.className = "crm-tabla-grupo";
+    const titulo = document.createElement("span");
+    titulo.textContent = `${etiqueta} (${deEstaEtapa.length})`;
+    resumen.appendChild(titulo);
+    const valorTexto = formatoUsdCompacto(valorEtapa);
+    if (valorTexto) {
+      const valorEl = document.createElement("span");
+      valorEl.className = "crm-tabla-grupo-valor";
+      valorEl.textContent = valorTexto;
+      resumen.appendChild(valorEl);
+    }
+    detalle.appendChild(resumen);
+
+    if (deEstaEtapa.length > 0) {
+      const envoltorioTabla = document.createElement("div");
+      envoltorioTabla.className = "tabla-scroll";
+      const tabla = document.createElement("table");
+      tabla.className = "tabla-panel";
+      tabla.innerHTML = `
+        <thead>
+          <tr>
+            <th>Contacto</th>
+            <th>Lotes de interés</th>
+            <th>Vigencia</th>
+            <th>Última actividad</th>
+            ${enTodas ? "<th>Asignado</th>" : ""}
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      const cuerpo = tabla.querySelector("tbody");
+      deEstaEtapa.forEach((contacto) => cuerpo.appendChild(filaContacto(contacto)));
+      envoltorioTabla.appendChild(tabla);
+      detalle.appendChild(envoltorioTabla);
+    }
+
+    elTabla.appendChild(detalle);
+  });
+}
+
+// Mismo patrón que actualizarModoVistaLista (vista-lista.js): las dos
+// vistas ya están renderizadas (renderTodo llama a ambas), esto solo
+// alterna cuál se ve.
+function actualizarModoVistaCrm() {
+  elBtnModoKanban.classList.toggle("activo", modoVistaKanban === "kanban");
+  elBtnModoTablaCrm.classList.toggle("activo", modoVistaKanban === "tabla");
+  elKanban.classList.toggle("oculto", modoVistaKanban !== "kanban");
+  elTabla.classList.toggle("oculto", modoVistaKanban !== "tabla");
+}
+
+elBtnModoKanban.addEventListener("click", () => {
+  modoVistaKanban = "kanban";
+  actualizarModoVistaCrm();
+});
+elBtnModoTablaCrm.addEventListener("click", () => {
+  modoVistaKanban = "tabla";
+  actualizarModoVistaCrm();
+});
+
 function renderStats() {
   // Mismo template que "Ventas" en el Dashboard (ver renderVentas en
   // dashboard.js) — htmlResumenVentas vive en crm-metricas.js para que
@@ -646,6 +807,8 @@ function renderTodo() {
   renderSeguimientos();
   poblarSelectFiltroEtiqueta();
   renderKanban();
+  renderTablaContactos();
+  actualizarModoVistaCrm();
 }
 
 function mostrarKanban() {
