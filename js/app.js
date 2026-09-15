@@ -200,20 +200,49 @@ function volverAlMapa() {
   document.getElementById("nav-tab-mapa").classList.add("activo");
 }
 
-document.getElementById("nav-tab-mapa").addEventListener("click", volverAlMapa);
-document.getElementById("nav-tab-lista").addEventListener("click", () => {
-  // "Ver como lista" es un toggle (ver vista-lista.js) — solo se
-  // reenvía el click si todavía está cerrado, para no cerrarlo por
-  // error si ya era la sección activa.
-  if (document.getElementById("vista-lista").classList.contains("oculto")) {
-    document.getElementById("btn-ver-lista").click();
+// Botón "atrás" del navegador (pedido explícito del usuario) — hasta
+// ahora, al ser un solo index.html sin ninguna entrada de historial
+// propia, "atrás" sacaba de la app entera en vez de volver a la sección
+// anterior DENTRO del sistema. Se pushea un estado por cada cambio entre
+// las 4 secciones principales (Mapa/Lista/Dashboard/CRM) — alcance
+// acotado a propósito, no cubre paneles del drawer ni la ficha de un
+// lote (mirar una ficha ya "es" estar en el Mapa, ver volverAlMapa).
+let seccionActual = "mapa";
+let restaurandoDesdeHistorial = false;
+
+function irASeccion(seccion, accion) {
+  if (!restaurandoDesdeHistorial && seccion !== seccionActual) {
+    history.pushState({ seccion }, "", location.href);
   }
+  seccionActual = seccion;
+  accion();
+}
+
+window.addEventListener("popstate", (evento) => {
+  restaurandoDesdeHistorial = true;
+  const seccion = evento.state?.seccion || "mapa";
+  document.getElementById(`nav-tab-${seccion}`).click();
+  restaurandoDesdeHistorial = false;
+});
+
+history.replaceState({ seccion: "mapa" }, "", location.href);
+
+document.getElementById("nav-tab-mapa").addEventListener("click", () => irASeccion("mapa", volverAlMapa));
+document.getElementById("nav-tab-lista").addEventListener("click", () => {
+  irASeccion("lista", () => {
+    // "Ver como lista" es un toggle (ver vista-lista.js) — solo se
+    // reenvía el click si todavía está cerrado, para no cerrarlo por
+    // error si ya era la sección activa.
+    if (document.getElementById("vista-lista").classList.contains("oculto")) {
+      document.getElementById("btn-ver-lista").click();
+    }
+  });
 });
 document.getElementById("nav-tab-dashboard").addEventListener("click", () => {
-  document.getElementById("btn-abrir-dashboard").click();
+  irASeccion("dashboard", () => document.getElementById("btn-abrir-dashboard").click());
 });
 document.getElementById("nav-tab-crm").addEventListener("click", () => {
-  document.getElementById("btn-abrir-crm").click();
+  irASeccion("crm", () => document.getElementById("btn-abrir-crm").click());
 });
 
 // Wiring de los módulos que necesitan mapa/mostrarFicha/etc. — todos
