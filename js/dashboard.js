@@ -24,7 +24,7 @@ import { cargarContactos, contactosParaSeguimiento, abrirContactoEnCrm } from ".
 // métricas/template que ya se ven en "#crm-stats" del panel CRM, sin
 // dependencia circular: crm-metricas.js es lógica pura, no importa nada
 // de este archivo.
-import { calcularMetricas, contactosPorEtapa, motivosPerdidaFrecuentes, htmlResumenVentas } from "./crm-metricas.js";
+import { calcularMetricas, contactosPorEtapa, motivosPerdidaFrecuentes, demandaPorZona, htmlResumenVentas } from "./crm-metricas.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -91,10 +91,12 @@ export function abrirPanelDashboard() {
   // mismo criterio que el refresco de renderDashboard() al terminar
   // cargarLotesDesdeFirestore() en app.js.
   cargarContactos().then(() => {
-    if (!elPanelDashboard.classList.contains("oculto")) {
-      renderSeguimientosCrm();
-      renderVentas();
-    }
+    // renderDashboard() ya llama renderSeguimientosCrm()/renderVentas()
+    // (y ahora también "Resumen por zona", que pasa a depender de los
+    // contactos para la demanda por zona — ver demandaPorZona en
+    // crm-metricas.js) — un solo re-render de todo en vez de acordarse
+    // de repetir cada sección nueva que pase a depender de esto.
+    if (!elPanelDashboard.classList.contains("oculto")) renderDashboard();
   });
 }
 
@@ -213,6 +215,12 @@ function calcularMetricasDashboard() {
       z.cantidadConPrecio++;
     }
   });
+  // "Interesados" (idea propia #3 de "el mapa como una cualidad del
+  // CRM" — demanda por zona, no un mapa de calor geográfico: "zona" es
+  // texto libre del lote, sin polígono propio para pintar algo así, ni
+  // falta hace) — se mezcla en esta misma tabla en vez de armar una
+  // aparte, mismo criterio de agrupación que el resto de la fila.
+  const demanda = demandaPorZona(getContactosActuales());
   const resumenPorZona = Object.entries(acumuladoPorZona)
     .map(([zona, z]) => ({
       zona,
@@ -221,7 +229,8 @@ function calcularMetricasDashboard() {
       reservado: z.reservado,
       vendido: z.vendido,
       pctVendido: z.total > 0 ? Math.round((z.vendido / z.total) * 100) : 0,
-      promedio: z.cantidadConPrecio > 0 ? z.sumaPrecio / z.cantidadConPrecio : null
+      promedio: z.cantidadConPrecio > 0 ? z.sumaPrecio / z.cantidadConPrecio : null,
+      interesados: demanda[zona] || 0
     }))
     .sort((a, b) => b.total - a.total);
 
@@ -460,14 +469,19 @@ export function renderDashboard() {
   const elPreciosCuerpo = document.getElementById("dashboard-precios-zona-cuerpo");
   elPreciosCuerpo.innerHTML = "";
   const promedioMaximo = Math.max(0, ...m.resumenPorZona.map((z) => z.promedio || 0));
-  m.resumenPorZona.forEach(({ zona, total, disponible, reservado, vendido, pctVendido, promedio }) => {
+  m.resumenPorZona.forEach(({ zona, total, disponible, reservado, vendido, pctVendido, promedio, interesados }) => {
     const fila = document.createElement("tr");
     const ancho = promedioMaximo > 0 && promedio ? (promedio / promedioMaximo) * 100 : 0;
     const celdaPrecio =
       promedio == null
         ? "—"
         : `<div class="dashboard-precio-celda"><div class="dashboard-precio-bar-track"><div class="dashboard-precio-bar-fill" style="width:${ancho}%"></div></div><span>USD ${Math.round(promedio).toLocaleString("es-AR")}</span></div>`;
-    fila.innerHTML = `<td>${zona}</td><td>${total}</td><td>${disponible}</td><td>${reservado}</td><td>${vendido} (${pctVendido}%)</td><td>${celdaPrecio}</td>`;
+    // "Interesados" en rojo cuando hay demanda pero nada disponible ya
+    // (0 disponible) — mismo criterio de urgencia que .dashboard-badge
+    // vencida: es justo la señal de "traer más inventario acá".
+    const celdaInteresados =
+      interesados === 0 ? "—" : `<span class="${disponible === 0 ? "texto-vencido" : ""}">${interesados}</span>`;
+    fila.innerHTML = `<td>${zona}</td><td>${total}</td><td>${disponible}</td><td>${reservado}</td><td>${vendido} (${pctVendido}%)</td><td>${celdaInteresados}</td><td>${celdaPrecio}</td>`;
     elPreciosCuerpo.appendChild(fila);
   });
   document.getElementById("dashboard-precios-zona-vacio").classList.toggle("oculto", m.resumenPorZona.length > 0);

@@ -11,7 +11,15 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, borrar_lote_de_prueba, crear_lote_de_prueba
+from conftest import (
+    TEST_USER_EMAIL,
+    TEST_USER_PASSWORD,
+    _uid_de_prueba,
+    borrar_contacto_de_prueba,
+    borrar_lote_de_prueba,
+    crear_contacto_de_prueba,
+    crear_lote_de_prueba,
+)
 
 
 def _loguearse(page, base_url):
@@ -55,8 +63,12 @@ def test_resumen_por_zona_desglosa_inventario_y_precio_promedio(page, base_url):
         _loguearse(page, base_url)
         # El login ya abre el dashboard automático (ver formularioLogin
         # en app.js) — no hace falta navegar, alcanza con esperar a que
-        # la fila de esta zona (recién sembrada) aparezca.
+        # la fila de esta zona (recién sembrada) aparezca. "Resumen por
+        # zona" vive dentro del <details> colapsado por default (pedido
+        # explícito del usuario para no sobrecargar el Dashboard), hay
+        # que abrirlo primero.
         expect(page.locator("#panel-dashboard")).to_be_visible()
+        page.locator("#dashboard-metricas-detalle summary").click()
 
         fila = page.locator("#dashboard-precios-zona-cuerpo tr", has_text=zona)
         expect(fila).to_be_visible()
@@ -66,9 +78,75 @@ def test_resumen_por_zona_desglosa_inventario_y_precio_promedio(page, base_url):
         expect(celdas.nth(3)).to_have_text("1")  # reservado
         expect(celdas.nth(4)).to_contain_text("1")  # vendido (33%)
         expect(celdas.nth(4)).to_contain_text("33%")
+        expect(celdas.nth(5)).to_have_text("—")  # interesados: sin contactos, ver test aparte
         # Precio promedio: solo los 2 con precio cargado (10000+20000)/2
-        expect(celdas.nth(5)).to_contain_text("USD 15.000")
+        expect(celdas.nth(6)).to_contain_text("USD 15.000")
     finally:
         borrar_lote_de_prueba(disponible)
         borrar_lote_de_prueba(reservado)
         borrar_lote_de_prueba(vendido)
+
+
+def test_interesados_por_zona_cuenta_contactos_activos_distintos(page, base_url):
+    # Idea propia #3 de "el mapa como una cualidad del CRM" — demanda
+    # por zona (demandaPorZona en crm-metricas.js): un contacto
+    # interesado en 2 lotes de la MISMA zona cuenta una sola vez, y un
+    # contacto "perdido" no cuenta (ya no está en juego).
+    marcador = uuid.uuid4().hex[:8]
+    zona = f"ZonaDemandaTest-{marcador}"
+    lote_a = crear_lote_de_prueba(_datos_lote("DEM-A", 0, estado="disponible", precio_usd=10000, sector=zona))
+    lote_b = crear_lote_de_prueba(_datos_lote("DEM-B", 0.001, estado="disponible", precio_usd=12000, sector=zona))
+    contacto_doble_interes = crear_contacto_de_prueba(
+        {
+            "nombre": f"DEMANDA-DOBLE-{marcador}",
+            "telefono": None,
+            "email": None,
+            "estado": "contactado",
+            "lotes_interes": [
+                {"id": lote_a, "titulo": "Manzana DEM-A — Lote 1"},
+                {"id": lote_b, "titulo": "Manzana DEM-B — Lote 1"},
+            ],
+            "actividades": [],
+            "asignado_a": _uid_de_prueba(),
+        }
+    )
+    contacto_simple = crear_contacto_de_prueba(
+        {
+            "nombre": f"DEMANDA-SIMPLE-{marcador}",
+            "telefono": None,
+            "email": None,
+            "estado": "nuevo",
+            "lotes_interes": [{"id": lote_b, "titulo": "Manzana DEM-B — Lote 1"}],
+            "actividades": [],
+            "asignado_a": _uid_de_prueba(),
+        }
+    )
+    contacto_perdido = crear_contacto_de_prueba(
+        {
+            "nombre": f"DEMANDA-PERDIDO-{marcador}",
+            "telefono": None,
+            "email": None,
+            "estado": "perdido",
+            "motivo_perdido": "Ya no le interesa",
+            "lotes_interes": [{"id": lote_a, "titulo": "Manzana DEM-A — Lote 1"}],
+            "actividades": [],
+            "asignado_a": _uid_de_prueba(),
+        }
+    )
+    try:
+        _loguearse(page, base_url)
+        expect(page.locator("#panel-dashboard")).to_be_visible()
+        page.locator("#dashboard-metricas-detalle summary").click()
+
+        fila = page.locator("#dashboard-precios-zona-cuerpo tr", has_text=zona)
+        expect(fila).to_be_visible()
+        # 2 contactos activos distintos cuentan para esta zona (el
+        # "doble interés" en 2 lotes de la misma zona no duplica al
+        # primero), y el perdido no suma nada.
+        expect(fila.locator("td").nth(5)).to_have_text("2")
+    finally:
+        borrar_contacto_de_prueba(contacto_doble_interes)
+        borrar_contacto_de_prueba(contacto_simple)
+        borrar_contacto_de_prueba(contacto_perdido)
+        borrar_lote_de_prueba(lote_a)
+        borrar_lote_de_prueba(lote_b)

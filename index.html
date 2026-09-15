@@ -49,7 +49,7 @@
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-09" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-14-10" />
 </head>
 <body>
 
@@ -963,13 +963,17 @@
              feedback_buscar_inspiracion_real): Tokko cobra
              "Emprendimientos" aparte, recién desde el plan de
              $252.320/mes — acá cualquier zona/sector ya cumple ese rol
-             (así se organiza un loteo en esta app), sin plan especial. -->
+             (así se organiza un loteo en esta app), sin plan especial.
+             "Interesados" (idea propia #3 de "el mapa como una cualidad
+             del CRM" — demanda por zona, ver demandaPorZona en
+             crm-metricas.js) se mezcló en esta misma tabla en vez de
+             armar una aparte. -->
         <section class="dashboard-seccion">
           <h3>Resumen por zona</h3>
           <div class="tabla-scroll">
             <table class="tabla-panel" data-testid="dashboard-precios-zona">
               <thead>
-                <tr><th>Zona</th><th>Lotes</th><th>Disponible</th><th>Reservado</th><th>Vendido</th><th>Precio promedio</th></tr>
+                <tr><th>Zona</th><th>Lotes</th><th>Disponible</th><th>Reservado</th><th>Vendido</th><th>Interesados</th><th>Precio promedio</th></tr>
               </thead>
               <tbody id="dashboard-precios-zona-cuerpo"></tbody>
             </table>
@@ -1583,6 +1587,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-14-09"></script>
+  <script type="module" src="js/app.js?v=2026-09-14-10"></script>
 </body>
 </html>

@@ -255,6 +255,34 @@ export function motivosPerdidaFrecuentes(contactos, limite = 3) {
     .slice(0, limite);
 }
 
+// Demanda por zona (idea propia #3 de "el mapa como una cualidad del
+// CRM" — no un mapa de calor geográfico: "zona" es un campo de texto
+// del lote, no tiene un polígono propio con el que dibujar algo así, ni
+// falta hace) — cuántos CONTACTOS ACTIVOS distintos (ni cerrado ni
+// perdido) tienen al menos un lote de interés en cada zona. Un mismo
+// contacto interesado en 2 lotes de la misma zona cuenta una sola vez
+// ahí (es un interesado, no dos marcas de interés) — de ahí el Set en
+// vez de sumar lotes_interes.length. Devuelve { [zona]: cantidad },
+// pensado para mezclarse con el "Resumen por zona" que ya existe en el
+// Dashboard (mismo criterio de agrupación, ver calcularMetricasDashboard
+// en dashboard.js) en vez de armar una tabla aparte.
+export function demandaPorZona(contactos) {
+  const porZona = {};
+  contactos
+    .filter((c) => c.estado !== "cerrado" && c.estado !== "perdido")
+    .forEach((c) => {
+      const zonasDeEsteContacto = new Set();
+      (c.lotes_interes || []).forEach((li) => {
+        const zona = getLotesActuales().find((f) => f.id === li.id)?.properties?.sector;
+        if (zona) zonasDeEsteContacto.add(zona);
+      });
+      zonasDeEsteContacto.forEach((zona) => {
+        porZona[zona] = (porZona[zona] || 0) + 1;
+      });
+    });
+  return porZona;
+}
+
 // ---------------------------------------------------------------------------
 // Matching lote↔interesado por reglas simples (idea propia, investigada
 // en varios CRM inmobiliarios antes de armarla: todos plantean esto con
