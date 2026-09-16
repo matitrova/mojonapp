@@ -146,7 +146,14 @@ export async function onRequestPost(context) {
         error: "La función de IA todavía no está configurada.",
         _diagnostico: {
           bindings: Object.keys(context.env || {}).sort(),
-          cantidad: Object.keys(context.env || {}).length
+          cantidad: Object.keys(context.env || {}).length,
+          // El binding aparece en la lista pero el valor da falsy. Esto
+          // distingue los casos sin exponer nada: "string" con largo 0 es
+          // un valor guardado vacío; "undefined" es un binding declarado
+          // sin valor; "object" sería otra cosa (un binding de Secrets
+          // Store, que se leería distinto).
+          tipo: typeof context.env.ANTHROPIC_API_KEY,
+          largo: typeof context.env.ANTHROPIC_API_KEY === "string" ? context.env.ANTHROPIC_API_KEY.length : null
         }
       },
       503
