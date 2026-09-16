@@ -63,7 +63,29 @@ def iniciar_sesion():
         timeout=TIMEOUT,
     )
     if not respuesta.ok:
-        sys.exit("No se pudo iniciar sesión. Revisá el mail y la contraseña.")
+        # Mostrar el motivo REAL y no un "revisá el mail y la contraseña"
+        # para todo: los tres casos se arreglan de forma distinta, y el
+        # tercero no tiene nada que ver con lo que escribiste.
+        try:
+            codigo = respuesta.json()["error"]["message"]
+        except Exception:
+            codigo = f"HTTP {respuesta.status_code}"
+        explicaciones = {
+            "INVALID_LOGIN_CREDENTIALS": "Mail o contraseña incorrectos.",
+            "INVALID_PASSWORD": "Contraseña incorrecta.",
+            "EMAIL_NOT_FOUND": "No existe una cuenta con ese mail.",
+            "USER_DISABLED": "Esa cuenta está deshabilitada.",
+            # Firebase Auth limita los intentos por su cuenta, aparte de
+            # cualquier cuota de Firestore. Pasa después de muchos logins
+            # seguidos (la suite de tests hace unos cuantos) y se
+            # destraba solo con el tiempo — ver el comentario de
+            # _sesion_de_prueba en tests/conftest.py.
+            "TOO_MANY_ATTEMPTS_TRY_LATER": (
+                "Firebase bloqueó los intentos por un rato (demasiados logins seguidos). "
+                "No es la contraseña: esperá unos minutos y reintentá."
+            ),
+        }
+        sys.exit(f"No se pudo iniciar sesión — {explicaciones.get(codigo, codigo)}")
     return respuesta.json()["idToken"]
 
 
