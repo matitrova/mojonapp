@@ -134,7 +134,8 @@ TRES PROHIBICIONES. Son las que importan:
 
 El aviso NO puede terminar en el precio ni en una enumeración de datos: eso es una ficha técnica, no un aviso. La última frase tiene que retomar algo concreto de ESTE lote y decir qué habilita para quien compre, sin prometer nada que no esté en los datos. Como es distinto en cada lote, el cierre sale distinto solo. Ejemplos de la forma (no los copies): "Son 900 metros para acomodar la casa mirando al dique." / "Con la luz y el agua ya puestas, se puede empezar a construir sin trámites previos."
 
-Dos cuidados con el cierre:
+Tres cuidados con el cierre:
+- El cierre habla SOLO del lote y de lo que se puede hacer DENTRO de él. Está prohibido afirmar nada sobre los vecinos, los terrenos de al lado, el entorno o el futuro. Concretamente: si te paso "vista al dique", el lote tiene vista al dique y se terminó — no digas que es abierta, despejada, que no hay nada que la tape, que es panorámica ni que va a seguir así. Eso nadie lo verificó, y si mañana el vecino construye, el aviso prometió algo falso.
 - NO repitas en el cierre un dato que ya dijiste en el cuerpo. El cierre agrega algo, no resume.
 - Elegí para el cierre lo que un comprador valora: la vista, los servicios ya instalados, la superficie. La pendiente, el tipo de calle, la forma del terreno y parecidos son características, no atractivos: van una sola vez en el cuerpo y al pasar, nunca como argumento de venta ni en el cierre.
 
