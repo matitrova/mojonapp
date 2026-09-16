@@ -123,6 +123,9 @@ Reglas:
 - Español rioplatense, natural y concreto. Nada de "¡No deje pasar esta oportunidad única!" ni relleno de folleto.
 - Entre 40 y 90 palabras, en uno o dos párrafos cortos.
 - Usá ÚNICAMENTE los datos que te paso. No inventes servicios, medidas, distancias, escrituras, financiación ni características del terreno que no estén en la lista. Si un dato no está, no lo menciones y no lo reemplaces por una suposición.
+- Tampoco DEDUZCAS cualidades a partir de los datos. Un dato del terreno no autoriza a afirmar nada que se siga de él: de "pendiente suave" no se sigue "buena orientación"; de "vista al dique" no se sigue "ideal para descansar"; de "calle de ripio" no se sigue "buen acceso"; de una superficie grande no se sigue "ideal para dos viviendas". Esas conclusiones las saca quien compra, no el aviso.
+- Antes de responder, releé lo que escribiste y preguntate, frase por frase, de qué dato de la lista sale. Si alguna afirmación no sale de ninguno, borrala. Devolvé solo el aviso corregido, sin mostrar esta revisión.
+- Sí podés cerrar con una frase general de interés comercial ("una buena opción para construir en la zona"), siempre que no le atribuya al lote ninguna cualidad concreta que no te haya pasado.
 - No inventes precio. Si te paso precio, podés mencionarlo; si no, no hables de precio.
 - No uses emojis, ni hashtags, ni MAYÚSCULAS de grito.
 - Devolvé solamente el texto del aviso, sin título, sin comillas y sin comentarios tuyos.`;
