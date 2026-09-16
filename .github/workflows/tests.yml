@@ -1,21 +1,66 @@
 name: Tests
 
-# Corre el mismo suite de pytest que hasta ahora se corría a mano antes
-# de cada commit — no hay build step en este proyecto (sitio estático
-# sin bundler, decisión deliberada), así que este workflow no compila
-# nada, solo levanta el servidor estático de prueba y corre Playwright
-# contra el proyecto real de Firebase (no hay emulador instalado, ver
+# Corre el mismo suite de pytest que se corría a mano antes de cada
+# commit — no hay build step en este proyecto (sitio estático sin
+# bundler, decisión deliberada), así que este workflow no compila nada:
+# levanta el servidor estático de prueba y corre Playwright contra el
+# proyecto REAL de Firebase (no hay emulador instalado, ver
 # tests/conftest.py) igual que en local.
 #
 # Necesita dos secrets del repo (Settings > Secrets and variables >
-# Actions), las mismas credenciales que ya viven en tests/.env en local:
+# Actions), las mismas credenciales que viven en tests/.env en local:
 #   TEST_USER_EMAIL
 #   TEST_USER_PASSWORD
+#
+# ---------------------------------------------------------------------
+# POR QUÉ ESTO YA NO CORRE EN CADA PUSH (2026-09-16)
+#
+# Correr la suite contra Firebase de verdad tiene un costo real: cada
+# test inicia sesión, siembra datos y lee la colección de lotes entera.
+# Medido: UNA corrida completa agota las 50.000 lecturas diarias del plan
+# gratuito de Firestore. Y cuando la cuota se agota, Firestore deja de
+# responder para TODOS — o sea que la app en producción queda sin cargar
+# un solo lote hasta la medianoche del Pacífico. Pasó en vivo: diez
+# pushes a main en un día dejaron mojonapp.com.ar vacía para cualquier
+# visitante.
+#
+# Por eso los tests pasan a correr una vez por día y cuando alguien los
+# pide, en vez de en cada push. Es un intercambio consciente: se pierde
+# el aviso inmediato de que un commit rompió algo, y a cambio la app no
+# se cae. Con muchos pushes por día, el aviso inmediato era ilusorio de
+# todos modos — las corridas se pisaban entre sí.
+#
+# Si el proyecto pasa al plan Blaze (pago por uso), este límite
+# desaparece: ahí las mismas 50.000 lecturas siguen siendo gratis y el
+# excedente se cobra centavos en vez de cortar el servicio. En ese caso
+# se puede volver a poner `push: branches: [main]` acá abajo sin drama.
+# ---------------------------------------------------------------------
 
 on:
-  push:
-    branches: [main]
+  # A pedido, desde la pestaña Actions del repo. Esta es la forma de
+  # correrlos antes de mostrarle la app a alguien o antes de un cambio
+  # grande, que es cuando de verdad importa.
+  workflow_dispatch:
+
+  # Una vez por día a las 08:00 UTC = 05:00 en Argentina. A propósito
+  # DESPUÉS del reseteo de la cuota de Firestore (medianoche del
+  # Pacífico, ~04:00 argentina): así la corrida consume la cuota del día
+  # nuevo a primera hora y queda margen de sobra para el uso real de la
+  # app durante el resto del día.
+  schedule:
+    - cron: "0 8 * * *"
+
+  # Los pull requests sí: son deliberados y poco frecuentes acá, y es el
+  # momento donde un test en rojo evita que algo roto entre a main.
   pull_request:
+
+# Si entran varios pushes o commits seguidos en un PR, deja viva solo la
+# última corrida y cancela las anteriores. Sin esto, cinco commits
+# seguidos son cinco suites completas corriendo en paralelo contra la
+# misma base — cinco veces la cuota para responder una sola pregunta.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   pytest:
