@@ -33,6 +33,17 @@ def _abrir_crm(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
     expect(page.locator("#panel-crm")).to_be_visible()
+    _soltar_el_mouse(page)
+
+
+def _soltar_el_mouse(page):
+    """El menú lateral se expande al pasar el mouse por encima, y Playwright
+    deja el puntero en (0,0) — o sea ENCIMA del rail. Expandido mide 288px y
+    tapa el toggle Kanban/Tabla de la toolbar del CRM (que arranca en x≈163),
+    así que el click se lo come un ítem del menú ("subtree intercepts pointer
+    events"). Mover el puntero al centro lo contrae y deja la toolbar libre.
+    Un usuario real no lo sufre salvo que tenga el menú abierto encima."""
+    page.mouse.move(700, 400)
 
 
 def test_arranca_en_kanban_con_tabla_oculta(page, base_url):
