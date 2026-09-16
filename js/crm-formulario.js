@@ -137,6 +137,14 @@ function mostrarTabLotes() {
   elPanelLotes.classList.remove("oculto");
   elPanelDatos.classList.add("oculto");
   elPanelActividad.classList.add("oculto");
+  // El mini-mapa se renderiza en mostrarForm(), mientras esta pestaña
+  // todavía está oculta (arranca en "Datos") — Leaflet mide el
+  // contenedor en 0x0 en ese momento y se queda con ese tamaño "roto"
+  // para siempre si nadie lo invalida de nuevo. Recién ahora, con el
+  // panel ya visible de verdad, tiene sentido volver a calcular tamaño/
+  // encuadre (mismo motivo que renderMiniMapa ya invalida al abrir el
+  // formulario por primera vez).
+  renderMiniMapa();
 }
 
 function mostrarTabActividad() {
