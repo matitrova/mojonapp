@@ -22,7 +22,7 @@ from conftest import (
     TEST_USER_EMAIL,
     TEST_USER_PASSWORD,
     borrar_lote_de_prueba,
-    buscar_doc_id_por_observaciones,
+    buscar_doc_id_por_descripcion,
 )
 
 # Centroide del rectángulo de LOTE_PRUEBA_DATOS en conftest.py (promedio
@@ -68,7 +68,7 @@ def test_ficha_muestra_datos_correctos_del_lote_tocado(page, base_url, lote_semb
     expect(page.locator("#ficha-superficie")).to_have_text("460.63 m²")
     expect(page.locator("#ficha-estado")).to_have_text("Disponible")
     expect(page.locator("#ficha-precio")).to_have_text("USD 5.000")
-    expect(page.locator("#ficha-observaciones")).to_have_text(lote_sembrado["observaciones"])
+    expect(page.locator("#ficha-descripcion")).to_have_text(lote_sembrado["descripcion"])
 
 
 def test_boton_como_llegar_arma_url_correcta(page, base_url, lote_sembrado):
@@ -128,7 +128,7 @@ def test_corredor_logueado_puede_cargar_un_lote(page, base_url):
         page.locator("#btn-cargar-lote").click()
         page.locator("#lote-superficie").fill("460.63")
         page.locator("#lote-estado").select_option("disponible")
-        page.locator("#lote-observaciones").fill(marcador)
+        page.locator("#lote-descripcion").fill(marcador)
         page.locator("#lote-vertices").fill(
             "-32.350000,-65.020000\n"
             "-32.350000,-65.019780\n"
@@ -143,7 +143,7 @@ def test_corredor_logueado_puede_cargar_un_lote(page, base_url):
         # mapa a propósito: si quedara al revés y la aserción fallara, el
         # "finally" nunca llegaría a borrar el lote (doc_id seguiría en
         # None), dejando basura de test en la base real.
-        doc_id = buscar_doc_id_por_observaciones(marcador)
+        doc_id = buscar_doc_id_por_descripcion(marcador)
         assert doc_id is not None, "El lote cargado por el formulario no apareció en Firestore."
         expect(page.locator(f".lote-{doc_id}")).to_have_count(1)
     finally:

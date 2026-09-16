@@ -74,7 +74,7 @@ _sesion_de_prueba_cacheada = None  # ver _sesion_de_prueba()
 
 def _sesion_de_prueba():
     """Cacheada a nivel de módulo: cada helper de este archivo (crear/
-    borrar lote, crear/borrar contacto, buscar por nombre/observaciones...)
+    borrar lote, crear/borrar contacto, buscar por nombre/descripción...)
     llama esto para autenticarse, y con retries de por medio (ver
     _buscar_contacto_con_reintento en test_crm.py) una corrida completa de
     la suite puede pedir un token muchas veces. signInWithPassword vía
@@ -209,9 +209,9 @@ def _con_reintento(intentar, intentos=8, espera=0.5):
     return None
 
 
-def buscar_doc_id_por_observaciones(texto):
+def buscar_doc_id_por_descripcion(texto):
     """Lectura pública (sin login): busca un lote por su texto de
-    observaciones exacto. Se usa para encontrar y limpiar el lote que un
+    descripción exacto. Se usa para encontrar y limpiar el lote que un
     test creó a través del formulario de la UI (que no expone el id del
     documento nuevo).
 
@@ -237,7 +237,7 @@ def buscar_doc_id_por_observaciones(texto):
             cuerpo = respuesta.json()
             for doc in cuerpo.get("documents", []):
                 campos = doc.get("fields", {})
-                if campos.get("observaciones", {}).get("stringValue") == texto:
+                if campos.get("descripcion", {}).get("stringValue") == texto:
                     return doc["name"].rsplit("/", 1)[-1]
             pagina_token = cuerpo.get("nextPageToken")
             if not pagina_token:
@@ -253,7 +253,7 @@ FIRESTORE_URL_BASE_CONTACTOS = (
 
 
 def buscar_contacto_doc_id_por_nombre(nombre):
-    """Mismo criterio que buscar_doc_id_por_observaciones, para la
+    """Mismo criterio que buscar_doc_id_por_descripcion, para la
     colección "contactos" (CRM, ver js/crm.js): encuentra el id del
     contacto que un test creó a través de la UI (que no lo expone). A
     diferencia de "lotes", leer "contactos" requiere sesión (ver
@@ -340,7 +340,7 @@ LOTE_PRUEBA_DATOS = {
     "superficie_m2": 460.63,
     "estado": "disponible",
     "precio_usd": 5000,
-    "observaciones": "Lote de prueba generado por la suite de tests (se borra solo).",
+    "descripcion": "Lote de prueba generado por la suite de tests (se borra solo).",
     # Array plano de {lon, lat}, no el anillo GeoJSON anidado
     # ([[lon,lat], ...]): Firestore no admite un array que tenga otro array
     # como elemento directo, y ese anillo tiene 2 niveles de arrays. La app

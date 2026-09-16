@@ -1,7 +1,7 @@
 """
 Test de Playwright para "Buscar" en "Ver como lista" (idea propia, mismo
 criterio que el buscador del CRM — #crm-buscar en crm.js): busca en
-manzana/lote/nomenclatura/zona/barrio/observaciones juntos, sin tener
+manzana/lote/nomenclatura/zona/barrio/descripción juntos, sin tener
 que saber en qué campo puntual está el dato. Integrado con "Compartir
 este filtro" (?buscar=...).
 """
@@ -15,7 +15,7 @@ from conftest import borrar_lote_de_prueba, crear_lote_de_prueba
 ZONA_PRUEBA = "ZonaTestBuscar"
 
 
-def _datos_lote(manzana, lote, offset, *, sector=ZONA_PRUEBA, observaciones=None):
+def _datos_lote(manzana, lote, offset, *, sector=ZONA_PRUEBA, descripcion=None):
     return {
         "manzana": manzana,
         "lote": lote,
@@ -23,7 +23,7 @@ def _datos_lote(manzana, lote, offset, *, sector=ZONA_PRUEBA, observaciones=None
         "superficie_m2": 500,
         "estado": "disponible",
         "sector": sector,
-        "observaciones": observaciones,
+        "descripcion": descripcion,
         "geometry": {
             "type": "Polygon",
             "coordinates": [
@@ -37,10 +37,10 @@ def _datos_lote(manzana, lote, offset, *, sector=ZONA_PRUEBA, observaciones=None
     }
 
 
-def test_buscar_filtra_por_manzana_zona_y_observaciones(page, base_url):
+def test_buscar_filtra_por_manzana_zona_y_descripcion(page, base_url):
     marcador = uuid.uuid4().hex[:8]
     a = crear_lote_de_prueba(_datos_lote(f"BUS-{marcador}", "1", 0))
-    b = crear_lote_de_prueba(_datos_lote("OTRA", "2", 0.001, sector="ZonaDistinta", observaciones=f"nota-{marcador}"))
+    b = crear_lote_de_prueba(_datos_lote("OTRA", "2", 0.001, sector="ZonaDistinta", descripcion=f"nota-{marcador}"))
     c = crear_lote_de_prueba(_datos_lote("OTRA2", "3", 0.002, sector="ZonaDistinta"))
     try:
         page.goto(base_url)
@@ -62,7 +62,7 @@ def test_buscar_filtra_por_manzana_zona_y_observaciones(page, base_url):
         expect(page.locator(f'tr[data-lote-id="{c}"]')).to_be_visible()
         expect(page.locator(f'tr[data-lote-id="{a}"]')).to_have_count(0)
 
-        # Por observaciones
+        # Por descripción
         buscar.fill(f"nota-{marcador}")
         expect(page.locator(f'tr[data-lote-id="{b}"]')).to_be_visible()
         expect(page.locator("tr.fila-lote")).to_have_count(1)

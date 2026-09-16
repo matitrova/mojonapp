@@ -33,7 +33,7 @@ LOTE = {
     "precio_usd": 18000,
     "sector": "Zona IA",
     "servicios": {"luz": True, "agua": True, "gas": False, "cloaca": False},
-    "observaciones": "Lote de prueba para redacción con IA",
+    "descripcion": "Lote de prueba para redacción con IA",
     "geometry": {
         "type": "Polygon",
         "coordinates": [

@@ -121,6 +121,30 @@ service cloud.firestore {
         || (!esDueno() && tienePermiso('borrar_lote_ajeno'));
     }
 
+    // Notas internas del lote: la libreta del corredor ("el dueño acepta
+    // menos", "cuesta encontrarlo, doblar en el molino"). Antes esto vivía
+    // mezclado con la descripción en el campo "observaciones" del lote —
+    // que es de lectura PÚBLICA (allow read: if true, acá arriba), así que
+    // cualquiera podía leerlas con un pedido a la API.
+    //
+    // Por eso es una subcolección y no un campo más: es la única forma de
+    // que tenga su propia regla. Cualquier corredor logueado las lee (son
+    // de la agencia, no de quien cargó el lote).
+    //
+    // La escritura es a propósito MÁS GRUESA que la del lote de arriba, que
+    // distingue propio/ajeno con esDueno(): ahí "creado_por" está en el
+    // documento mismo, y acá habría que ir a buscarlo al lote padre con un
+    // get(), o sea una lectura de Firestore extra en cada evaluación de la
+    // regla. Este proyecto viene chocando contra la cuota gratuita, así que
+    // no vale la pena pagar eso para afinar un permiso entre corredores de
+    // la misma agencia: quien puede editar lotes puede editar estas notas.
+    match /lotes/{loteId}/privado/{docId} {
+      allow read: if request.auth != null;
+      allow write: if esRoot()
+        || tienePermiso('editar_lote_propio')
+        || tienePermiso('editar_lote_ajeno');
+    }
+
     // Registro de auditoría ("quién hizo qué", ver js/auditoria.js): un
     // evento ya escrito nunca se EDITA (ninguna app real necesita
     // reescribir la historia) pero sí lo puede BORRAR root — pensado para

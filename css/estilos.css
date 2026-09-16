@@ -3983,3 +3983,14 @@ body.con-nav-secciones #btn-flotante-catastro {
   background: color-mix(in srgb, var(--color-reservado) 18%, var(--color-fondo));
   color: var(--color-reservado);
 }
+
+/* Aclaración al lado de la etiqueta de un campo ("se publica" / "no se
+   publica"). Nació con la separación entre descripción y notas internas:
+   ahí el texto de la etiqueta es lo único que evita que alguien escriba
+   un recordatorio interno en el campo que sale publicado, así que tiene
+   que leerse sin competirle en peso al nombre del campo. */
+.campo-ayuda {
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--color-texto-secundario);
+}

@@ -57,7 +57,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-04" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-05" />
 </head>
 <body>
 
@@ -315,7 +315,17 @@
         <span id="ficha-servicios" data-testid="ficha-servicios"></span>
         <button id="btn-editar-servicios" class="oculto btn-link" type="button" data-testid="btn-editar-servicios">Editar</button>
       </dd>
-      <dt>Observaciones</dt><dd id="ficha-observaciones" data-testid="ficha-observaciones"></dd>
+      <dt>Descripción</dt><dd id="ficha-descripcion" data-testid="ficha-descripcion"></dd>
+      <!-- Notas internas: la libreta del corredor, NO se publica. Antes
+           esto vivía mezclado con la descripción en "observaciones", que
+           se mostraba acá mismo sin ningún control — o sea que cualquier
+           visitante anónimo leía las notas de trabajo. Ahora viven en la
+           subcolección lotes/{id}/privado/notas, con su propia regla de
+           Firestore, y esta fila solo se completa con sesión iniciada
+           (ver actualizarNotasInternas en js/ficha.js). Sin sesión no se
+           pide nada: no es que se oculte, es que no se trae. -->
+      <dt id="ficha-notas-dt" class="oculto">Notas internas</dt>
+      <dd id="ficha-notas" class="oculto" data-testid="ficha-notas"></dd>
       <!-- Se completa aparte, async (ver actualizarCercanias en
            js/ficha.js) — dato real sacado en vivo de OpenStreetMap, no
            un valor cargado con el resto del lote. Empieza oculta:
@@ -623,8 +633,16 @@
           <input type="checkbox" id="lote-servicio-cloaca" data-testid="lote-servicio-cloaca" /> 🚽 Cloaca
         </label>
       </fieldset>
-      <label>Observaciones
-        <textarea id="lote-observaciones" data-testid="lote-observaciones"></textarea>
+      <!-- Dos campos donde antes había uno ("Observaciones"), que mezclaba
+           lo que se publica con la libreta del corredor. Las etiquetas
+           dicen explícitamente qué pasa con cada uno: es lo único que
+           evita que alguien vuelva a escribir un recordatorio interno en
+           el campo equivocado. -->
+      <label>Descripción <span class="campo-ayuda">(se publica en la ficha y en los portales)</span>
+        <textarea id="lote-descripcion" data-testid="lote-descripcion"></textarea>
+      </label>
+      <label>Notas internas <span class="campo-ayuda">(no se publican, solo las ve el equipo)</span>
+        <textarea id="lote-notas" data-testid="lote-notas"></textarea>
       </label>
       <label>
         Vértices del polígono (uno por línea, "latitud,longitud" tal cual los
@@ -1660,7 +1678,7 @@
       <div id="vista-lista-filtros" data-testid="vista-lista-filtros">
         <!-- Idea propia, mismo criterio que el buscador del CRM
              (#crm-buscar en crm.js) — busca en manzana/lote/
-             nomenclatura/zona/barrio/observaciones, todo junto, sin
+             nomenclatura/zona/barrio/descripción, todo junto, sin
              tener que saber en qué campo puntual está el dato. -->
         <label>Buscar
           <input type="search" id="filtro-buscar" placeholder="Manzana, lote, zona…" data-testid="filtro-buscar" />
@@ -1839,8 +1857,11 @@
             <input type="checkbox" id="editar-lote-servicio-cloaca" data-testid="editar-lote-servicio-cloaca" /> 🚽 Cloaca
           </label>
         </fieldset>
-        <label>Observaciones
-          <textarea id="editar-lote-observaciones" data-testid="editar-lote-observaciones"></textarea>
+        <label>Descripción <span class="campo-ayuda">(se publica en la ficha y en los portales)</span>
+          <textarea id="editar-lote-descripcion" data-testid="editar-lote-descripcion"></textarea>
+        </label>
+        <label>Notas internas <span class="campo-ayuda">(no se publican, solo las ve el equipo)</span>
+          <textarea id="editar-lote-notas" data-testid="editar-lote-notas"></textarea>
         </label>
         <button type="submit" data-testid="editar-lote-guardar">Guardar cambios</button>
         <p id="editar-lote-error" class="mensaje-error oculto" data-testid="editar-lote-error"></p>
@@ -1883,6 +1904,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-16-04"></script>
+  <script type="module" src="js/app.js?v=2026-09-16-05"></script>
 </body>
 </html>

@@ -36,6 +36,7 @@ import {
 import { getModoCaptura, setModoCaptura, onSesionCerrada } from "./estado.js";
 import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
 import { registrarAuditoria } from "./auditoria.js";
+import { guardarNotasInternas } from "./notas-internas.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -90,7 +91,8 @@ const elLoteServicioLuz = document.getElementById("lote-servicio-luz");
 const elLoteServicioAgua = document.getElementById("lote-servicio-agua");
 const elLoteServicioGas = document.getElementById("lote-servicio-gas");
 const elLoteServicioCloaca = document.getElementById("lote-servicio-cloaca");
-const elLoteObservaciones = document.getElementById("lote-observaciones");
+const elLoteDescripcion = document.getElementById("lote-descripcion");
+const elLoteNotas = document.getElementById("lote-notas");
 const elLoteVertices = document.getElementById("lote-vertices");
 const elLoteAreaCalculada = document.getElementById("lote-area-calculada");
 const elLoteError = document.getElementById("lote-error");
@@ -221,9 +223,26 @@ formularioLote.addEventListener("submit", async (evento) => {
         gas: elLoteServicioGas.checked,
         cloaca: elLoteServicioCloaca.checked
       },
-      observaciones: elLoteObservaciones.value.trim() || null,
+      descripcion: elLoteDescripcion.value.trim() || null,
       geometry: anilloAGeometryFirestore(vertices)
     });
+    // Las notas internas van en una subcolección del lote (ver
+    // js/notas-internas.js), así que recién se pueden escribir acá, con el
+    // id del documento ya creado.
+    //
+    // Con su propio try/catch, y no bajo el de afuera, a propósito: para
+    // cuando esto falla el lote YA está guardado, así que dejar que el
+    // error suba mostraría "no tenés permiso" y el formulario abierto,
+    // como si no se hubiera creado nada — y el corredor lo cargaría de
+    // nuevo, duplicado. El caso concreto que lo hace probable: desplegar
+    // esto antes de pegar la regla nueva de Firestore. Se pierde la nota,
+    // nunca el lote.
+    try {
+      await guardarNotasInternas(nuevoLoteRef.id, elLoteNotas.value);
+    } catch {
+      // El lote quedó creado; la nota se puede volver a escribir desde
+      // "Editar lote", que sí avisa si falla.
+    }
     registrarAuditoria({
       accion: "crear_lote",
       objetoId: nuevoLoteRef.id,
@@ -403,9 +422,21 @@ elManzanaConfirmar.addEventListener("click", async () => {
         superficie_m2: parcela.superficie_m2,
         estado: "disponible",
         precio_usd: null,
-        observaciones: "Importado automáticamente del catastro de San Luis.",
+        // Un lote importado no tiene descripción: nadie la escribió
+        // todavía. De dónde salió es una nota de trabajo, no algo que se
+        // publique — antes iba a "observaciones", que se mostraba en la
+        // ficha a cualquier visitante.
+        descripcion: null,
         geometry: anilloAGeometryFirestore(parcela.anillo)
       });
+      // Mismo criterio que el alta a mano: una nota que no se pudo
+      // escribir no puede cortar una importación de varias parcelas por
+      // la mitad.
+      try {
+        await guardarNotasInternas(nuevoLoteRef.id, "Importado automáticamente del catastro de San Luis.");
+      } catch {
+        // El lote importado ya está; la nota es un extra.
+      }
       registrarAuditoria({
         accion: "crear_lote",
         objetoId: nuevoLoteRef.id,
@@ -451,7 +482,7 @@ elBtnAbrirParcela.addEventListener("click", () => abrirHoja(elFormParcela));
 
 // Al elegir una parcela encontrada, se precarga en el formulario "+ Lote"
 // de siempre (en vez de guardarla directo) para que el corredor pueda
-// revisar o completar estado/precio/observaciones antes de guardar — y
+// revisar o completar estado/precio/descripción antes de guardar — y
 // para reusar ese único camino de guardado, ya probado. También la llama
 // "Ver catastro cercano" (en app.js) cuando se toca una parcela cercana.
 export function cargarParcelaEnFormLote(feature) {
@@ -470,7 +501,11 @@ export function cargarParcelaEnFormLote(feature) {
   elLoteSuperficie.value = datos.superficie_m2 ?? "";
   elLoteEstado.value = "disponible";
   elLotePrecio.value = "";
-  elLoteObservaciones.value = `Importado del catastro de ${datos.provincia} (parcela individual).`;
+  // De dónde salió el lote es una nota de trabajo, no la descripción que
+  // se publica — va al campo interno, igual que en el alta masiva de
+  // arriba. La descripción queda vacía para que la escriba el corredor.
+  elLoteDescripcion.value = "";
+  elLoteNotas.value = `Importado del catastro de ${datos.provincia} (parcela individual).`;
   elLoteVertices.value = anillo.map(([lon, lat]) => `${lat},${lon}`).join("\n");
   elLoteVertices.dispatchEvent(new Event("input"));
   abrirHoja(elFormLote);

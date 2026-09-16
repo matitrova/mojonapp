@@ -15,6 +15,7 @@ import { getLotesActuales, getContactosActuales, getLoteEditadoDesdeFicha, setLo
 import { centroideDePoligono } from "./geometria.js";
 import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
 import { registrarAuditoria } from "./auditoria.js";
+import { leerNotasInternas, guardarNotasInternas } from "./notas-internas.js";
 import { cargarContactos } from "./crm.js";
 
 const COLECCION_LOTES = "lotes";
@@ -150,7 +151,8 @@ const elEditarLoteServicioLuz = document.getElementById("editar-lote-servicio-lu
 const elEditarLoteServicioAgua = document.getElementById("editar-lote-servicio-agua");
 const elEditarLoteServicioGas = document.getElementById("editar-lote-servicio-gas");
 const elEditarLoteServicioCloaca = document.getElementById("editar-lote-servicio-cloaca");
-const elEditarLoteObservaciones = document.getElementById("editar-lote-observaciones");
+const elEditarLoteDescripcion = document.getElementById("editar-lote-descripcion");
+const elEditarLoteNotas = document.getElementById("editar-lote-notas");
 const elEditarLoteError = document.getElementById("editar-lote-error");
 let loteEditandoDesdeGrilla = null; // feature actual del formulario de edición
 
@@ -195,12 +197,12 @@ function compararConNulosAlFinal(valorA, valorB, signo) {
   return (valorA - valorB) * signo;
 }
 
-// Busca en manzana/lote/nomenclatura/zona/barrio/observaciones juntos
+// Busca en manzana/lote/nomenclatura/zona/barrio/descripción juntos
 // (idea propia, mismo criterio que #crm-buscar en crm.js) — no hace
 // falta saber en qué campo puntual está el dato que se busca.
 function coincideConBusqueda(p, termino) {
   if (!termino) return true;
-  return [p.manzana, p.lote, p.nomenclatura, p.sector, p.barrio, p.observaciones]
+  return [p.manzana, p.lote, p.nomenclatura, p.sector, p.barrio, p.descripcion]
     .filter(Boolean)
     .some((valor) => String(valor).toLowerCase().includes(termino));
 }
@@ -414,7 +416,7 @@ elFiltroCantidad.addEventListener("change", reiniciarPaginaYActualizar);
 // corredor y no siempre tiene sentido ir hasta el mapa solo para
 // cambiar el estado o el sector de un lote. Mismos campos editables que
 // ya existían sueltos (servicios, sector) más estado/precio/
-// observaciones, que hasta ahora solo se cargaban una vez al crearlo.
+// descripción, que hasta ahora solo se cargaban una vez al crearlo.
 export function mostrarListaLotesGrilla() {
   elLoteVistaEditar.classList.add("oculto");
   elLoteVistaLista.classList.remove("oculto");
@@ -441,7 +443,15 @@ export function mostrarEditarLoteDesdeGrilla(feature) {
   elEditarLoteServicioAgua.checked = !!s.agua;
   elEditarLoteServicioGas.checked = !!s.gas;
   elEditarLoteServicioCloaca.checked = !!s.cloaca;
-  elEditarLoteObservaciones.value = p.observaciones || "";
+  elEditarLoteDescripcion.value = p.descripcion || "";
+  // Las notas viven en una subcolección (js/notas-internas.js), no en el
+  // documento del lote, así que hay que ir a buscarlas. Se limpia primero
+  // para no mostrar por un instante las del lote anterior.
+  elEditarLoteNotas.value = "";
+  leerNotasInternas(feature.id).then((texto) => {
+    // Pudo haberse abierto la edición de otro lote mientras respondía.
+    if (loteEditandoDesdeGrilla === feature) elEditarLoteNotas.value = texto || "";
+  });
   elEditarLoteError.classList.add("oculto");
 
   elLoteVistaLista.classList.add("oculto");
@@ -502,7 +512,7 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
         gas: elEditarLoteServicioGas.checked,
         cloaca: elEditarLoteServicioCloaca.checked
       },
-      observaciones: elEditarLoteObservaciones.value.trim() || null
+      descripcion: elEditarLoteDescripcion.value.trim() || null
     };
 
     // Para la auditoría: si el estado entra o sale de "reservado"/
@@ -518,6 +528,9 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
     else if (estadoAnterior !== "vendido" && datos.estado === "vendido") accionAuditoria = "vender_lote";
 
     await updateDoc(doc(db, COLECCION_LOTES, loteEditandoDesdeGrilla.id), datos);
+    // Las notas no son un campo del lote sino una subcolección aparte
+    // (js/notas-internas.js), así que se guardan con su propia escritura.
+    await guardarNotasInternas(loteEditandoDesdeGrilla.id, elEditarLoteNotas.value);
     Object.assign(loteEditandoDesdeGrilla.properties, datos);
     registrarAuditoria({
       accion: accionAuditoria,

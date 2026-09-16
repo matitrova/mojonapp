@@ -51,9 +51,9 @@ const FIREBASE_API_KEY = "AIzaSyCR9w0fwXixk4CZV051-srq9PsTvmp5lGQ";
 
 // Qué campos del lote se aceptan, y cuánto texto se deja pasar de cada
 // uno. Sin esta lista blanca, alguien con una cuenta válida puede
-// mandar cualquier cosa en "observaciones" y usar el endpoint como una
+// mandar cualquier cosa en "descripcion" y usar el endpoint como una
 // API de IA de uso general pagada por vos.
-const CAMPOS_TEXTO = { titulo: 120, sector: 80, barrio: 80, observaciones: 600 };
+const CAMPOS_TEXTO = { titulo: 120, sector: 80, barrio: 80, descripcion: 600 };
 const SERVICIOS_CONOCIDOS = ["luz", "agua", "gas", "cloaca"];
 
 function json(cuerpo, status = 200) {
@@ -169,9 +169,7 @@ Tres cuidados con el cierre:
 - NO repitas en el cierre un dato que ya dijiste en el cuerpo. El cierre agrega algo, no resume.
 - Elegí para el cierre lo que un comprador valora: la vista, los servicios ya instalados, la superficie. La pendiente, el tipo de calle, la forma del terreno y parecidos son características, no atractivos: van una sola vez en el cuerpo y al pasar, nunca como argumento de venta ni en el cierre.
 
-CUIDADO CON "observaciones". Ese campo lo escribe el corredor para sí mismo, no para publicar, y suele mezclar las dos cosas. Usá solamente lo que describe el terreno para alguien que lo quiere comprar (la vista, la forma, el estado, lo que tiene alrededor). IGNORÁ por completo todo lo demás: de dónde salieron los datos, sistemas de coordenadas, nombres de organismos, fechas de relevamiento, códigos internos, recordatorios del corredor. Nada de eso va en un aviso.
-
-Y si una observación es ambigua, no la interpretes: ignorala. Un ejemplo real: "lote de difícil ubicación" puede querer decir que cuesta encontrarlo en el mapa, no que tenga mal acceso — si lo publicás como "difícil acceso" estás inventando un defecto que espanta compradores. Ante la duda, no lo menciones. Si después de descartar todo esto no queda nada usable en observaciones, escribí el aviso con el resto de los datos y listo.
+El campo "descripcion" lo escribe el corredor para publicar, así que podés apoyarte en él. Igual vale la regla 1: usalo, no lo interpretes ni le agregues conclusiones. Si viene vacío, escribí el aviso con el resto de los datos.
 
 Cómo escribirlo:
 - Que sea lindo de leer, no una ficha técnica. Español rioplatense, natural, cuidando el ritmo de las frases. Nada de "¡oportunidad única!".

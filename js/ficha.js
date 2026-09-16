@@ -12,9 +12,10 @@
 // puede importar esos tres directo sin crear un ciclo.
 // ---------------------------------------------------------------------------
 
-import { db } from "./firebase-config.js";
+import { db, auth } from "./firebase-config.js";
 import {
   doc,
+  getDoc,
   updateDoc,
   deleteDoc,
   arrayUnion,
@@ -38,6 +39,7 @@ import { registrarAuditoria } from "./auditoria.js";
 import { crearContactoDesdeInteresado, abrirContactoEnCrm } from "./crm.js";
 import { esFavorito, alternarFavorito } from "./favoritos.js";
 import { distanciasReferenciaCercanas } from "./distancias-referencia.js";
+import { leerNotasInternas } from "./notas-internas.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -110,7 +112,9 @@ const elMedidas = document.getElementById("ficha-medidas");
 const elEstado = document.getElementById("ficha-estado");
 const elPrecio = document.getElementById("ficha-precio");
 const elServicios = document.getElementById("ficha-servicios");
-const elObservaciones = document.getElementById("ficha-observaciones");
+const elDescripcion = document.getElementById("ficha-descripcion");
+const elNotas = document.getElementById("ficha-notas");
+const elNotasDt = document.getElementById("ficha-notas-dt");
 
 // Trazabilidad de venta (idea propia — "vendido a" se carga desde
 // "Editar lote", ver poblarSelectComprador/actualizarVisibilidadComprador
@@ -542,13 +546,14 @@ export function mostrarFicha(feature, contactoOrigen = null) {
   actualizarComprador(feature);
   elPrecio.textContent = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   elServicios.innerHTML = renderServiciosHTML(p.servicios);
-  elObservaciones.textContent = p.observaciones || "Sin datos";
+  elDescripcion.textContent = p.descripcion || "Sin datos";
   actualizarTasacion(feature);
   actualizarCalculadoraCuotas(feature);
   renderFotos(feature);
   actualizarBotonFavorito(feature.id);
   renderLotesSimilares(feature);
   actualizarCercanias(feature);
+  actualizarNotasInternas(feature);
 
   document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
   document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
@@ -570,7 +575,7 @@ document.getElementById("cerrar-ficha").addEventListener("click", () => {
 
 // "Editar lote" en la ficha abre el mismo formulario completo que
 // "Editar" desde la grilla (manzana/lote/nomenclatura/superficie/
-// estado/precio/sector/servicios/observaciones) — pedido explícito:
+// estado/precio/sector/servicios/descripción) — pedido explícito:
 // antes solo se podía corregir todo eso yendo a "Ver como lista", acá
 // arriba del mapa solo había editores sueltos para sector y servicios.
 // Reusa mostrarEditarLoteDesdeGrilla tal cual para no duplicar la
@@ -911,6 +916,31 @@ function formatearKm(km) {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
 
+// Notas internas (ver js/notas-internas.js): la libreta del corredor, que
+// NO se publica. Se pide async y solo con sesión iniciada — a un visitante
+// anónimo no se le esconde la fila, directamente no se le trae el dato.
+// Esa diferencia es el punto de todo el cambio: antes las notas vivían en
+// "observaciones", que se mostraba acá mismo a cualquiera.
+//
+// Mismo criterio que actualizarCercanias, abajo: no bloquea la ficha, y si
+// la lectura falla la fila simplemente no aparece.
+async function actualizarNotasInternas(feature) {
+  elNotasDt.classList.add("oculto");
+  elNotas.classList.add("oculto");
+  if (!auth.currentUser) return;
+
+  const texto = await leerNotasInternas(feature.id);
+
+  // Mientras se esperaba la respuesta el corredor pudo haber abierto otra
+  // ficha — no pisar esos datos con la respuesta de un pedido viejo
+  // (mismo cuidado que actualizarCercanias).
+  if (!texto || getLoteSeleccionado() !== feature) return;
+
+  elNotas.textContent = texto;
+  elNotasDt.classList.remove("oculto");
+  elNotas.classList.remove("oculto");
+}
+
 async function actualizarCercanias(feature) {
   elFichaCercaniasDt.classList.add("oculto");
   elFichaCercanias.classList.add("oculto");
@@ -1058,7 +1088,7 @@ function textoDescripcionPortal(feature) {
     .filter(([, tiene]) => tiene)
     .map(([nombre]) => nombre);
   if (servicios.length > 0) lineas.push(`Servicios: ${servicios.join(", ")}`);
-  if (p.observaciones) lineas.push(p.observaciones);
+  if (p.descripcion) lineas.push(p.descripcion);
   lineas.push(`Más info: ${location.origin}${location.pathname}?lote=${feature.id}`);
   return lineas.join("\n");
 }

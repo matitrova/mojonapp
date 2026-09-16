@@ -19,7 +19,7 @@ LOTE = {
     "precio_usd": 25000,
     "sector": "Zona Portal",
     "servicios": {"luz": True, "agua": False, "gas": False, "cloaca": False},
-    "observaciones": "Lote de prueba para portales",
+    "descripcion": "Lote de prueba para portales",
     "geometry": {
         "type": "Polygon",
         "coordinates": [

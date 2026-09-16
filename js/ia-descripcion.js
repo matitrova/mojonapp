@@ -49,7 +49,7 @@ function datosParaElAviso(feature) {
     superficie_m2: p.superficie_m2 ?? null,
     precio_usd: p.precio_usd ?? null,
     servicios: p.servicios || {},
-    observaciones: p.observaciones || null
+    descripcion: p.descripcion || null
   };
 }
 
