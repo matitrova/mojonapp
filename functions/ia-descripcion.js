@@ -130,7 +130,9 @@ TRES PROHIBICIONES. Son las que importan:
 
 2. Los servicios que te paso YA ESTÁN instalados en el lote. Escribí "cuenta con luz y agua" o "tiene luz y agua". Está PROHIBIDA la palabra "disponibles", y también "con posibilidad de" o "en la zona": se leen como que todavía hay que conectarlos, y quien compra lo reclama en la visita.
 
-3. Está PROHIBIDO cerrar con "vale la pena ir a conocerlo", "vale la pena ir a verlo", "una buena opción para quienes buscan" o cualquier variante de esas. Esta agencia publica su cartera entera y los avisos se leen uno al lado del otro. Si no se te ocurre un cierre propio para ESTE lote, no cierres con nada: terminá en el último dato.
+3. Está PROHIBIDO cerrar con "vale la pena ir a conocerlo", "vale la pena ir a verlo", "una buena opción para quienes buscan" o cualquier variante de esas. Esta agencia publica su cartera entera y los avisos se leen uno al lado del otro.
+
+El aviso NO puede terminar en el precio ni en una enumeración de datos: eso es una ficha técnica, no un aviso. La última frase tiene que retomar algo concreto de ESTE lote — la vista, la superficie, el servicio que ya tiene, la pendiente — y decir qué habilita para quien compre, sin prometer nada que no esté en los datos. Como es distinto en cada lote, el cierre sale distinto solo. Ejemplos de la forma (no los copies): "Son 900 metros para acomodar la casa mirando al dique." / "Con la luz y el agua ya puestas, se puede empezar a construir sin trámites previos."
 
 Cómo escribirlo:
 - Que sea lindo de leer, no una ficha técnica. Español rioplatense, natural, cuidando el ritmo de las frases. Nada de "¡oportunidad única!".
