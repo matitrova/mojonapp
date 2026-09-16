@@ -259,11 +259,18 @@ document.getElementById("nav-tab-mas").addEventListener("click", () => {
 // "activo" (dashboard.js/crm.js/vista-lista.js/acá arriba) — más seguro
 // que perseguir cada call site a mano. El mapa arranca visible (sin
 // sesión, es el catálogo público de siempre); con sesión, pasa a
-// ocultarse/mostrarse como cualquier otra sección.
+// ocultarse/mostrarse como cualquier otra sección. Mismo motivo que ya
+// documentado en renderMiniMapa (crm-formulario.js): Leaflet puede
+// quedarse con un tamaño interno "roto" si el contenedor cambió de
+// tamaño real mientras estaba en display:none (oculto) — invalidateSize()
+// recién al volver a mostrarse, no al ocultarse, evita ese problema sin
+// costo (nadie mira el mapa mientras está oculto).
 const elNavTabMapa = document.getElementById("nav-tab-mapa");
 const elSeccionMapa = document.getElementById("seccion-mapa");
 function sincronizarSeccionMapa() {
-  elSeccionMapa.classList.toggle("oculto", !elNavTabMapa.classList.contains("activo"));
+  const visible = elNavTabMapa.classList.contains("activo");
+  elSeccionMapa.classList.toggle("oculto", !visible);
+  if (visible) mapa.invalidateSize();
 }
 new MutationObserver(sincronizarSeccionMapa).observe(elNavTabMapa, { attributes: true, attributeFilter: ["class"] });
 
