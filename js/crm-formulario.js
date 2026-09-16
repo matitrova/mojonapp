@@ -267,9 +267,17 @@ function renderLotesSugeridos() {
 
     const info = document.createElement("div");
     info.className = "crm-chip-sugerido-info";
-    const titulo = document.createElement("span");
+    // Mismo <button> clickeable que los chips de "Lotes de interés" (ver
+    // renderListaLotesInteres): .crm-chip-titulo se ve como un link, así
+    // que acá era un <span> que parecía clickeable y no llevaba a ningún
+    // lado — bug reportado por el usuario. Lleva a la ficha real del lote
+    // aunque todavía no sea un interés guardado: sirve justo para ir a
+    // mirarlo antes de decidir si agregarlo.
+    const titulo = document.createElement("button");
+    titulo.type = "button";
     titulo.className = "crm-chip-titulo";
     titulo.textContent = tituloLote(feature.properties);
+    titulo.addEventListener("click", () => irALoteDesdeCrm(feature.id, contactoOrigenActual()));
     info.appendChild(titulo);
     if (motivos.length > 0) {
       const razon = document.createElement("span");
