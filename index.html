@@ -57,7 +57,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-02" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-03" />
 </head>
 <body>
 
@@ -471,6 +471,29 @@
         Copiar descripción para portales
       </button>
       <p id="portales-mensaje" class="oculto" data-testid="portales-mensaje">Descripción copiada.</p>
+
+      <!-- "Redactar con IA": la misma descripción, pero escrita por un
+           modelo de lenguaje en vez de armada por plantilla — la primera
+           tarjeta del panel "Inteligencia Artificial" que deja de ser
+           "Próximamente". Va acá, al lado del botón por plantilla y
+           dentro de #ficha-portales, por dos motivos: es el mismo
+           momento de la tarea (estoy por publicar este lote en un
+           portal), y así hereda gratis el gateo por permisos que ya hace
+           actualizarPortales() en js/ficha.js (esconde la sección entera
+           si el usuario no puede editar el lote). Ver js/ia-descripcion.js
+           y functions/ia-descripcion.js. -->
+      <button type="button" id="btn-redactar-ia" class="btn-editar-ficha" data-testid="btn-redactar-ia">
+        ✨ Redactar con IA
+      </button>
+      <div id="ia-descripcion-resultado" class="oculto" data-testid="ia-descripcion-resultado">
+        <!-- Editable a propósito: el corredor conoce la zona mejor que
+             el modelo y lo normal es que retoque algo antes de publicar. -->
+        <textarea id="ia-descripcion-texto" rows="7" data-testid="ia-descripcion-texto"></textarea>
+        <button type="button" id="btn-copiar-ia" class="btn-editar-ficha" data-testid="btn-copiar-ia">
+          Copiar
+        </button>
+      </div>
+      <p id="ia-mensaje" class="oculto" data-testid="ia-mensaje"></p>
     </div>
 
     <!-- Otros lotes de la misma zona (o, si no tiene zona cargada, los
@@ -808,18 +831,19 @@
       <button id="cerrar-panel-ia" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     </div>
     <p class="dashboard-ayuda">
-      Estas funciones ya están pensadas y con su lugar armado en la app, pero necesitan una API paga
-      (OpenAI y/o WhatsApp Business) para funcionar de verdad — hoy no hacen ninguna llamada ni tienen
-      ningún costo. Cuando quieras activar alguna en serio, se conecta sin tener que rehacer nada de esto.
+      La primera de estas funciones ya está andando de verdad. Las otras están pensadas y con su lugar
+      armado en la app, pero necesitan la API de WhatsApp Business para funcionar — hoy no hacen ninguna
+      llamada ni tienen ningún costo. Cuando quieras activar alguna, se conecta sin rehacer nada de esto.
     </p>
     <div class="ia-tarjetas">
       <div class="ia-tarjeta">
         <p class="ia-tarjeta-titulo">📝 Descripciones redactadas con IA</p>
         <p class="ia-tarjeta-desc">
-          Una versión más natural del texto que hoy arma "Copiar descripción para portales" por plantilla —
-          la misma idea, pero redactada por un modelo de lenguaje en vez de campos fijos.
+          Una versión más natural del texto que arma "Copiar descripción para portales" por plantilla —
+          la misma idea, pero redactada por un modelo de lenguaje en vez de campos fijos. Está en la ficha
+          de cada lote, en "Publicación en portales": el botón "Redactar con IA".
         </p>
-        <span class="ia-badge">Próximamente</span>
+        <span class="ia-badge ia-badge-activa" data-testid="ia-badge-descripciones">Activa</span>
       </div>
       <div class="ia-tarjeta">
         <p class="ia-tarjeta-titulo">🎙️ Actualizar por nota de voz de WhatsApp</p>
@@ -1743,6 +1767,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-16-02"></script>
+  <script type="module" src="js/app.js?v=2026-09-16-03"></script>
 </body>
 </html>

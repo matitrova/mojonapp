@@ -942,7 +942,11 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin-top: 0.5rem;
 }
 
-#portales-mensaje {
+/* #ia-mensaje comparte el look de #portales-mensaje (mismo lugar de la
+   ficha, misma función: avisar el resultado de lo que se acaba de
+   apretar) — se suma al selector en vez de copiar la regla. */
+#portales-mensaje,
+#ia-mensaje {
   text-align: center;
   font-size: 0.8rem;
   color: var(--color-primario);
@@ -951,6 +955,35 @@ body.con-nav-secciones #btn-flotante-catastro {
   word-break: break-word;
   user-select: text;
   white-space: pre-line;
+}
+
+/* "Redactar con IA" usa el mismo look que el botón de plantilla que
+   tiene al lado (.btn-editar-ficha) — se distingue por el ✨ del label,
+   no por el color: --color-acento es rojo y un botón rojo acá se leería
+   como advertencia, no como función nueva. Lo único propio es el estado
+   deshabilitado, que el otro botón no necesita porque es instantáneo. */
+#btn-redactar-ia:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+#ia-descripcion-texto {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  font: inherit;
+  color: var(--color-texto);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 10px;
+  resize: vertical;
+}
+
+#ia-descripcion-texto:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(51, 82, 58, 0.15);
 }
 
 /* Cartel con QR (idea #7) y ficha imprimible (idea #9) comparten la
@@ -2668,6 +2701,14 @@ body.con-nav-secciones #btn-flotante-catastro {
   padding: 2px 8px;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+/* La tarjeta que ya dejó de ser una promesa: mismo lugar y forma que
+   "Próximamente" pero en verde, para que se vea de un vistazo cuál de
+   las cinco anda de verdad. */
+.ia-badge-activa {
+  background: color-mix(in srgb, var(--color-disponible) 18%, var(--color-fondo));
+  color: var(--color-disponible);
 }
 
 .auditoria-lista {

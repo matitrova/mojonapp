@@ -50,6 +50,7 @@ import {
 import "./admin.js";
 import "./auditoria.js";
 import "./ia-proximamente.js";
+import "./ia-descripcion.js";
 import "./dibujar-area.js";
 import {
   collection,
