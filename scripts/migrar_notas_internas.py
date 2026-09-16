@@ -23,8 +23,13 @@ la suite de tests.
 
 CÓMO SE CORRE.
 
-    python3 scripts/migrar_notas_internas.py              # dry-run: no escribe nada
-    python3 scripts/migrar_notas_internas.py --aplicar    # escribe de verdad
+    .venv/bin/python scripts/migrar_notas_internas.py            # dry-run: no escribe nada
+    .venv/bin/python scripts/migrar_notas_internas.py --aplicar  # escribe de verdad
+
+Con el Python del entorno virtual del proyecto, NO con el del sistema:
+"requests" está instalado ahí (es la misma dependencia que usa la suite de
+tests, ver tests/requirements.txt). Con `python3` pelado tira
+ModuleNotFoundError.
 
 Pide el mail y la contraseña de un corredor al arrancar. No se guardan en
 ningún lado ni se escriben en disco.
