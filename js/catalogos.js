@@ -14,7 +14,11 @@ import {
   getSectoresActuales,
   setSectoresActuales,
   getBarriosActuales,
-  setBarriosActuales
+  setBarriosActuales,
+  getMotivosActuales,
+  setMotivosActuales,
+  getEtiquetasCrmActuales,
+  setEtiquetasCrmActuales
 } from "./estado.js";
 import { registrarAuditoria } from "./auditoria.js";
 
@@ -33,31 +37,38 @@ export function configurarCatalogos(sdk) {
 // (editores inline de zona/barrio), "Cargar a mano" y "Editar lote".
 // ---------------------------------------------------------------------------
 
-export async function cargarSectores() {
+// Si falla (reglas viejas sin esta colección, sin conexión, etc.) el
+// catálogo queda vacío — no puede tirar abajo el login ni el resto de la
+// carga de lotes, así que el catch deja la lista en [] y sigue.
+async function cargarCatalogoEn(coleccion, setter) {
   try {
-    const snapshot = await getDocs(collection(db, "sectores"));
-    setSectoresActuales(
-      snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.nombre.localeCompare(b.nombre))
-    );
+    const snapshot = await getDocs(collection(db, coleccion));
+    setter(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.nombre.localeCompare(b.nombre)));
   } catch {
-    // Si falla (reglas viejas sin esta colección, sin conexión, etc.) el
-    // combo queda con "Sin zona" nomás — no puede tirar abajo el login
-    // ni el resto de la carga de lotes.
-    setSectoresActuales([]);
+    setter([]);
   }
+}
+
+export async function cargarSectores() {
+  await cargarCatalogoEn("sectores", setSectoresActuales);
 }
 
 // Mismo catálogo que zonas, colección separada — un lote tiene zona Y
 // barrio a la vez, son dos categorías independientes.
 export async function cargarBarrios() {
-  try {
-    const snapshot = await getDocs(collection(db, "barrios"));
-    setBarriosActuales(
-      snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.nombre.localeCompare(b.nombre))
-    );
-  } catch {
-    setBarriosActuales([]);
-  }
+  await cargarCatalogoEn("barrios", setBarriosActuales);
+}
+
+// Catálogos del CRM (motivos de pérdida y etiquetas de contacto): antes
+// eran texto libre, así que "precio"/"Precio"/"caro" contaban como tres
+// motivos distintos en el Dashboard y "urgente"/"Urgente" como dos
+// etiquetas en el filtro del pipeline. Ver asegurarEnCatalogo más abajo.
+export async function cargarMotivos() {
+  await cargarCatalogoEn("motivos_perdida", setMotivosActuales);
+}
+
+export async function cargarEtiquetasCrm() {
+  await cargarCatalogoEn("etiquetas_contacto", setEtiquetasCrmActuales);
 }
 
 // valorActual: el nombre que ya tiene el lote (si lo tiene), para
@@ -82,6 +93,56 @@ export function poblarSelectBarrio(elSelect, valorActual) {
   poblarSelectCatalogo(elSelect, valorActual, getBarriosActuales(), "Sin barrio");
 }
 
+// Los catálogos del CRM se eligen con un <input list> + <datalist> en vez
+// de un <select>: el corredor tiene que poder elegir uno de la lista O
+// escribir uno nuevo sin frenar la carga ("lista + crear al vuelo",
+// decisión del usuario). Un <select> solo no permite lo segundo.
+function poblarDatalist(idDatalist, catalogo) {
+  const el = document.getElementById(idDatalist);
+  if (!el) return;
+  el.innerHTML = catalogo.map((item) => `<option value="${item.nombre}"></option>`).join("");
+}
+
+// Los ids de los <datalist> viven solo acá: quien necesita refrescar el
+// autocompletado (app.js al iniciar sesión, crm-formulario.js al crear un
+// valor nuevo al vuelo) llama a esto y listo.
+export function refrescarDatalistsCrm() {
+  poblarDatalist("lista-motivos", getMotivosActuales());
+  poblarDatalist("lista-etiquetas-crm", getEtiquetasCrmActuales());
+}
+
+// El corazón del "sin duplicados": devuelve SIEMPRE el nombre canónico.
+// Si lo que se tipeó ya está en el catálogo con otra capitalización
+// ("precio" cuando existe "Precio"), devuelve el del catálogo; si no
+// está, lo agrega y lo devuelve tal cual se escribió.
+//
+// Nunca tira: si el usuario no tiene el permiso para escribir el catálogo
+// (o no hay conexión), devuelve el texto original y deja que el contacto
+// se guarde igual — el catálogo es para ordenar, no para bloquear una
+// carga en el medio del campo.
+async function asegurarEnCatalogo(nombre, coleccion, getCatalogoActual, recargar) {
+  const limpio = (nombre || "").trim();
+  if (!limpio) return null;
+  const yaExiste = getCatalogoActual().find((item) => item.nombre.toLowerCase() === limpio.toLowerCase());
+  if (yaExiste) return yaExiste.nombre;
+  try {
+    await addDoc(collection(db, coleccion), { nombre: limpio });
+    await recargar();
+    refrescarDatalistsCrm(); // el valor nuevo ya queda para autocompletar
+  } catch {
+    // sin permiso / sin conexión: el valor se guarda igual en el contacto
+  }
+  return limpio;
+}
+
+export function asegurarMotivo(nombre) {
+  return asegurarEnCatalogo(nombre, "motivos_perdida", getMotivosActuales, cargarMotivos);
+}
+
+export function asegurarEtiqueta(nombre) {
+  return asegurarEnCatalogo(nombre, "etiquetas_contacto", getEtiquetasCrmActuales, cargarEtiquetasCrm);
+}
+
 // ---------------------------------------------------------------------------
 // Panel de administración: lista + alta/edición + borrado. "Sectores" y
 // "Barrios" son el mismo patrón exacto (root / permiso administrar_
@@ -89,17 +150,20 @@ export function poblarSelectBarrio(elSelect, valorActual) {
 // en vez de mantener dos copias del mismo código.
 // ---------------------------------------------------------------------------
 
+// Todos los paneles de catálogo que existen: al abrir uno se cierran los
+// otros (antes era un solo "panel hermano", con dos alcanzaba).
+const PANELES_CATALOGO = ["panel-sectores", "panel-barrios", "panel-motivos", "panel-etiquetas-crm"];
+
 function crearPanelCatalogo({
-  prefijo, // "sector" | "barrio" — singular, para los ids que van uno por item
-  plural, // "sectores" | "barrios" — para los ids del panel/tabla/vistas
-  panelId, // "panel-sectores" | "panel-barrios"
-  coleccion, // "sectores" | "barrios"
-  entidad, // "zona" | "barrio" — para los mensajes
-  genero, // "f" (zona) | "m" (barrio) — concordancia de los mensajes de abajo
-  tituloNuevo, // "Nueva zona" | "Nuevo barrio"
-  cargarCatalogo, // cargarSectores | cargarBarrios
-  getCatalogoActual, // getSectoresActuales | getBarriosActuales
-  idPanelHermano // el otro panel (Barrios si esto es Sectores, y viceversa)
+  prefijo, // singular, para los ids que van uno por item ("sector", "motivo"...)
+  plural, // para los ids del panel/tabla/vistas ("sectores", "motivos"...)
+  panelId, // "panel-sectores" | "panel-barrios" | "panel-motivos" | "panel-etiquetas-crm"
+  coleccion, // colección de Firestore
+  entidad, // "zona" | "barrio" | "motivo" | "etiqueta" — para los mensajes
+  genero, // "f" (zona, etiqueta) | "m" (barrio, motivo) — concordancia de los mensajes
+  tituloNuevo, // "Nueva zona" | "Nuevo barrio" | ...
+  cargarCatalogo, // cargarSectores | cargarBarrios | cargarMotivos | cargarEtiquetasCrm
+  getCatalogoActual // getSectoresActuales | getBarriosActuales | ...
 }) {
   const articulo = genero === "f" ? "la" : "el";
   const pronombre = genero === "f" ? "la" : "lo"; // "la tienen asignada" / "lo tienen asignado"
@@ -177,6 +241,17 @@ function crearPanelCatalogo({
     try {
       const datos = { nombre: elNombre.value.trim() };
       const idEditando = elIdEditando.value;
+      // Duplicados, case-insensitive: hasta ahora se podía cargar "Merlo"
+      // y "merlo" como dos zonas distintas. Al estar acá, la validación
+      // protege a los cuatro catálogos por igual.
+      const repetido = getCatalogoActual().find(
+        (item) => item.id !== idEditando && item.nombre.toLowerCase() === datos.nombre.toLowerCase()
+      );
+      if (repetido) {
+        elError.textContent = `Ya existe: "${repetido.nombre}".`;
+        elError.classList.remove("oculto");
+        return;
+      }
       if (idEditando) {
         await setDoc(doc(db, coleccion, idEditando), datos);
         registrarAuditoria({ accion: `editar_${entidad}`, objetoId: idEditando, objetoTitulo: datos.nombre });
@@ -222,8 +297,13 @@ function crearPanelCatalogo({
     document.getElementById("vista-lista").classList.add("oculto"); // no superponer con "Ver como lista"
     document.getElementById("btn-ver-lista").classList.remove("activo");
     document.getElementById("panel-admin").classList.add("oculto"); // ni con "Seguridad"
-    document.getElementById(idPanelHermano).classList.add("oculto"); // ni con el otro catálogo
     document.getElementById("panel-dashboard").classList.add("oculto"); // ni con "Dashboard"
+    document.getElementById("panel-crm").classList.add("oculto"); // ni con Contactos
+    // Ni con NINGÚN otro catálogo: con cuatro paneles (zonas, barrios,
+    // motivos, etiquetas) ya no alcanza con ocultar "el hermano".
+    PANELES_CATALOGO.filter((id) => id !== panelId).forEach((id) => {
+      document.getElementById(id).classList.add("oculto");
+    });
     mostrarLista();
     elPanel.classList.remove("oculto");
     await cargarPanel();
@@ -246,8 +326,7 @@ export function iniciarCatalogos() {
     genero: "f",
     tituloNuevo: "Nueva zona",
     cargarCatalogo: cargarSectores,
-    getCatalogoActual: getSectoresActuales,
-    idPanelHermano: "panel-barrios"
+    getCatalogoActual: getSectoresActuales
   });
   crearPanelCatalogo({
     prefijo: "barrio",
@@ -258,7 +337,31 @@ export function iniciarCatalogos() {
     genero: "m",
     tituloNuevo: "Nuevo barrio",
     cargarCatalogo: cargarBarrios,
-    getCatalogoActual: getBarriosActuales,
-    idPanelHermano: "panel-sectores"
+    getCatalogoActual: getBarriosActuales
+  });
+  // Catálogos del CRM. "etiqueta-crm" y no "etiqueta" a propósito: la
+  // fábrica arma el id `btn-agregar-${prefijo}`, y `btn-agregar-etiqueta`
+  // YA existe (es el botón que suma una etiqueta a un contacto).
+  crearPanelCatalogo({
+    prefijo: "motivo",
+    plural: "motivos",
+    panelId: "panel-motivos",
+    coleccion: "motivos_perdida",
+    entidad: "motivo",
+    genero: "m",
+    tituloNuevo: "Nuevo motivo",
+    cargarCatalogo: cargarMotivos,
+    getCatalogoActual: getMotivosActuales
+  });
+  crearPanelCatalogo({
+    prefijo: "etiqueta-crm",
+    plural: "etiquetas-crm",
+    panelId: "panel-etiquetas-crm",
+    coleccion: "etiquetas_contacto",
+    entidad: "etiqueta",
+    genero: "f",
+    tituloNuevo: "Nueva etiqueta",
+    cargarCatalogo: cargarEtiquetasCrm,
+    getCatalogoActual: getEtiquetasCrmActuales
   });
 }

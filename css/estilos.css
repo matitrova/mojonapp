@@ -3555,6 +3555,41 @@ body.con-nav-secciones #btn-flotante-catastro {
   flex-shrink: 0;
 }
 
+/* "Pegar mail de portal" (ver js/ia-lead.js): bloque que se abre bajo la
+   toolbar del CRM, no un panel a pantalla completa — pegar un mail es un
+   paso corto antes de caer en el formulario de contacto de siempre, no
+   una pantalla propia. Borde neutro a propósito: el ámbar de
+   .crm-automatizacion y del aviso de duplicado significa "prestá
+   atención a esto", y acá no hay nada que avisar. */
+#crm-pegar-mail {
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  background: var(--color-fondo-alterno);
+}
+
+#crm-pegar-mail textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+#crm-pegar-mail-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 0.6rem;
+}
+
+#crm-pegar-mail-mensaje {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primario);
+  word-break: break-word;
+}
+
 /* Botón principal de una pantalla: mismo fondo/color que "Ingresar" o
    "Guardar lote" en el resto de la app (ver #formulario-login button y
    hermanos) — para que la acción destacada se reconozca al toque en

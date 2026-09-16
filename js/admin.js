@@ -73,7 +73,14 @@ const PERMISOS_SECCIONES = [
       // que varios corredores usando el mismo MojonApp no se pisen la
       // cartera de leads entre sí a medida que crece el equipo. Con este
       // permiso (pensado para dueños/gerentes) se ve la cartera completa.
-      { clave: "ver_todos_los_contactos", etiqueta: "Ver contactos de todos los corredores" }
+      { clave: "ver_todos_los_contactos", etiqueta: "Ver contactos de todos los corredores" },
+      // Administrar los catálogos del CRM (motivos de pérdida y etiquetas,
+      // ver js/catalogos.js). Permiso propio y no `administrar_sectores`
+      // porque eso es de lotes: acá se decide el vocabulario del pipeline,
+      // que es otra responsabilidad. Sin este permiso un corredor sigue
+      // pudiendo ELEGIR de la lista y escribir un valor nuevo al vuelo —
+      // solo que ese valor no queda guardado en el catálogo.
+      { clave: "administrar_catalogos_crm", etiqueta: "Administrar catálogos del CRM" }
     ]
   }
 ];

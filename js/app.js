@@ -21,8 +21,11 @@ import {
   iniciarCatalogos,
   cargarSectores,
   cargarBarrios,
+  cargarMotivos,
+  cargarEtiquetasCrm,
   poblarSelectSector,
-  poblarSelectBarrio
+  poblarSelectBarrio,
+  refrescarDatalistsCrm
 } from "./catalogos.js";
 import { configurarDashboard, abrirPanelDashboard, renderDashboard } from "./dashboard.js";
 import { configurarCrm } from "./crm.js";
@@ -51,6 +54,7 @@ import "./admin.js";
 import "./auditoria.js";
 import "./ia-proximamente.js";
 import "./ia-descripcion.js";
+import "./ia-lead.js";
 import "./dibujar-area.js";
 import {
   collection,
@@ -428,6 +432,12 @@ function actualizarUIPorPermisos() {
   // "Interés del CRM" en el mapa (idea #5 de "el mapa como una cualidad
   // del CRM") — mismo permiso que el botón "CRM" del drawer.
   document.getElementById("btn-ver-interes-crm").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
+  // Catálogos del CRM (motivos de pérdida y etiquetas): permiso propio,
+  // separado de administrar_sectores (que es de lotes) — ver
+  // PERMISOS_SECCIONES en admin.js y firestore.rules.
+  document
+    .getElementById("drawer-grupo-catalogos-crm")
+    .classList.toggle("oculto", !tienePermiso("administrar_catalogos_crm"));
   // Idea #11: el resumen de seguimientos del Dashboard abre el CRM al
   // tocar una fila (abrirContactoEnCrm en crm.js) — mismo permiso que el
   // botón "CRM" del drawer, para no mostrar un resumen que apunta a una
@@ -503,6 +513,12 @@ onAuthStateChanged(auth, async (usuario) => {
     const elLoteBarrioForm = document.getElementById("lote-barrio");
     poblarSelectSector(elLoteSectorForm, elLoteSectorForm.value);
     poblarSelectBarrio(elLoteBarrioForm, elLoteBarrioForm.value);
+    // Mismo criterio para los catálogos del CRM: alimentan el
+    // autocompletado de "motivo de pérdida" y "etiquetas" en el
+    // formulario de contacto (ver los <datalist> en index.html).
+    await cargarMotivos();
+    await cargarEtiquetasCrm();
+    refrescarDatalistsCrm();
   } else {
     elBtnAbrirLogin.classList.remove("oculto");
     elSesionActiva.classList.add("oculto");

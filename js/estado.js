@@ -86,6 +86,25 @@ export function setBarriosActuales(v) {
   barriosActuales = v;
 }
 
+// Catálogos del CRM (colecciones "motivos_perdida" y "etiquetas_contacto"):
+// antes eran texto libre en cada contacto, lo que dejaba entrar duplicados
+// tipo "precio"/"Precio". Alimentan los <datalist> de los dos campos.
+let motivosActuales = [];
+export function getMotivosActuales() {
+  return motivosActuales;
+}
+export function setMotivosActuales(v) {
+  motivosActuales = v;
+}
+
+let etiquetasCrmActuales = [];
+export function getEtiquetasCrmActuales() {
+  return etiquetasCrmActuales;
+}
+export function setEtiquetasCrmActuales(v) {
+  etiquetasCrmActuales = v;
+}
+
 // Contactos del CRM (colección "contactos", ver js/crm.js) — se cargan
 // una sola vez al abrir el panel, después el pipeline se pinta desde
 // esta copia en memoria (mismo criterio que lotesActuales con el mapa).

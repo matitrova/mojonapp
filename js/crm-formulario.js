@@ -38,6 +38,10 @@ import {
   obtenerUsuariosPorUidCache,
   textoAsignado
 } from "./crm-datos.js";
+// Catálogos del CRM: devuelven el nombre canónico y, si es nuevo, lo dejan
+// guardado para la próxima. catalogos.js no importa nada de acá, así que
+// no hay riesgo de ciclo.
+import { asegurarMotivo, asegurarEtiqueta } from "./catalogos.js";
 
 let renderTodo, mostrarKanban, irALoteDesdeCrm, tituloLote;
 export function configurarFormulario(deps) {
@@ -371,19 +375,21 @@ function renderListaEtiquetas() {
   elEtiquetasVacio.classList.toggle("oculto", etiquetasEnEdicion.length > 0);
 }
 
-function agregarEtiquetaDesdeInput() {
+async function agregarEtiquetaDesdeInput() {
   const valor = elInputEtiqueta.value.trim();
   if (!valor) return;
-  // Comparación sin mayúsculas/minúsculas para no juntar "Urgente" y
-  // "urgente" como dos etiquetas distintas — se guarda tal cual se
-  // escribió la primera vez.
-  const yaExiste = etiquetasEnEdicion.some((e) => e.toLowerCase() === valor.toLowerCase());
-  if (!yaExiste) {
-    etiquetasEnEdicion.push(valor);
-    renderListaEtiquetas();
-  }
   elInputEtiqueta.value = "";
   elInputEtiqueta.focus();
+  // El catálogo manda: si "urgente" ya está como "Urgente", se usa
+  // "Urgente" — así el filtro del pipeline no termina con la misma
+  // etiqueta escrita de tres formas. Si es nueva, queda en el catálogo
+  // para la próxima (ver asegurarEtiqueta en catalogos.js).
+  const canonico = (await asegurarEtiqueta(valor)) || valor;
+  const yaExiste = etiquetasEnEdicion.some((e) => e.toLowerCase() === canonico.toLowerCase());
+  if (!yaExiste) {
+    etiquetasEnEdicion.push(canonico);
+    renderListaEtiquetas();
+  }
 }
 
 elBtnAgregarEtiqueta.addEventListener("click", agregarEtiquetaDesdeInput);
@@ -572,8 +578,16 @@ elBtnAbrirDuplicado.addEventListener("click", () => {
 // estadoInicial: solo se usa con contacto == null (alta rápida desde el
 // "+" de una columna del kanban) — precarga el estado con el que se creó
 // el contacto en vez de forzar siempre "Nuevo".
+// "Origen del lead" de un contacto que todavía no se guardó. El alta
+// normal lo tiene fijo en el submit ("manual"), pero un contacto que sale
+// de un mail de portal no es un alta manual — lo pone mostrarFormConLead,
+// más abajo. Se limpia al abrir cualquier formulario para que el próximo
+// "+ Nuevo contacto" no herede el origen del anterior.
+let origenPrefill = null;
+
 export function mostrarForm(contacto, estadoInicial) {
   formulario.reset();
+  origenPrefill = null;
   mostrarTabDatos(); // no queda en la pestaña que tenía seleccionada el contacto anterior
   elNotaFijada.value = contacto ? contacto.nota_fijada || "" : "";
   elError.classList.add("oculto");
@@ -626,17 +640,68 @@ export function mostrarForm(contacto, estadoInicial) {
   renderMiniMapa();
 }
 
+// Precarga el formulario con lo que la IA sacó de un mail de portal (ver
+// js/ia-lead.js y functions/ia-lead.js). No guarda nada: deja todo listo
+// para que el corredor lo revise y apriete Guardar como siempre.
+//
+// Vive acá y no en ia-lead.js porque los campos del formulario y
+// lotesInteresEnEdicion son estado interno de este módulo — mismo criterio
+// por el que mostrarForm también vive acá.
+//
+// Se llama a mostrarForm(null), no mostrarForm(lead): con un objeto,
+// mostrarForm hace elIdEditando.value = contacto.id, y sin un id real de
+// Firestore el guardado intentaría actualizar un documento inexistente en
+// vez de crear uno.
+export function mostrarFormConLead(lead) {
+  mostrarForm(null);
+
+  elNombre.value = lead.nombre || "";
+  elTelefono.value = lead.telefono || "";
+  elEmail.value = lead.email || "";
+
+  // La consulta va a la nota fijada porque es lo único que se guarda
+  // junto con el formulario: las actividades no sirven todavía
+  // (elAgregarActividad está oculto hasta que el contacto exista).
+  //
+  // El lote de interés NO se adivina a partir de lead.propiedad: el mail
+  // referencia el aviso del portal, no el lote de este sistema, y un
+  // match por texto se equivoca en silencio. Queda escrito en la nota y
+  // el corredor elige el lote con el selector que ya está en el form.
+  elNotaFijada.value = [
+    lead.propiedad ? `Consultó por: ${lead.propiedad}` : null,
+    lead.consulta || null
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  origenPrefill = "email";
+  elFormTitulo.textContent = "Nuevo contacto (desde un mail)";
+
+  // Todo lo que cuelga del teléfono se evalúa al tipear, y acá el
+  // teléfono lo puso el código, no una persona: sin esto, un lead que ya
+  // está en el pipeline se guardaría duplicado sin que nadie se entere
+  // (actualizarAvisoDuplicado) y el botón de WhatsApp quedaría apagado
+  // con un número cargado (actualizarBotonWhatsapp — mostrarForm ya lo
+  // llamó, pero antes de que este campo tuviera valor).
+  elTelefono.dispatchEvent(new Event("input"));
+}
+
 formulario.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   elError.classList.add("oculto");
   const idEditando = elIdEditando.value;
   const estado = elEstado.value;
+  // Mismo criterio que las etiquetas: el motivo tipeado pasa por el
+  // catálogo, así "precio" no queda como un motivo aparte de "Precio" en
+  // el resumen del Dashboard (ver motivosPerdidaFrecuentes).
+  const motivoCanonico =
+    estado === "perdido" ? await asegurarMotivo(elMotivoPerdido.value) : null;
   const datos = {
     nombre: elNombre.value.trim(),
     telefono: elTelefono.value.trim() || null,
     email: elEmail.value.trim() || null,
     estado,
-    motivo_perdido: estado === "perdido" ? elMotivoPerdido.value.trim() || null : null,
+    motivo_perdido: motivoCanonico,
     proximo_seguimiento: elSeguimientoInput.value || null,
     nota_fijada: elNotaFijada.value.trim() || null,
     lotes_interes: lotesInteresEnEdicion,
@@ -680,9 +745,11 @@ formulario.addEventListener("submit", async (evento) => {
       datos.creado_por = auth.currentUser.uid;
       datos.fecha_creacion = datos.fecha_actualizacion;
       // "Origen del lead" (ver mismo criterio en crearContactoDesdeInteresado,
-      // crm-datos.js) — este es el alta manual desde "+ Nuevo contacto",
-      // sin pasar por la ficha de ningún lote puntual.
-      datos.origen = "manual";
+      // crm-datos.js) — "manual" es el alta desde "+ Nuevo contacto", sin
+      // pasar por la ficha de ningún lote puntual. Un contacto que vino de
+      // un mail de portal llega acá con origenPrefill ya puesto (ver
+      // mostrarFormConLead).
+      datos.origen = origenPrefill || "manual";
       const nuevoRef = await addDoc(collection(db, COLECCION_CONTACTOS), datos);
       registrarAuditoria({ accion: "crear_contacto", objetoId: nuevoRef.id, objetoTitulo: datos.nombre });
     }

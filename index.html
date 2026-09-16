@@ -57,7 +57,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-03" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-04" />
 </head>
 <body>
 
@@ -173,6 +173,15 @@
              contactos activos interesados sobre cada lote, ver
              activarInteresCrm en js/mapa.js. -->
         <button type="button" class="drawer-item oculto" id="btn-ver-interes-crm" data-testid="btn-ver-interes-crm">Interés del CRM en el mapa</button>
+
+        <!-- Misma categoría CONFIGURACIÓN que tiene Gestor dentro de su
+             módulo CRM. Gateada por el permiso administrar_catalogos_crm
+             (ver actualizarUIPorPermisos en app.js). -->
+        <div id="drawer-grupo-catalogos-crm" class="oculto">
+          <p class="menu-categoria">Configuración</p>
+          <button type="button" class="drawer-item" id="btn-abrir-motivos" data-testid="btn-abrir-motivos">Motivos de pérdida</button>
+          <button type="button" class="drawer-item" id="btn-abrir-etiquetas-crm" data-testid="btn-abrir-etiquetas-crm">Etiquetas</button>
+        </div>
       </div>
     </div>
 
@@ -795,6 +804,7 @@
               <div class="permisos-seccion-items">
                 <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-gestionar_contactos" data-testid="perfil-permiso-gestionar_contactos" /> Gestionar contactos (CRM)</label>
                 <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-ver_todos_los_contactos" data-testid="perfil-permiso-ver_todos_los_contactos" /> Ver contactos de todos los corredores</label>
+                <label class="opcion-servicio"><input type="checkbox" id="perfil-permiso-administrar_catalogos_crm" data-testid="perfil-permiso-administrar_catalogos_crm" /> Administrar catálogos del CRM</label>
               </div>
             </div>
           </div>
@@ -862,12 +872,13 @@
         <span class="ia-badge">Próximamente</span>
       </div>
       <div class="ia-tarjeta">
-        <p class="ia-tarjeta-titulo">📧 Alta automática de leads por email</p>
+        <p class="ia-tarjeta-titulo">📧 Leads de portales, sin cargar a mano</p>
         <p class="ia-tarjeta-desc">
-          Las consultas que llegan por mail desde los portales (ZonaProp, MercadoLibre) se convierten solas
-          en un contacto nuevo del CRM, sin copiar y pegar a mano.
+          Pegás la consulta que te llegó por mail desde un portal (ZonaProp, MercadoLibre) y sale un contacto
+          del CRM con nombre, teléfono y la consulta ya cargados, para revisar y guardar. Está en el CRM:
+          el botón "Pegar mail de portal". Que el mail entre solo, sin pegarlo, es el paso siguiente.
         </p>
-        <span class="ia-badge">Próximamente</span>
+        <span class="ia-badge ia-badge-activa" data-testid="ia-badge-leads">Activa</span>
       </div>
       <div class="ia-tarjeta">
         <p class="ia-tarjeta-titulo">🗣️ Resúmenes automáticos de conversaciones</p>
@@ -946,6 +957,78 @@
         </label>
         <button type="submit" id="barrio-guardar-btn" data-testid="barrio-guardar">Guardar barrio</button>
         <p id="barrio-error" class="mensaje-error oculto" data-testid="barrio-error"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Catálogos del CRM: mismo patrón exacto que Zonas/Barrios (misma
+       fábrica crearPanelCatalogo en js/catalogos.js). Antes el motivo de
+       pérdida y las etiquetas eran texto libre en cada contacto, y por eso
+       entraban duplicados ("precio" y "Precio" contaban como dos motivos
+       distintos en el Dashboard). -->
+  <div id="panel-motivos" class="oculto panel-pantalla-completa" data-testid="panel-motivos">
+    <div class="panel-header">
+      <h2>Motivos de pérdida</h2>
+      <button id="cerrar-panel-motivos" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div id="motivos-vista-lista">
+      <div class="tabla-scroll">
+        <table class="tabla-panel" data-testid="tabla-motivos">
+          <thead>
+            <tr><th>Nombre</th><th></th></tr>
+          </thead>
+          <tbody id="tabla-motivos-cuerpo"></tbody>
+        </table>
+      </div>
+      <button type="button" id="btn-agregar-motivo" data-testid="btn-agregar-motivo">+ Nuevo motivo</button>
+    </div>
+
+    <div id="motivos-vista-form" class="oculto">
+      <button type="button" id="motivo-volver" class="btn-link" data-testid="motivo-volver">&larr; Volver a motivos</button>
+      <h3 id="motivo-form-titulo">Nuevo motivo</h3>
+      <form id="formulario-motivo">
+        <input type="hidden" id="motivo-id-editando" value="" />
+        <label>Nombre
+          <input type="text" id="motivo-nombre" data-testid="motivo-nombre" required placeholder="Ej: Precio, Financiación, Compró en otro lado..." />
+        </label>
+        <button type="submit" id="motivo-guardar-btn" data-testid="motivo-guardar">Guardar motivo</button>
+        <p id="motivo-error" class="mensaje-error oculto" data-testid="motivo-error"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- "etiqueta-crm" y no "etiqueta" en los ids a propósito:
+       btn-agregar-etiqueta YA existe (suma una etiqueta a un contacto en
+       el formulario del CRM) y la fábrica arma btn-agregar-{prefijo}. -->
+  <div id="panel-etiquetas-crm" class="oculto panel-pantalla-completa" data-testid="panel-etiquetas-crm">
+    <div class="panel-header">
+      <h2>Etiquetas</h2>
+      <button id="cerrar-panel-etiquetas-crm" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div id="etiquetas-crm-vista-lista">
+      <div class="tabla-scroll">
+        <table class="tabla-panel" data-testid="tabla-etiquetas-crm">
+          <thead>
+            <tr><th>Nombre</th><th></th></tr>
+          </thead>
+          <tbody id="tabla-etiquetas-crm-cuerpo"></tbody>
+        </table>
+      </div>
+      <button type="button" id="btn-agregar-etiqueta-crm" data-testid="btn-agregar-etiqueta-crm">+ Nueva etiqueta</button>
+    </div>
+
+    <div id="etiquetas-crm-vista-form" class="oculto">
+      <button type="button" id="etiqueta-crm-volver" class="btn-link" data-testid="etiqueta-crm-volver">&larr; Volver a etiquetas</button>
+      <h3 id="etiqueta-crm-form-titulo">Nueva etiqueta</h3>
+      <form id="formulario-etiqueta-crm">
+        <input type="hidden" id="etiqueta-crm-id-editando" value="" />
+        <label>Nombre
+          <input type="text" id="etiqueta-crm-nombre" data-testid="etiqueta-crm-nombre" required placeholder="Ej: Urgente, Referido, Inversor..." />
+        </label>
+        <button type="submit" id="etiqueta-crm-guardar-btn" data-testid="etiqueta-crm-guardar">Guardar etiqueta</button>
+        <p id="etiqueta-crm-error" class="mensaje-error oculto" data-testid="etiqueta-crm-error"></p>
       </form>
     </div>
   </div>
@@ -1274,6 +1357,7 @@
             <option value="">Todo origen</option>
             <option value="ficha">🌐 Desde un lote</option>
             <option value="manual">✍️ Alta manual</option>
+            <option value="email">📧 Consulta de portal</option>
           </select>
           <!-- Oculto por defecto: solo aparece con el permiso
                "ver_todos_los_contactos" — sin él, el corredor ve
@@ -1290,8 +1374,31 @@
              relleno, para que no compitan en peso visual. -->
         <div id="crm-toolbar-acciones">
           <button type="button" id="btn-exportar-contactos" class="crm-btn-fantasma" data-testid="btn-exportar-contactos">⬇️ Exportar CSV</button>
+          <!-- Secundario como "Exportar": la acción principal de esta
+               pantalla sigue siendo "+ Nuevo contacto" (ver el comentario
+               de arriba). Ver js/ia-lead.js. -->
+          <button type="button" id="btn-pegar-mail" class="crm-btn-fantasma" data-testid="btn-pegar-mail">📧 Pegar mail de portal</button>
           <button type="button" id="btn-agregar-contacto" class="crm-btn-primario" data-testid="btn-agregar-contacto">+ Nuevo contacto</button>
         </div>
+      </div>
+
+      <!-- "Pegar mail de portal": la consulta que llegó por mail desde
+           ZonaProp/MercadoLibre se convierte en un contacto del CRM con
+           los datos ya cargados. No guarda nada solo — abre el
+           formulario de siempre para revisar antes de guardar.
+           El mail lo pega el corredor, no entra automáticamente: ver el
+           comentario largo en functions/ia-lead.js. -->
+      <div id="crm-pegar-mail" class="oculto" data-testid="crm-pegar-mail">
+        <label class="crm-campo">
+          Pegá el mail que te llegó del portal
+          <textarea id="crm-pegar-mail-texto" rows="8" data-testid="crm-pegar-mail-texto"
+            placeholder="Pegá acá el mail completo, tal como te llegó."></textarea>
+        </label>
+        <div id="crm-pegar-mail-acciones">
+          <button type="button" id="btn-cancelar-pegar-mail" class="crm-btn-fantasma" data-testid="btn-cancelar-pegar-mail">Cancelar</button>
+          <button type="button" id="btn-convertir-mail" class="crm-btn-primario" data-testid="btn-convertir-mail">Convertir en contacto</button>
+        </div>
+        <p id="crm-pegar-mail-mensaje" class="oculto" data-testid="crm-pegar-mail-mensaje"></p>
       </div>
 
       <div id="crm-kanban" data-testid="crm-kanban"></div>
@@ -1395,7 +1502,11 @@
              siempre apenas se archiva. -->
         <label class="crm-campo oculto" id="crm-campo-motivo-perdido" data-testid="crm-campo-motivo-perdido">
           Motivo de la pérdida
-          <input type="text" id="contacto-motivo-perdido" placeholder="Precio, financiación, ya compró en otro lado…" data-testid="contacto-motivo-perdido" />
+          <!-- list= + <datalist>: se elige uno del catálogo o se escribe
+               uno nuevo, que queda guardado para la próxima (ver
+               asegurarMotivo en js/catalogos.js). -->
+          <input type="text" id="contacto-motivo-perdido" list="lista-motivos" placeholder="Precio, financiación, ya compró en otro lado…" data-testid="contacto-motivo-perdido" />
+          <datalist id="lista-motivos"></datalist>
         </label>
         <!-- Solo visible con el permiso "ver_todos_los_contactos" (o
              root, ver poblarSelectAsignado en js/crm.js) — sin él, un
@@ -1460,12 +1571,17 @@
           <ul id="crm-lista-etiquetas" data-testid="crm-lista-etiquetas"></ul>
           <p id="crm-etiquetas-vacio" class="dashboard-vacio oculto">Ninguna todavía.</p>
           <div class="crm-agregar-lote">
+            <!-- Mismo criterio que el motivo de pérdida: autocompleta con
+                 las etiquetas que ya existen (para no crear "urgente" y
+                 "Urgente" como dos) y deja escribir una nueva. -->
             <input
               type="text"
               id="crm-input-etiqueta"
+              list="lista-etiquetas-crm"
               placeholder="Ej: financiamiento, urgente…"
               data-testid="crm-input-etiqueta"
             />
+            <datalist id="lista-etiquetas-crm"></datalist>
             <button type="button" id="btn-agregar-etiqueta" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-agregar-etiqueta">
               + Agregar
             </button>
@@ -1767,6 +1883,6 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-16-03"></script>
+  <script type="module" src="js/app.js?v=2026-09-16-04"></script>
 </body>
 </html>

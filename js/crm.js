@@ -25,8 +25,17 @@ import {
   doc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-import { getContactosActuales, getLotesActuales, getModoVista, setModoVista } from "./estado.js";
+import {
+  getContactosActuales,
+  getLotesActuales,
+  getModoVista,
+  setModoVista,
+  getEtiquetasCrmActuales
+} from "./estado.js";
 import { centroideDePoligono } from "./geometria.js";
+// Catálogo de motivos de pérdida: el motivo que se tipea al mover una
+// tarjeta a "Perdido" también se unifica contra el catálogo.
+import { asegurarMotivo } from "./catalogos.js";
 import { registrarAuditoria } from "./auditoria.js";
 // Primera etapa de la modularización de este archivo (venía con 1643
 // líneas) — constantes y lógica pura sin Firestore/DOM, movidas a su
@@ -95,6 +104,22 @@ export function configurarCrm(deps) {
 // patrón que catalogos.js/admin.js: la vista completa cambia, no un
 // formulario que se abre encima).
 // ---------------------------------------------------------------------------
+
+// "Origen del lead": de dónde salió cada contacto. Empezó siendo binario
+// (ficha / manual) resuelto con ternarios en cada lugar que lo mostraba;
+// con el tercer valor ("email", los que entran pegando un mail de portal
+// — ver js/ia-lead.js) esos ternarios se volvían ilegibles, así que el
+// ícono, el título y la etiqueta del CSV viven todos acá.
+//
+// "manual" es además el default de los contactos anteriores a que este
+// campo existiera: no se puede afirmar que salieron de una ficha si nunca
+// se guardó el dato. Las claves tienen que coincidir con los value del
+// <select id="crm-filtro-origen"> en index.html.
+const ORIGENES = {
+  ficha: { icono: "🌐", titulo: "Desde un lote" },
+  manual: { icono: "✍️", titulo: "Alta manual" },
+  email: { icono: "📧", titulo: "Consulta de portal" }
+};
 
 const elPanel = document.getElementById("panel-crm");
 const elBtnAbrir = document.getElementById("btn-abrir-crm");
@@ -192,7 +217,10 @@ async function moverContacto(contacto, nuevoEstado) {
       renderKanban();
       return;
     }
-    motivoPerdido = respuesta.trim() || null;
+    // Pasa por el catálogo igual que el campo del formulario: lo que se
+    // tipea acá también se unifica ("precio" → "Precio" si ya existe) y,
+    // si es nuevo, queda disponible para la próxima vez.
+    motivoPerdido = await asegurarMotivo(respuesta);
   }
 
   const estadoAnterior = contacto.estado;
@@ -251,15 +279,12 @@ function tarjetaContacto(contacto) {
 
   // "Origen del lead" (idea propia — versión gratis de "centralización
   // de leads" de Tokko): un ícono chico, no un chip grande, para no
-  // competir con la calificación que ya ocupa su propia línea. Los
-  // contactos de antes de este cambio no tienen "origen" guardado —
-  // "manual" es el default más neutro (no se puede afirmar que salieron
-  // de una ficha si nunca se guardó ese dato).
+  // competir con la calificación que ya ocupa su propia línea.
   const origenIcono = document.createElement("span");
   origenIcono.className = "crm-tarjeta-origen";
-  const esDesdeFicha = (contacto.origen || "manual") === "ficha";
-  origenIcono.textContent = esDesdeFicha ? "🌐" : "✍️";
-  origenIcono.title = esDesdeFicha ? "Origen: desde un lote" : "Origen: alta manual";
+  const origen = ORIGENES[contacto.origen] || ORIGENES.manual;
+  origenIcono.textContent = origen.icono;
+  origenIcono.title = `Origen: ${origen.titulo}`;
   cabecera.appendChild(origenIcono);
 
   tarjeta.appendChild(cabecera);
@@ -415,6 +440,11 @@ function contactosFiltrados() {
 // sigue existiendo.
 function poblarSelectFiltroEtiqueta() {
   const etiquetas = new Set();
+  // Unión del catálogo + lo que está en uso: el catálogo para poder
+  // filtrar por una etiqueta recién creada aunque todavía no la tenga
+  // ningún contacto, y lo en uso para no perder de vista las que quedaron
+  // de antes del catálogo (o de una etiqueta que se borró del catálogo).
+  getEtiquetasCrmActuales().forEach((item) => etiquetas.add(item.nombre));
   getContactosActuales().forEach((c) => (c.etiquetas || []).forEach((e) => etiquetas.add(e)));
   const opciones = [...etiquetas].sort((a, b) => a.localeCompare(b));
   elFiltroEtiqueta.innerHTML =
@@ -878,7 +908,7 @@ function exportarCsv() {
       c.telefono || "",
       c.email || "",
       ETIQUETA_ETAPA[c.estado] || c.estado || "",
-      (c.origen || "manual") === "ficha" ? "Desde un lote" : "Alta manual",
+      (ORIGENES[c.origen] || ORIGENES.manual).titulo,
       c.proximo_seguimiento || "",
       (c.lotes_interes || []).map((l) => l.titulo).join(" | "),
       c.fecha_actualizacion || ""
