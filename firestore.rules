@@ -68,6 +68,28 @@ service cloud.firestore {
       allow write: if esRoot() || tienePermiso('administrar_sectores');
     }
 
+    // Catálogos del CRM: los motivos por los que se pierde un contacto y
+    // las etiquetas que se le pueden poner. Antes eran texto libre en cada
+    // contacto, lo que dejaba entrar duplicados tipo "precio"/"Precio" que
+    // después ensucian cualquier métrica ("motivos de pérdida más
+    // frecuentes" en el Dashboard cuenta los dos por separado).
+    //
+    // Misma forma que sectores/barrios de arriba —  cualquier logueado
+    // lee (lo necesita para completar los <datalist> de esos dos campos),
+    // administrarlos es un permiso propio — pero con permiso separado,
+    // "administrar_catalogos_crm": quién organiza las zonas del mapa y
+    // quién organiza el pipeline de contactos no tienen por qué ser la
+    // misma persona.
+    match /motivos_perdida/{motivoId} {
+      allow read: if request.auth != null;
+      allow write: if esRoot() || tienePermiso('administrar_catalogos_crm');
+    }
+
+    match /etiquetas_contacto/{etiquetaId} {
+      allow read: if request.auth != null;
+      allow write: if esRoot() || tienePermiso('administrar_catalogos_crm');
+    }
+
     // El catálogo de lotes sigue siendo público en lectura — ese es el
     // propósito comercial de la app, no depende de perfiles. Lo que se
     // restringe por perfil es quién puede cargar/editar/borrar, y si un
