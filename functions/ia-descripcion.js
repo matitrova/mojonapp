@@ -133,7 +133,24 @@ export async function onRequestPost(context) {
     // Falta configurar el secret en Cloudflare. Se distingue del resto
     // de los errores a propósito: es el único que se arregla del lado
     // de ustedes y no reintentando.
-    return json({ error: "La función de IA todavía no está configurada." }, 503);
+    //
+    // DIAGNÓSTICO TEMPORAL (2026-09-16) — SACAR cuando se resuelva.
+    // El secret figura cargado y guardado en el panel, el deploy dice
+    // "Éxito" y el dominio sirve esta misma función, pero acá sigue
+    // llegando undefined. Esto dice qué bindings ve la función de
+    // verdad, sin revelar ningún valor: solo la cantidad y los nombres
+    // (un nombre de variable no es un secreto; el valor nunca se
+    // devuelve).
+    return json(
+      {
+        error: "La función de IA todavía no está configurada.",
+        _diagnostico: {
+          bindings: Object.keys(context.env || {}).sort(),
+          cantidad: Object.keys(context.env || {}).length
+        }
+      },
+      503
+    );
   }
 
   let cuerpo;
