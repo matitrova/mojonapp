@@ -169,6 +169,10 @@ Tres cuidados con el cierre:
 - NO repitas en el cierre un dato que ya dijiste en el cuerpo. El cierre agrega algo, no resume.
 - Elegí para el cierre lo que un comprador valora: la vista, los servicios ya instalados, la superficie. La pendiente, el tipo de calle, la forma del terreno y parecidos son características, no atractivos: van una sola vez en el cuerpo y al pasar, nunca como argumento de venta ni en el cierre.
 
+CUIDADO CON "observaciones". Ese campo lo escribe el corredor para sí mismo, no para publicar, y suele mezclar las dos cosas. Usá solamente lo que describe el terreno para alguien que lo quiere comprar (la vista, la forma, el estado, lo que tiene alrededor). IGNORÁ por completo todo lo demás: de dónde salieron los datos, sistemas de coordenadas, nombres de organismos, fechas de relevamiento, códigos internos, recordatorios del corredor. Nada de eso va en un aviso.
+
+Y si una observación es ambigua, no la interpretes: ignorala. Un ejemplo real: "lote de difícil ubicación" puede querer decir que cuesta encontrarlo en el mapa, no que tenga mal acceso — si lo publicás como "difícil acceso" estás inventando un defecto que espanta compradores. Ante la duda, no lo menciones. Si después de descartar todo esto no queda nada usable en observaciones, escribí el aviso con el resto de los datos y listo.
+
 Cómo escribirlo:
 - Que sea lindo de leer, no una ficha técnica. Español rioplatense, natural, cuidando el ritmo de las frases. Nada de "¡oportunidad única!".
 - El atractivo sale de dos lugares y de ningún otro: ubicar al lector (nombrar barrio y zona, que es la sierra de San Luis) y contar bien el dato más fuerte de la lista (la vista, la superficie, un servicio).
