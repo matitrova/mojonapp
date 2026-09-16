@@ -134,30 +134,15 @@ export async function onRequestPost(context) {
     // de los errores a propósito: es el único que se arregla del lado
     // de ustedes y no reintentando.
     //
-    // DIAGNÓSTICO TEMPORAL (2026-09-16) — SACAR cuando se resuelva.
-    // El secret figura cargado y guardado en el panel, el deploy dice
-    // "Éxito" y el dominio sirve esta misma función, pero acá sigue
-    // llegando undefined. Esto dice qué bindings ve la función de
-    // verdad, sin revelar ningún valor: solo la cantidad y los nombres
-    // (un nombre de variable no es un secreto; el valor nunca se
-    // devuelve).
-    return json(
-      {
-        error: "La función de IA todavía no está configurada.",
-        _diagnostico: {
-          bindings: Object.keys(context.env || {}).sort(),
-          cantidad: Object.keys(context.env || {}).length,
-          // El binding aparece en la lista pero el valor da falsy. Esto
-          // distingue los casos sin exponer nada: "string" con largo 0 es
-          // un valor guardado vacío; "undefined" es un binding declarado
-          // sin valor; "object" sería otra cosa (un binding de Secrets
-          // Store, que se leería distinto).
-          tipo: typeof context.env.ANTHROPIC_API_KEY,
-          largo: typeof context.env.ANTHROPIC_API_KEY === "string" ? context.env.ANTHROPIC_API_KEY.length : null
-        }
-      },
-      503
-    );
+    // Si esto vuelve a aparecer con el secret aparentemente cargado, el
+    // sospechoso número uno es que el VALOR esté vacío: Cloudflare
+    // muestra "Valor cifrado" en el panel tenga contenido o no, así que
+    // una variable bien nombrada y guardada sin valor se ve idéntica a
+    // una correcta. Pasó una vez (2026-09-16) y costó varias vueltas
+    // encontrarlo. La forma rápida de confirmarlo es devolver acá
+    // `typeof` y `.length` del valor por un deploy: string de largo 0 es
+    // exactamente ese caso.
+    return json({ error: "La función de IA todavía no está configurada." }, 503);
   }
 
   let cuerpo;
