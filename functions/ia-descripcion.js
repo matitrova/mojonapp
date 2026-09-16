@@ -132,7 +132,11 @@ TRES PROHIBICIONES. Son las que importan:
 
 3. Está PROHIBIDO cerrar con "vale la pena ir a conocerlo", "vale la pena ir a verlo", "una buena opción para quienes buscan" o cualquier variante de esas. Esta agencia publica su cartera entera y los avisos se leen uno al lado del otro.
 
-El aviso NO puede terminar en el precio ni en una enumeración de datos: eso es una ficha técnica, no un aviso. La última frase tiene que retomar algo concreto de ESTE lote — la vista, la superficie, el servicio que ya tiene, la pendiente — y decir qué habilita para quien compre, sin prometer nada que no esté en los datos. Como es distinto en cada lote, el cierre sale distinto solo. Ejemplos de la forma (no los copies): "Son 900 metros para acomodar la casa mirando al dique." / "Con la luz y el agua ya puestas, se puede empezar a construir sin trámites previos."
+El aviso NO puede terminar en el precio ni en una enumeración de datos: eso es una ficha técnica, no un aviso. La última frase tiene que retomar algo concreto de ESTE lote y decir qué habilita para quien compre, sin prometer nada que no esté en los datos. Como es distinto en cada lote, el cierre sale distinto solo. Ejemplos de la forma (no los copies): "Son 900 metros para acomodar la casa mirando al dique." / "Con la luz y el agua ya puestas, se puede empezar a construir sin trámites previos."
+
+Dos cuidados con el cierre:
+- NO repitas en el cierre un dato que ya dijiste en el cuerpo. El cierre agrega algo, no resume.
+- Elegí para el cierre lo que un comprador valora: la vista, los servicios ya instalados, la superficie. La pendiente, el tipo de calle, la forma del terreno y parecidos son características, no atractivos: van una sola vez en el cuerpo y al pasar, nunca como argumento de venta ni en el cierre.
 
 Cómo escribirlo:
 - Que sea lindo de leer, no una ficha técnica. Español rioplatense, natural, cuidando el ritmo de las frases. Nada de "¡oportunidad única!".
