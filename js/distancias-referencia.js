@@ -79,6 +79,20 @@ async function consultarOverpass(lat, lon) {
 // Devuelve { rutaKm, localidadNombre, localidadKm } (cualquiera de los
 // dos puede venir null si no se encontró) o null si no se pudo calcular
 // nada en absoluto.
+// Lo mismo que distanciasReferenciaCercanas pero SIN salir a la red: si el
+// dato ya está en el cache de la sesión lo devuelve, y si no, null.
+//
+// Existe para "Redactar con IA" (js/ia-descripcion.js). Ese botón quiere
+// las distancias si están, pero no puede esperarlas: Overpass tarda entre
+// 9 y 16 segundos bajo carga (medido, ver arriba), y hacer esperar todo
+// eso para generar un aviso sería peor que publicar el aviso sin la
+// referencia de distancia. En la práctica casi siempre hay dato, porque
+// abrir la ficha ya disparó la consulta de "Cercanías" y esto es el mismo
+// cache.
+export function distanciasReferenciaEnCache(lat, lon) {
+  return cache.get(claveCache(lat, lon)) || null;
+}
+
 export async function distanciasReferenciaCercanas(lat, lon) {
   const clave = claveCache(lat, lon);
   if (cache.has(clave)) return cache.get(clave);

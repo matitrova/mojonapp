@@ -22,6 +22,8 @@
 import { auth } from "./firebase-config.js";
 import { getLoteSeleccionado } from "./estado.js";
 import { tituloLote } from "./ficha.js";
+import { distanciasReferenciaEnCache } from "./distancias-referencia.js";
+import { centroideDePoligono } from "./geometria.js";
 
 const elBoton = document.getElementById("btn-redactar-ia");
 const elResultado = document.getElementById("ia-descripcion-resultado");
@@ -51,6 +53,33 @@ function datosParaElAviso(feature) {
   };
 }
 
+// Distancia real a la ruta pavimentada y a la localidad más cercana, el
+// mismo dato medido que la ficha ya muestra en "Cercanías" (ver
+// js/distancias-referencia.js, que lo saca de OpenStreetMap).
+//
+// Por qué se lo pasamos al generador de avisos: mirando cómo publican las
+// otras inmobiliarias de la zona, TODAS ubican al lector con referencias
+// concretas ("a 500 metros del Centro Cívico", "sobre el camino que une La
+// Punta con Potrero"). Es lo que hace que un aviso ubique de verdad, y
+// nuestros avisos no podían hacerlo porque el prompt tiene prohibido
+// inventar distancias — con razón. Esta es la forma de tenerlas sin
+// inventar nada: son medidas.
+//
+// Lee SOLO del cache, nunca sale a la red: Overpass tarda entre 9 y 16
+// segundos bajo carga, y hacer esperar todo eso para redactar un aviso
+// sería peor que publicarlo sin la referencia de distancia. En la práctica
+// casi siempre hay dato, porque abrir la ficha ya disparó la consulta de
+// "Cercanías" y este es el mismo cache. Si no hay, el aviso se escribe sin
+// esta parte — es un extra, no un requisito.
+function cercaniasDelLote(feature) {
+  try {
+    const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+    return distanciasReferenciaEnCache(lat, lon);
+  } catch {
+    return null;
+  }
+}
+
 elBoton.addEventListener("click", async () => {
   const feature = getLoteSeleccionado();
   if (!feature) return;
@@ -74,7 +103,11 @@ elBoton.addEventListener("click", async () => {
     const respuesta = await fetch("/ia-descripcion", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken, lote: datosParaElAviso(feature) })
+      body: JSON.stringify({
+        idToken,
+        lote: datosParaElAviso(feature),
+        cercanias: cercaniasDelLote(feature)
+      })
     });
     const datos = await respuesta.json();
 

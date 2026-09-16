@@ -112,6 +112,34 @@ function datosDelLote(lote) {
   return lineas.length ? lineas.join("\n") : null;
 }
 
+// Las distancias medidas que manda el cliente (ver cercaniasDelLote en
+// js/ia-descripcion.js). Se formatean ACÁ y no del lado del navegador a
+// propósito: así lo único que cruza la red son números, que no pueden
+// traer texto colado en el prompt. El nombre de la localidad sí es texto
+// —viene de OpenStreetMap— así que se le sacan los saltos de línea y se
+// recorta, por el mismo motivo.
+function formatearKm(km) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace(".", ",")} km`;
+}
+
+function lineasDeCercanias(cercanias) {
+  if (!cercanias || typeof cercanias !== "object") return [];
+
+  const lineas = [];
+  const { rutaKm, localidadKm, localidadNombre } = cercanias;
+
+  // Techo de 200 km: más que eso es un cálculo con algo mal, no un lote
+  // lejos — la consulta original ni siquiera mira más allá de 15 km.
+  const valida = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 200;
+
+  if (valida(rutaKm)) lineas.push(`distancia medida a la ruta pavimentada más cercana: ${formatearKm(rutaKm)}`);
+  if (valida(localidadKm) && typeof localidadNombre === "string" && localidadNombre.trim()) {
+    const nombre = localidadNombre.replace(/\s+/g, " ").trim().slice(0, 60);
+    lineas.push(`distancia medida a ${nombre}: ${formatearKm(localidadKm)}`);
+  }
+  return lineas;
+}
+
 // "No inventes datos" es la regla importante de todo este prompt, no un
 // detalle de estilo: un aviso publicado que promete un servicio que el
 // lote no tiene es un problema con un comprador real, no un bug.
@@ -128,6 +156,8 @@ TRES PROHIBICIONES. Son las que importan:
 
 1. No afirmes NADA que no esté en los datos que te paso. Ni datos nuevos (servicios, medidas, distancias, tiempos de viaje, escrituras, financiación) ni conclusiones sacadas de los datos: de "pendiente suave" no se sigue "buena orientación", de "vista al dique" no se sigue "ideal para descansar", de "calle de ripio" no se sigue "buen acceso". Esas conclusiones las saca quien compra.
 
+   UNA EXCEPCIÓN: si entre los datos viene alguna línea que empieza con "distancia medida a", ese número está medido de verdad y SÍ lo podés usar — conviene, porque ubica al lector. Escribilo tal como te lo paso, sin redondear ni convertirlo en tiempo de viaje ("a 10 minutos" sigue prohibido: no sabés a qué velocidad). Cualquier otra distancia o referencia que no venga en esa forma sigue estando prohibida.
+
 2. Los servicios que te paso YA ESTÁN instalados en el lote. Escribí "cuenta con luz y agua" o "tiene luz y agua". Está PROHIBIDA la palabra "disponibles", y también "con posibilidad de" o "en la zona": se leen como que todavía hay que conectarlos, y quien compra lo reclama en la visita.
 
 3. Está PROHIBIDO cerrar con "vale la pena ir a conocerlo", "vale la pena ir a verlo", "una buena opción para quienes buscan" o cualquier variante de esas. Esta agencia publica su cartera entera y los avisos se leen uno al lado del otro.
@@ -135,7 +165,7 @@ TRES PROHIBICIONES. Son las que importan:
 El aviso NO puede terminar en el precio ni en una enumeración de datos: eso es una ficha técnica, no un aviso. La última frase tiene que retomar algo concreto de ESTE lote y decir qué habilita para quien compre, sin prometer nada que no esté en los datos. Como es distinto en cada lote, el cierre sale distinto solo. Ejemplos de la forma (no los copies): "Son 900 metros para acomodar la casa mirando al dique." / "Con la luz y el agua ya puestas, se puede empezar a construir sin trámites previos."
 
 Tres cuidados con el cierre:
-- El cierre habla SOLO del lote y de lo que se puede hacer DENTRO de él. Está prohibido afirmar nada sobre los vecinos, los terrenos de al lado, el entorno o el futuro. Concretamente: si te paso "vista al dique", el lote tiene vista al dique y se terminó — no digas que es abierta, despejada, que no hay nada que la tape, que es panorámica ni que va a seguir así. Eso nadie lo verificó, y si mañana el vecino construye, el aviso prometió algo falso.
+- El cierre habla SOLO del lote y de lo que se puede hacer DENTRO de él. Está prohibido afirmar nada sobre los vecinos, los terrenos de al lado, el entorno o el futuro. Concretamente: si te paso "vista al dique", el lote tiene vista al dique y se terminó — no digas que es abierta, despejada, que no hay nada que la tape, que es panorámica ni que va a seguir así. Eso nadie lo verificó, y si mañana el vecino construye, el aviso prometió algo falso. (Las "distancias medidas" son la excepción de siempre: son dato, no interpretación. Pero van en el cuerpo, donde ubican; no las uses de cierre.)
 - NO repitas en el cierre un dato que ya dijiste en el cuerpo. El cierre agrega algo, no resume.
 - Elegí para el cierre lo que un comprador valora: la vista, los servicios ya instalados, la superficie. La pendiente, el tipo de calle, la forma del terreno y parecidos son características, no atractivos: van una sola vez en el cuerpo y al pasar, nunca como argumento de venta ni en el cierre.
 
@@ -146,6 +176,20 @@ Cómo escribirlo:
 - Sin emojis, sin hashtags, sin MAYÚSCULAS de grito.
 
 Antes de responder, releé lo que escribiste y verificá las tres prohibiciones una por una. Devolvé solamente el aviso corregido: sin título, sin comillas y sin mostrar esta revisión.`;
+
+// Descargo al pie del aviso. Va acá y NO en el prompt a propósito: es una
+// frase legal que tiene que salir SIEMPRE y SIEMPRE igual, y una
+// instrucción más en el prompt es algo que el modelo puede olvidar,
+// reescribir o resumir — ya pasó con otras reglas de esta misma función.
+// Escrito en código, no falla nunca.
+//
+// Es práctica estándar del rubro: revisando los 21 terrenos publicados en
+// Potrero de los Funes, casi todas las inmobiliarias incluyen un descargo
+// equivalente. Y es el mismo criterio que la app ya usa en el mapa ("las
+// ubicaciones son orientativas y no reemplazan una mensura profesional").
+const DESCARGO =
+  "Los datos de esta publicación son orientativos y no forman parte de documentación contractual. " +
+  "Las medidas y superficies definitivas surgen del título de propiedad.";
 
 export async function onRequestPost(context) {
   const apiKey = context.env.ANTHROPIC_API_KEY;
@@ -201,7 +245,7 @@ export async function onRequestPost(context) {
         // centavo por aviso.
         output_config: { effort: "medium" },
         system: INSTRUCCIONES,
-        messages: [{ role: "user", content: datos }]
+        messages: [{ role: "user", content: [datos, ...lineasDeCercanias(cuerpo.cercanias)].join("\n") }]
       })
     });
   } catch {
@@ -230,5 +274,5 @@ export async function onRequestPost(context) {
     return json({ error: "El servicio de IA devolvió una respuesta vacía." }, 502);
   }
 
-  return json({ texto });
+  return json({ texto: `${texto}\n\n${DESCARGO}` });
 }
