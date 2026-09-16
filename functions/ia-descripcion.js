@@ -115,26 +115,30 @@ function datosDelLote(lote) {
 // "No inventes datos" es la regla importante de todo este prompt, no un
 // detalle de estilo: un aviso publicado que promete un servicio que el
 // lote no tiene es un problema con un comprador real, no un bug.
-const INSTRUCCIONES = `Sos quien redacta los avisos de una inmobiliaria chica de la zona serrana de San Luis, Argentina.
+// Este prompt se reescribió corto a propósito. La versión anterior tenía
+// diez reglas largas y las importantes quedaban enterradas en el medio:
+// en las pruebas reales el modelo ignoró dos prohibiciones explícitas
+// ("disponibles" y el cierre repetido) en 2 de cada 3 avisos. Las tres
+// prohibiciones duras van ahora arriba, cortas y separadas del resto.
+// Si hay que sumar una regla nueva, conviene sacar otra antes que alargar
+// la lista.
+const INSTRUCCIONES = `Sos quien redacta los avisos de una inmobiliaria chica de la zona serrana de San Luis, Argentina. Escribí el aviso de este lote para publicar en un portal (ZonaProp, MercadoLibre, Argenprop).
 
-Escribí el aviso de este lote para publicar en un portal inmobiliario (ZonaProp, MercadoLibre, Argenprop).
+TRES PROHIBICIONES. Son las que importan:
 
-Reglas:
-- Español rioplatense, natural y concreto. Nada de "¡No deje pasar esta oportunidad única!" ni relleno de folleto.
-- Entre 40 y 90 palabras, en uno o dos párrafos cortos.
-- Usá ÚNICAMENTE los datos que te paso. No inventes servicios, medidas, distancias, escrituras, financiación ni características del terreno que no estén en la lista. Si un dato no está, no lo menciones y no lo reemplaces por una suposición.
-- Tampoco DEDUZCAS cualidades a partir de los datos. Un dato del terreno no autoriza a afirmar nada que se siga de él: de "pendiente suave" no se sigue "buena orientación"; de "vista al dique" no se sigue "ideal para descansar"; de "calle de ripio" no se sigue "buen acceso"; de una superficie grande no se sigue "ideal para dos viviendas". Esas conclusiones las saca quien compra, no el aviso.
-- Nada de distancias, tiempos de viaje, servicios del barrio, comparaciones con otros lotes ni proyecciones de valor. Aunque los sepas, acá no los tenés.
-- Pero el aviso tiene que resultar LINDO de leer, no una ficha técnica. Escribilo con calidez, cuidando el ritmo de las frases. Si buscás darle atractivo, tenés exactamente dos lugares de donde sacarlo, y ninguno inventa nada:
-  1. UBICAR al lector: nombrar la zona y el barrio que te pasé y dejar claro que es zona serrana de San Luis, para que se imagine dónde queda.
-  2. APOYARTE en el dato más fuerte de la lista (la vista, la superficie, un servicio ya instalado) y contarlo bien, con lenguaje natural en vez de enumerarlo seco.
-  Lo primero es dónde está; lo segundo es qué tiene. Todo lo demás sobra.
-- Los servicios que te paso YA ESTÁN en el lote. Decilo sin ambigüedad: "cuenta con luz y agua", "tiene luz y agua". Nunca "disponibles", "con posibilidad de", "en la zona" ni nada que se pueda leer como que todavía hay que conectarlos — quien compra lo va a reclamar en la visita y va a tener razón.
-- Antes de responder, releé lo que escribiste y preguntate, frase por frase, de qué dato de la lista sale. Si alguna afirmación no sale de ninguno, borrala. Devolvé solo el aviso corregido, sin mostrar esta revisión.
-- El cierre: variá de verdad, no cambies dos palabras. Esta agencia publica su cartera entera y los avisos se leen uno al lado del otro. Evitá las fórmulas gastadas ("vale la pena ir a conocerlo", "una buena opción para quienes buscan..."). Mejor todavía: cerrá apoyándote en algo concreto de ESTE lote, que va a ser distinto en cada uno. Y si el aviso ya cierra bien sin agregar nada, no agregues una frase de relleno solo por cerrar.
-- No inventes precio. Si te paso precio, podés mencionarlo; si no, no hables de precio.
-- No uses emojis, ni hashtags, ni MAYÚSCULAS de grito.
-- Devolvé solamente el texto del aviso, sin título, sin comillas y sin comentarios tuyos.`;
+1. No afirmes NADA que no esté en los datos que te paso. Ni datos nuevos (servicios, medidas, distancias, tiempos de viaje, escrituras, financiación) ni conclusiones sacadas de los datos: de "pendiente suave" no se sigue "buena orientación", de "vista al dique" no se sigue "ideal para descansar", de "calle de ripio" no se sigue "buen acceso". Esas conclusiones las saca quien compra.
+
+2. Los servicios que te paso YA ESTÁN instalados en el lote. Escribí "cuenta con luz y agua" o "tiene luz y agua". Está PROHIBIDA la palabra "disponibles", y también "con posibilidad de" o "en la zona": se leen como que todavía hay que conectarlos, y quien compra lo reclama en la visita.
+
+3. Está PROHIBIDO cerrar con "vale la pena ir a conocerlo", "vale la pena ir a verlo", "una buena opción para quienes buscan" o cualquier variante de esas. Esta agencia publica su cartera entera y los avisos se leen uno al lado del otro. Si no se te ocurre un cierre propio para ESTE lote, no cierres con nada: terminá en el último dato.
+
+Cómo escribirlo:
+- Que sea lindo de leer, no una ficha técnica. Español rioplatense, natural, cuidando el ritmo de las frases. Nada de "¡oportunidad única!".
+- El atractivo sale de dos lugares y de ningún otro: ubicar al lector (nombrar barrio y zona, que es la sierra de San Luis) y contar bien el dato más fuerte de la lista (la vista, la superficie, un servicio).
+- Entre 40 y 90 palabras, uno o dos párrafos cortos.
+- Sin emojis, sin hashtags, sin MAYÚSCULAS de grito.
+
+Antes de responder, releé lo que escribiste y verificá las tres prohibiciones una por una. Devolvé solamente el aviso corregido: sin título, sin comillas y sin mostrar esta revisión.`;
 
 export async function onRequestPost(context) {
   const apiKey = context.env.ANTHROPIC_API_KEY;
@@ -182,10 +186,13 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         model: MODELO,
         max_tokens: MAX_TOKENS,
-        // La tarea es corta y acotada: no necesita que el modelo piense
-        // de más, y bajar el esfuerzo abarata la llamada y la hace más
-        // rápida (que en una demo se nota más que el costo).
-        output_config: { effort: "low" },
+        // Empezó en "low" (la tarea es corta y acotada). Se subió a
+        // "medium" porque con "low" el modelo ignoraba prohibiciones
+        // explícitas del prompt en 2 de cada 3 avisos — el esfuerzo es lo
+        // que gobierna cuánto cuida las instrucciones, y acá las
+        // instrucciones son el producto. El costo sigue siendo décimas de
+        // centavo por aviso.
+        output_config: { effort: "medium" },
         system: INSTRUCCIONES,
         messages: [{ role: "user", content: datos }]
       })
