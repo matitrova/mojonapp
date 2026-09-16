@@ -140,13 +140,20 @@ const elBtnMenu = document.getElementById("btn-menu");
 const elDrawerMenu = document.getElementById("drawer-menu");
 const elDrawerOverlay = document.getElementById("drawer-overlay");
 
+// "Contraído" no es lo mismo que "oculto" desde que el menú es el único
+// de la app (ver index.html/estilos.css): con sesión en escritorio, el
+// menú contraído sigue visible como un rail de íconos, así que cerrarlo
+// solo le saca .expandido — el CSS decide si contraído significa "rail"
+// (escritorio con sesión) o "no se ve" (celular / sin sesión). .oculto
+// queda reservado para "no hay sesión", lo maneja onAuthStateChanged.
 function abrirDrawer() {
   elDrawerMenu.classList.remove("oculto");
+  elDrawerMenu.classList.add("expandido");
   elDrawerOverlay.classList.remove("oculto");
 }
 
 function cerrarDrawer() {
-  elDrawerMenu.classList.add("oculto");
+  elDrawerMenu.classList.remove("expandido");
   elDrawerOverlay.classList.add("oculto");
 }
 
@@ -161,15 +168,20 @@ document.querySelectorAll(".drawer-item").forEach((boton) => {
   boton.addEventListener("click", cerrarDrawer);
 });
 
-// Subsecciones plegables (genérico: cualquier ".drawer-grupo-titulo"
-// nuevo que se agregue más adelante ya funciona solo, sin tocar este
-// código de nuevo). Arrancan cerradas para que la lista no se alargue
-// sola a medida que se sumen más secciones.
-document.querySelectorAll(".drawer-grupo-titulo").forEach((boton) => {
-  const items = boton.nextElementSibling;
-  boton.addEventListener("click", () => {
-    const abierto = boton.classList.toggle("abierto");
-    items.classList.toggle("oculto", !abierto);
+// Tocar el ícono de un módulo lleva a su pantalla por defecto (mismo
+// criterio que Gestor: el módulo es una puerta, no solo un rótulo) — y
+// cierra el menú, igual que cualquier ítem. Se hace disparando el botón
+// que YA abre esa pantalla, no duplicando la lógica de apertura.
+const PANTALLA_POR_MODULO = {
+  "btn-modulo-inicio": "btn-abrir-dashboard",
+  "btn-modulo-lotes": "btn-drawer-mapa",
+  "btn-modulo-contactos": "btn-abrir-crm",
+  "btn-modulo-sistema": "menu-seguridad-usuarios"
+};
+Object.entries(PANTALLA_POR_MODULO).forEach(([idModulo, idDestino]) => {
+  document.getElementById(idModulo).addEventListener("click", () => {
+    document.getElementById(idDestino).click();
+    cerrarDrawer();
   });
 });
 
@@ -244,14 +256,12 @@ document.getElementById("nav-tab-dashboard").addEventListener("click", () => {
 document.getElementById("nav-tab-crm").addEventListener("click", () => {
   irASeccion("crm", () => document.getElementById("btn-abrir-crm").click());
 });
-// "Más" (herramientas que antes solo vivían en el ☰): primero se asegura
-// de estar en la sección Mapa — exactamente el mismo supuesto de siempre
-// (el drawer se abre ENCIMA del mapa, cada botón de ahí asume que está
-// visible detrás) — y recién ahí abre el drawer de siempre, sin tocar su
-// contenido.
-document.getElementById("nav-tab-mas").addEventListener("click", () => {
-  irASeccion("mapa", volverAlMapa);
-  abrirDrawer();
+// "Mapa" del menú: dispara el mismo botón de la barra de secciones
+// oculta, que es quien sabe mostrar el mapa y cerrar el resto de los
+// paneles (volverAlMapa) y además deja la entrada de historial para que
+// el botón "atrás" del navegador siga funcionando entre secciones.
+document.getElementById("btn-drawer-mapa").addEventListener("click", () => {
+  elNavTabMapa.click();
 });
 
 // #seccion-mapa se sigue solo del estado de "nav-tab-mapa" en vez de
@@ -443,15 +453,28 @@ onAuthStateChanged(auth, async (usuario) => {
   if (usuario) {
     elBtnAbrirLogin.classList.add("oculto");
     elSesionActiva.classList.remove("oculto");
-    document.getElementById("drawer-sesion-activa").classList.remove("oculto");
+    // Varios bloques del menú son solo para quien tiene sesión, y no están
+    // todos juntos: el módulo "Lotes" mezcla lo público (Mapa, Lista,
+    // Favoritos, Dibujar área) con lo de gestión (Carga, Catastro,
+    // Clasificación). Por eso el gate es una clase y no un solo wrapper.
+    document.querySelectorAll(".solo-con-sesion").forEach((el) => el.classList.remove("oculto"));
     elSesionEmail.textContent = usuario.email;
     actualizarUIPorPermisos();
-    // Barra de secciones persistente (Mapa | Lista | Dashboard | CRM) —
-    // solo con sesión, nunca para un visitante anónimo ni en modo embed
-    // (mismo criterio que #encabezado ahí).
+    // El rail de íconos del menú (menú contraído, ver estilos.css) es
+    // solo para quien tiene sesión, nunca para un visitante anónimo ni en
+    // modo embed (mismo criterio que #encabezado ahí) — sin sesión el
+    // menú sigue siendo el de siempre: oculto hasta que se toca el ☰.
+    // #nav-secciones se deja sin "oculto" igual (aunque el CSS la
+    // esconda) porque su estado "activo" es el que define qué sección se
+    // ve; "con-nav-secciones" en <body> es el que activa el rail.
     if (!document.documentElement.classList.contains("modo-embed")) {
       document.getElementById("nav-secciones").classList.remove("oculto");
       document.body.classList.add("con-nav-secciones");
+      elDrawerMenu.classList.remove("oculto");
+      // El rail le come 68px de ancho al mapa (ver estilos.css): sin esto
+      // Leaflet se queda con el tamaño de antes de iniciar sesión y
+      // dibuja los tiles corridos. Mismo motivo que sincronizarSeccionMapa.
+      mapa.invalidateSize();
     }
     // Aterrizaje real al iniciar sesión (pedido explícito: "apenas
     // inicie sesión que tenga un dashboard con información importante
@@ -482,10 +505,16 @@ onAuthStateChanged(auth, async (usuario) => {
   } else {
     elBtnAbrirLogin.classList.remove("oculto");
     elSesionActiva.classList.add("oculto");
-    document.getElementById("drawer-sesion-activa").classList.add("oculto");
+    document.querySelectorAll(".solo-con-sesion").forEach((el) => el.classList.add("oculto"));
     document.getElementById("nav-secciones").classList.add("oculto");
     document.body.classList.remove("con-nav-secciones");
+    // Sin sesión el menú vuelve a ser "oculto hasta que se toca el ☰"
+    // (no queda el rail de íconos colgado de una sesión que ya cerró).
+    elDrawerMenu.classList.add("oculto");
+    cerrarDrawer();
     volverAlMapa();
+    mapa.invalidateSize(); // el mapa recupera los 68px del rail
+
     setSectoresActuales([]);
     setBarriosActuales([]);
     // Cerrar sesión apaga todas las herramientas de corredor, no solo

@@ -149,66 +149,93 @@ button:active {
   background: rgba(37, 30, 20, 0.4);
 }
 
+/* Menú ÚNICO de la app (ver el comentario en index.html) — mismo patrón que
+   Gestor: CONTRAÍDO es un rail angosto con solo los íconos de los 4 módulos;
+   EXPANDIDO es un panel con el nombre de cada módulo y sus pantallas
+   agrupadas por categoría. Se expande al pasar el mouse o con el ☰ (clase
+   .expandido, la pone abrirDrawer en app.js). En celular no hay rail:
+   contraído es directamente no mostrarse. Al ser position:fixed, expandir
+   SUPERPONE el contenido — no mueve el layout, así que no hace falta
+   recalcular el tamaño del mapa. */
 #drawer-menu {
   position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
   z-index: 1900;
-  width: 260px;
-  max-width: 82vw;
+  width: 288px;
+  max-width: 86vw;
   background: var(--color-fondo);
-  box-shadow: 4px 0 16px rgba(56, 38, 20, 0.25);
+  box-shadow: 4px 0 16px rgba(20, 30, 34, 0.25);
   padding: 16px 14px calc(34px + 16px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+}
+
+#drawer-menu:not(.expandido) {
+  display: none;
 }
 
 #drawer-menu .panel-header {
   margin-bottom: 8px;
 }
 
-.drawer-grupo {
-  margin: 4px 0;
+/* Un módulo = un ícono en el rail + un bloque de pantallas al expandir. */
+.menu-modulo {
   border-top: 1px solid var(--color-borde);
+  padding: 4px 0;
 }
 
-/* Título de cada subsección del menú: plegable, para que la lista no
-   se alargue sola a medida que se sumen más secciones/subsecciones. */
-.drawer-grupo-titulo {
+.menu-modulo:first-of-type {
+  border-top: none;
+}
+
+.menu-modulo-boton {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   width: 100%;
   background: none;
   border: none;
-  padding: 12px 4px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-texto-secundario);
+  border-radius: var(--radio-chico);
+  padding: 9px 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--color-primario);
   cursor: pointer;
 }
 
-.drawer-grupo-titulo:hover {
-  color: var(--color-texto);
+.menu-modulo-boton:hover {
+  background: var(--color-fondo-alterno);
 }
 
-.drawer-grupo-flecha {
-  font-size: 1rem;
-  line-height: 1;
-  transition: transform 0.15s ease;
+.menu-modulo-icono {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.drawer-grupo-titulo.abierto .drawer-grupo-flecha {
-  transform: rotate(90deg);
+.menu-modulo-icono svg {
+  width: 21px;
+  height: 21px;
 }
 
-.drawer-grupo-items {
-  padding-bottom: 6px;
+/* Título de categoría dentro de un módulo: es una etiqueta, no un botón
+   plegable — mismo criterio que Gestor, donde las categorías no se cierran
+   (la idea es ver todo el sistema de un vistazo). */
+.menu-categoria {
+  margin: 10px 8px 2px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-texto-secundario);
 }
 
 .drawer-item {
@@ -218,16 +245,64 @@ button:active {
   background: none;
   border: none;
   border-radius: var(--radio-chico);
-  padding: 10px 8px;
-  margin: 2px 0;
-  font-size: 0.88rem;
+  padding: 8px 8px 8px 42px; /* alineado debajo del nombre del módulo */
+  margin: 1px 0;
+  font-size: 0.85rem;
   font-weight: 600;
+  font-family: inherit;
   color: var(--color-texto);
   cursor: pointer;
 }
 
 .drawer-item:hover {
   background: var(--color-fondo-alterno);
+}
+
+@media (min-width: 860px) {
+  /* Rail contraído: solo con sesión. Sin sesión el menú sigue siendo
+     "oculto hasta que se toca el ☰", igual que siempre. */
+  body.con-nav-secciones #drawer-menu:not(.expandido) {
+    display: flex;
+    top: 44px;
+    width: 68px;
+    max-width: 68px;
+    padding: 14px 8px;
+    border-right: 1px solid var(--color-borde);
+    box-shadow: 1px 0 8px rgba(20, 30, 34, 0.07);
+  }
+
+  body.con-nav-secciones #drawer-menu:not(.expandido) .panel-header,
+  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-nombre,
+  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-items {
+    display: none;
+  }
+
+  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-boton {
+    justify-content: center;
+    padding: 11px 0;
+    gap: 0;
+  }
+
+  /* Se expande al pasar el mouse por encima (además del ☰) — pedido
+     explícito del usuario. Estas reglas van DESPUÉS de las de contraído a
+     propósito: misma especificidad, gana la última. */
+  body.con-nav-secciones #drawer-menu:hover {
+    width: 288px;
+    max-width: 288px;
+    padding: 14px 14px calc(34px + 16px);
+    box-shadow: 4px 0 16px rgba(20, 30, 34, 0.22);
+  }
+
+  body.con-nav-secciones #drawer-menu:hover .menu-modulo-nombre,
+  body.con-nav-secciones #drawer-menu:hover .menu-modulo-items {
+    display: block;
+  }
+
+  body.con-nav-secciones #drawer-menu:hover .menu-modulo-boton {
+    justify-content: flex-start;
+    padding: 9px 8px;
+    gap: 10px;
+  }
 }
 
 #btn-ver-catastro-cercano.activo,
@@ -1788,41 +1863,25 @@ body.con-nav-secciones #btn-flotante-catastro {
   color: var(--color-acento);
 }
 
-body.con-nav-secciones .panel-pantalla-completa,
-body.con-nav-secciones .hoja-inferior {
-  padding-bottom: calc(34px + 16px + 60px);
+/* La barra de secciones ya no se muestra (pedido explícito del usuario:
+   "quiero sacar la sidebar y dejar el menú desplegable con iconos") —
+   pero el elemento sigue en el DOM a propósito: su clase "activo" es la
+   que define qué sección se ve (ver sincronizarSeccionMapa en app.js y
+   los toggles de .nav-tab en dashboard.js/crm.js/vista-lista.js), y los
+   ítems del menú disparan esos mismos botones. Borrarla obligaría a
+   reescribir esa lógica en 4 archivos sin ganar nada. */
+#nav-secciones {
+  display: none;
 }
 
-/* Escritorio con sesión: la barra de secciones pasa de bottom-nav a
-   sidebar fijo a la izquierda (pedido explícito del usuario — "que se
-   vea como un sistema de gestión") — mismos botones, mismos ids/
-   data-testid, solo cambia la disposición. Sin sesión (catálogo público)
-   no se toca nada: #nav-secciones sigue oculta y el mapa sigue ocupando
-   toda la pantalla como siempre. */
+/* Con sesión en escritorio, el menú contraído queda como un rail fijo de
+   íconos a la izquierda, así que los paneles y el mapa arrancan después
+   de ese rail (ver el rail más arriba, junto al resto del #drawer-menu). */
 @media (min-width: 860px) {
-  body.con-nav-secciones #nav-secciones {
-    top: 44px;
-    bottom: 0;
-    right: auto;
-    width: 84px;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 10px;
-    padding: 18px 8px;
-    border-top: none;
-    border-right: 1px solid var(--color-borde);
-    border-radius: 0;
-    box-shadow: 2px 0 10px rgba(20, 30, 34, 0.08);
-  }
-
   body.con-nav-secciones .panel-pantalla-completa,
-  body.con-nav-secciones .hoja-inferior {
-    padding-bottom: 16px;
-    left: 84px;
-  }
-
+  body.con-nav-secciones .hoja-inferior,
   body.con-nav-secciones #seccion-mapa #mapa {
-    left: 84px;
+    left: 68px;
   }
 }
 

@@ -121,8 +121,10 @@ def test_corredor_logueado_puede_cargar_un_lote(page, base_url):
         # pantalla completa de esta app; hay que cerrarlo primero.
         page.locator("#cerrar-panel-dashboard").click()
 
+        # El menú ya no tiene grupos plegables: al abrirlo con el ☰ se ven
+        # todas las secciones con sus ítems (ver el menú de módulos en
+        # index.html/estilos.css).
         page.locator("#btn-menu").click()
-        page.locator('[data-testid="drawer-grupo-cargar-lotes"]').click()
         page.locator("#btn-cargar-lote").click()
         page.locator("#lote-superficie").fill("460.63")
         page.locator("#lote-estado").select_option("disponible")

@@ -57,7 +57,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-01" />
+<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-02" />
 </head>
 <body>
 
@@ -73,9 +73,17 @@
     </div>
   </header>
 
-  <!-- Menú lateral: todas las secciones/subsecciones de la app en un
-       solo lugar, pensado para poder sumar más sin volver a amontonar
-       botones en el header. -->
+  <!-- Menú ÚNICO de la app (pedido explícito del usuario: "sacar la
+       sidebar y dejar el menú desplegable con iconos que se vean cuando
+       está contraído") — mismo criterio que el rail de Tokko: contraído
+       muestra solo los íconos de cada sección, expandido muestra todo
+       con su nombre agrupado por sección. Reemplaza a la barra de
+       secciones que estaba antes acá: #nav-secciones queda en el DOM
+       pero oculta por CSS a propósito, porque su clase "activo" sigue
+       siendo la que define qué sección se ve (ver sincronizarSeccionMapa
+       en js/app.js y los toggles de .nav-tab en dashboard.js/crm.js/
+       vista-lista.js) — los ítems de acá disparan esos mismos botones.
+       Cada ítem lleva "title" porque contraído el texto no se ve. -->
   <div id="drawer-overlay" class="oculto" data-testid="drawer-overlay"></div>
   <nav id="drawer-menu" class="oculto" data-testid="drawer-menu">
     <div class="panel-header">
@@ -83,83 +91,121 @@
       <button id="cerrar-drawer" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     </div>
 
-    <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista">Ver como lista</button>
-    <!-- Visible sin sesión (guarda en el propio navegador, no en
-         Firestore) — un comprador anónimo también puede armarse su
-         propia lista para volver a verla después. -->
-    <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos">🤍 Favoritos</button>
-    <!-- También visible sin sesión, mismo criterio que "Favoritos" — un
-         visitante anónimo del catálogo público también puede acotar el
-         mapa a una zona dibujada a mano. -->
-    <button type="button" class="drawer-item" id="btn-dibujar-area" data-testid="btn-dibujar-area">✏️ Dibujar área</button>
-
-    <div id="drawer-sesion-activa" class="oculto">
-      <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard">Dashboard</button>
-      <!-- Oculto por defecto: se muestra con el permiso "gestionar_contactos"
-           (o root), mismo criterio que btn-abrir-auditoria — ver
-           actualizarUIPorPermisos() en app.js. -->
-      <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm">CRM</button>
-      <!-- "Interés del CRM" (idea propia #5 de "el mapa como una
-           cualidad del CRM" — resaltar, no filtrar: los lotes sin
-           interés se ven exactamente igual que siempre, no se pierde
-           nada de vista). Un pin chico con la cantidad de contactos
-           activos interesados sobre cada lote que corresponda, ver
-           activarInteresCrm en js/mapa.js. Mismo permiso/criterio de
-           oculto que btn-abrir-crm. -->
-      <button type="button" class="drawer-item oculto" id="btn-ver-interes-crm" data-testid="btn-ver-interes-crm">📌 Interés del CRM en el mapa</button>
-
-      <div class="drawer-grupo">
-        <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-cargar-lotes">
-          Cargar lotes
-          <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
-        </button>
-        <div class="drawer-grupo-items oculto">
-          <button type="button" class="drawer-item btn-secundario" id="btn-cargar-lote" data-testid="btn-cargar-lote">Cargar a mano</button>
-          <button type="button" class="drawer-item" id="btn-abrir-manzana" data-testid="btn-abrir-manzana">+ Manzana</button>
-          <button type="button" class="drawer-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela">+ Parcela</button>
-        </div>
+    <!-- MÓDULO: Inicio -->
+    <div class="menu-modulo solo-con-sesion oculto" id="drawer-sesion-activa">
+      <button type="button" class="menu-modulo-boton" id="btn-modulo-inicio" data-testid="btn-modulo-inicio" title="Inicio">
+        <span class="menu-modulo-icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /><path d="M9.5 21v-6h5v6" />
+          </svg>
+        </span>
+        <span class="menu-modulo-nombre">Inicio</span>
+      </button>
+      <div class="menu-modulo-items">
+        <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard">Dashboard</button>
       </div>
+    </div>
 
-      <div class="drawer-grupo">
-        <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-catastro">
-          Catastro
-          <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
-        </button>
-        <div class="drawer-grupo-items oculto">
+    <!-- MÓDULO: Lotes — el único que mezcla ítems públicos (el catálogo se
+         puede mirar sin sesión) con ítems de gestión, que van marcados con
+         .solo-con-sesion. -->
+    <div class="menu-modulo">
+      <button type="button" class="menu-modulo-boton" id="btn-modulo-lotes" data-testid="btn-modulo-lotes" title="Lotes">
+        <span class="menu-modulo-icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 3 3 5.5v15L9 18l6 3 6-2.5v-15L15 6 9 3Z" /><path d="M9 3v15" /><path d="M15 6v15" />
+          </svg>
+        </span>
+        <span class="menu-modulo-nombre">Lotes</span>
+      </button>
+      <div class="menu-modulo-items">
+        <!-- Dispara el mismo botón de la barra de secciones oculta, que es
+             quien sabe mostrar el mapa y ocultar el resto (volverAlMapa). -->
+        <button type="button" class="drawer-item" id="btn-drawer-mapa" data-testid="btn-drawer-mapa">Mapa</button>
+        <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista">Ver como lista</button>
+        <!-- Visible sin sesión (guarda en el propio navegador, no en
+             Firestore) — un comprador anónimo también puede armarse su
+             propia lista para volver a verla después. -->
+        <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos">Favoritos</button>
+        <!-- También visible sin sesión, mismo criterio que "Favoritos" — un
+             visitante anónimo del catálogo público también puede acotar el
+             mapa a una zona dibujada a mano. -->
+        <button type="button" class="drawer-item" id="btn-dibujar-area" data-testid="btn-dibujar-area">Dibujar área</button>
+
+        <div class="solo-con-sesion oculto">
+          <p class="menu-categoria">Carga</p>
+          <button type="button" class="drawer-item" id="btn-cargar-lote" data-testid="btn-cargar-lote">Cargar a mano</button>
+          <button type="button" class="drawer-item" id="btn-abrir-manzana" data-testid="btn-abrir-manzana">Agregar manzana</button>
+          <button type="button" class="drawer-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela">Agregar parcela</button>
+
+          <p class="menu-categoria">Catastro</p>
           <button type="button" class="drawer-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano">Ver catastro cercano</button>
         </div>
-      </div>
 
-      <div id="drawer-grupo-seguridad" class="drawer-grupo oculto">
-        <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-seguridad">
-          Seguridad
-          <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
-        </button>
-        <div class="drawer-grupo-items oculto">
+        <!-- Gateado por el permiso "administrar_sectores" (ver
+             actualizarUIPorPermisos en app.js): el id no cambia. -->
+        <div id="drawer-grupo-sectores" class="solo-con-sesion oculto">
+          <p class="menu-categoria">Clasificación</p>
+          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores">Zonas</button>
+          <button type="button" class="drawer-item" id="btn-abrir-barrios" data-testid="btn-abrir-barrios">Barrios</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÓDULO: Contactos (el CRM). Dice "Contactos" y no "CRM" por pedido
+         explícito del usuario; los ids no cambian. -->
+    <div class="menu-modulo solo-con-sesion oculto">
+      <button type="button" class="menu-modulo-boton" id="btn-modulo-contactos" data-testid="btn-modulo-contactos" title="Contactos">
+        <span class="menu-modulo-icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" />
+            <path d="M16 5.5a3.2 3.2 0 0 1 0 6.2" /><path d="M18 14.8c2 .7 3 2.5 3 5.2" />
+          </svg>
+        </span>
+        <span class="menu-modulo-nombre">Contactos</span>
+      </button>
+      <div class="menu-modulo-items">
+        <!-- Los dos gateados por "gestionar_contactos" en
+             actualizarUIPorPermisos (app.js) — ids sin cambios. -->
+        <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm">Pipeline de contactos</button>
+        <!-- "Interés del CRM" (idea propia #5 de "el mapa como una cualidad
+             del CRM" — resaltar, no filtrar): un pin con la cantidad de
+             contactos activos interesados sobre cada lote, ver
+             activarInteresCrm en js/mapa.js. -->
+        <button type="button" class="drawer-item oculto" id="btn-ver-interes-crm" data-testid="btn-ver-interes-crm">Interés del CRM en el mapa</button>
+      </div>
+    </div>
+
+    <!-- MÓDULO: Sistema -->
+    <div class="menu-modulo solo-con-sesion oculto">
+      <button type="button" class="menu-modulo-boton" id="btn-modulo-sistema" data-testid="btn-modulo-sistema" title="Sistema">
+        <span class="menu-modulo-icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2.5v3M12 18.5v3M4.2 7.2l2.1 2.1M17.7 14.7l2.1 2.1M2.5 12h3M18.5 12h3M4.2 16.8l2.1-2.1M17.7 9.3l2.1-2.1" />
+          </svg>
+        </span>
+        <span class="menu-modulo-nombre">Sistema</span>
+      </button>
+      <div class="menu-modulo-items">
+        <!-- Gateado por "administrar_usuarios" (app.js) — id sin cambios. -->
+        <div id="drawer-grupo-seguridad" class="oculto">
+          <p class="menu-categoria">Seguridad</p>
           <button type="button" class="drawer-item" id="menu-seguridad-usuarios" data-testid="menu-seguridad-usuarios">Usuarios</button>
           <button type="button" class="drawer-item" id="menu-seguridad-perfiles" data-testid="menu-seguridad-perfiles">Perfiles de seguridad</button>
-          <!-- A diferencia de "Usuarios"/"Perfiles de seguridad" (visibles con
-               el permiso administrar_usuarios), esta entrada se oculta/muestra
-               aparte con esRootActual() directo — quién hizo qué es algo que
-               solo root ve, ni siquiera un corredor con administrar_usuarios. -->
-          <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria">Auditoría</button>
-          <!-- Vidriera de funciones de IA todavía no conectadas a ningún
-               servicio pago (ver panel-ia más abajo) — mismo criterio de
-               visibilidad que Auditoría, decisión de root por el costo
-               que implicaría activarlas de verdad. -->
-          <button type="button" class="drawer-item oculto" id="btn-abrir-ia" data-testid="btn-abrir-ia">Inteligencia Artificial</button>
         </div>
-      </div>
 
-      <div id="drawer-grupo-sectores" class="drawer-grupo oculto">
-        <button type="button" class="drawer-grupo-titulo" data-testid="drawer-grupo-sectores">
-          Zonas y barrios
-          <span class="drawer-grupo-flecha" aria-hidden="true">&rsaquo;</span>
-        </button>
-        <div class="drawer-grupo-items oculto">
-          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores">Gestionar zonas</button>
-          <button type="button" class="drawer-item" id="btn-abrir-barrios" data-testid="btn-abrir-barrios">Gestionar barrios</button>
-        </div>
+        <p class="menu-categoria">Control</p>
+        <!-- A diferencia de "Usuarios"/"Perfiles" (permiso
+             administrar_usuarios), esto se muestra con esRootActual()
+             directo: quién hizo qué lo ve solo root. -->
+        <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria">Auditoría</button>
+
+        <p class="menu-categoria">Avanzado</p>
+        <!-- Vidriera de funciones de IA todavía no conectadas a ningún
+             servicio pago (ver panel-ia más abajo) — mismo criterio de
+             visibilidad que Auditoría. -->
+        <button type="button" class="drawer-item oculto" id="btn-abrir-ia" data-testid="btn-abrir-ia">Inteligencia Artificial</button>
       </div>
     </div>
   </nav>
@@ -1694,18 +1740,9 @@
     <button type="button" id="nav-tab-crm" class="nav-tab oculto" data-testid="nav-tab-crm">
       <span class="nav-tab-icono">👥</span><span class="nav-tab-texto">Contactos</span>
     </button>
-    <!-- Todo lo que antes solo vivía en el menú ☰ (Seguridad, Zonas y
-         barrios, Cargar lotes, Catastro, Favoritos, Dibujar área...) —
-         mismo criterio que el ícono de configuración/"Mi empresa" de
-         Tokko, que tampoco pone cada herramienta como ítem de primer
-         nivel. Abre el mismo #drawer-menu de siempre, sin tocar su
-         contenido ni su lógica — ver btn-nav-mas en js/app.js. -->
-    <button type="button" id="nav-tab-mas" class="nav-tab" data-testid="nav-tab-mas">
-      <span class="nav-tab-icono">⋯</span><span class="nav-tab-texto">Más</span>
-    </button>
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-16-01"></script>
+  <script type="module" src="js/app.js?v=2026-09-16-02"></script>
 </body>
 </html>
