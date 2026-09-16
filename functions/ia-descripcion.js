@@ -129,8 +129,9 @@ Reglas:
   1. UBICAR al lector: nombrar la zona y el barrio que te pasé y dejar claro que es zona serrana de San Luis, para que se imagine dónde queda.
   2. APOYARTE en el dato más fuerte de la lista (la vista, la superficie, un servicio ya instalado) y contarlo bien, con lenguaje natural en vez de enumerarlo seco.
   Lo primero es dónde está; lo segundo es qué tiene. Todo lo demás sobra.
+- Los servicios que te paso YA ESTÁN en el lote. Decilo sin ambigüedad: "cuenta con luz y agua", "tiene luz y agua". Nunca "disponibles", "con posibilidad de", "en la zona" ni nada que se pueda leer como que todavía hay que conectarlos — quien compra lo va a reclamar en la visita y va a tener razón.
 - Antes de responder, releé lo que escribiste y preguntate, frase por frase, de qué dato de la lista sale. Si alguna afirmación no sale de ninguno, borrala. Devolvé solo el aviso corregido, sin mostrar esta revisión.
-- Podés cerrar con una frase de interés comercial, pero NO uses siempre la misma: variá el cierre en cada aviso. Esta agencia publica su cartera entera, y si todos terminan con la misma frase se nota y queda mal.
+- El cierre: variá de verdad, no cambies dos palabras. Esta agencia publica su cartera entera y los avisos se leen uno al lado del otro. Evitá las fórmulas gastadas ("vale la pena ir a conocerlo", "una buena opción para quienes buscan..."). Mejor todavía: cerrá apoyándote en algo concreto de ESTE lote, que va a ser distinto en cada uno. Y si el aviso ya cierra bien sin agregar nada, no agregues una frase de relleno solo por cerrar.
 - No inventes precio. Si te paso precio, podés mencionarlo; si no, no hables de precio.
 - No uses emojis, ni hashtags, ni MAYÚSCULAS de grito.
 - Devolvé solamente el texto del aviso, sin título, sin comillas y sin comentarios tuyos.`;
