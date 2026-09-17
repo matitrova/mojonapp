@@ -15,12 +15,11 @@ del navegador. Pasó en vivo: vista-lista.js se sirvió cacheado
 normales, y una edición nueva no se reflejaba hasta forzar un fetch con
 cache:"no-store".
 
-CON _redirects. Desde que cada sección tiene su propia URL (ver
-js/router.js), pedir /contactos tiene que devolver index.html: en
-producción eso lo hace Cloudflare Pages con el archivo `_redirects` de la
-raíz. Acá se lee ESE MISMO archivo en vez de repetir la lista de rutas,
-así local y producción no se pueden desincronizar. Sin esto, entrar
-directo a una URL de sección (o recargar estando en una) daba 404 en
+CON LAS RUTAS DEL ROUTER. Desde que cada sección tiene su propia URL
+(ver js/router.js), pedir /contactos tiene que devolver index.html. En
+producción eso lo hace Cloudflare Pages solo, sin configurar nada; acá se
+imita esa misma regla (ver sirve_el_indice más abajo). Sin esto, entrar
+directo a una URL de sección —o recargar estando en una— daba 404 en
 local, y los tests que prueban justamente eso no podrían correr.
 
 Solo para desarrollo local — no toca nada de producción (Cloudflare
@@ -42,28 +41,32 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 
 
-def leer_reglas_de_rewrite():
-    """Las líneas "<desde> <hacia> 200" de _redirects, como dict.
+def sirve_el_indice(camino):
+    """¿Este pedido tiene que devolver index.html?
 
-    Solo interesan las de código 200 (rewrite: la URL no cambia y se
-    sirve otro archivo). Un 301/302 sería un redirect de verdad y no
-    hace falta emularlo para desarrollo.
+    Imita lo que hace Cloudflare Pages: un pedido que no corresponde a
+    ningún archivo del proyecto devuelve index.html con código 200 (no un
+    404, ni un redirect). Eso es lo que hace que /contactos, /dashboard y
+    el resto de las rutas del router funcionen al entrar directo o al
+    recargar, y es comportamiento nativo de Pages — verificado en
+    producción: /cualquier-cosa devuelve la app con 200.
+
+    IMPORTANTE, porque ya costó un deploy roto: NO hace falta un archivo
+    `_redirects`. Se probó con reglas `"/contactos /index.html 200"` y
+    Pages no las aplica como rewrite — las convierte en un redirect 308
+    al destino canonizado ("/index.html" pasa a ser "/"), así que entrar
+    a /contactos rebotaba al mapa y se perdía la sección. El archivo
+    rompía justo lo que ya funcionaba solo.
+
+    Los pedidos con extensión (.js, .css, .svg) quedan afuera: si no
+    existen tienen que dar 404 de verdad, no la app — un 200 con HTML
+    donde se esperaba un módulo esconde el error real.
     """
-    archivo = RAIZ / "_redirects"
-    if not archivo.exists():
-        return {}
-    reglas = {}
-    for linea in archivo.read_text(encoding="utf-8").splitlines():
-        linea = linea.strip()
-        if not linea or linea.startswith("#"):
-            continue
-        partes = linea.split()
-        if len(partes) == 3 and partes[2] == "200":
-            reglas[partes[0]] = partes[1]
-    return reglas
-
-
-REGLAS = leer_reglas_de_rewrite()
+    if camino.startswith("/js/") or camino.startswith("/css/"):
+        return False
+    if Path(camino).suffix:
+        return False
+    return not (RAIZ / camino.lstrip("/")).exists()
 
 # ---------------------------------------------------------------------------
 # Apuntar la app a otro proyecto Firebase (para los tests)
@@ -142,8 +145,8 @@ class ManejadorSinCache(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             return io.BytesIO(cuerpo)
 
-        if camino in REGLAS:
-            self.path = REGLAS[camino] + separador + query
+        if sirve_el_indice(camino):
+            self.path = "/index.html" + separador + query
         return super().send_head()
 
 

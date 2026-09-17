@@ -16,10 +16,11 @@ producción, en tres síntomas que son el mismo problema:
 Más el pedido de que la sección actual quede marcada en el menú.
 
 OJO con el server de prueba: entrar directo a /contactos necesita que el
-servidor devuelva index.html en esa ruta, igual que hace Cloudflare Pages
-con el archivo `_redirects`. Eso lo cubre scripts/servidor_dev.py, que es
-el que levanta la fixture `base_url` (ver tests/conftest.py) justamente
-por este motivo.
+servidor devuelva index.html en esa ruta. Cloudflare Pages lo hace solo
+(un pedido que no matchea ningún archivo devuelve index.html con 200, sin
+configurar nada), y scripts/servidor_dev.py imita esa regla — es el que
+levanta la fixture `base_url` (ver tests/conftest.py) justamente por este
+motivo.
 """
 
 from playwright.sync_api import expect

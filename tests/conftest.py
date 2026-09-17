@@ -79,10 +79,10 @@ def base_url():
     puerto = _puerto_libre()
     # scripts/servidor_dev.py y no "-m http.server" por dos motivos:
     #
-    # 1. Aplica las reglas de _redirects, o sea que /contactos,
-    #    /dashboard, etc. devuelven index.html igual que en Cloudflare
-    #    Pages. Sin eso, los tests que entran directo a la URL de una
-    #    sección (ver test_router.py) recibirían un 404 que en
+    # 1. Devuelve index.html en las rutas del router (/contactos,
+    #    /dashboard, etc.), que es lo que hace Cloudflare Pages en
+    #    producción. Sin eso, los tests que entran directo a la URL de
+    #    una sección (ver test_router.py) recibirían un 404 que en
     #    producción no existe.
     # 2. Sirve el firebase-config del proyecto que digan estas variables,
     #    así la APP que ve el navegador habla con el mismo proyecto que
