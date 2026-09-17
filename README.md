@@ -135,3 +135,57 @@ pytest tests/
 
 Los tests levantan su propio servidor estático en un puerto de prueba, así
 que no hace falta tener la app corriendo de antemano.
+
+### Contra qué proyecto Firebase corren
+
+Los tests escriben en Firestore de verdad, así que **conviene que sea un
+proyecto aparte y no producción**. Cuando corrían contra producción pasaban
+dos cosas concretas:
+
+- Los datos de prueba que quedaban sin borrar (cuando un test se corta a
+  mitad, el borrado del `finally` también falla) aparecían en el Dashboard
+  real: llegó a mostrar "162 Contactos" y 22 seguimientos que no existían.
+- Firestore cuenta las lecturas **por documento**, con 50.000 por día en el
+  plan gratuito. Cada apertura del CRM leía todos esos contactos, así que
+  una corrida completa de la suite agotaba la cuota del proyecto y **la app
+  en producción empezaba a responder 429** a cualquiera que entrara.
+
+Para usar un proyecto de pruebas, agregá a `tests/.env` (no versionado):
+
+```
+FIREBASE_API_KEY=<api key del proyecto de pruebas>
+FIREBASE_PROJECT_ID=<id del proyecto de pruebas>
+TEST_USER_EMAIL=<usuario de prueba>
+TEST_USER_PASSWORD=<su contraseña>
+```
+
+Y después:
+
+```bash
+python3 scripts/sembrar_proyecto_de_pruebas.py
+```
+
+Ese script revisa que el proyecto esté bien armado y te dice, paso por
+paso, lo que falte. Hay una parte que **no puede hacer**: las reglas exigen
+ser root para escribir en `usuarios` y `perfiles`, y para ser root ya hay
+que tener esos documentos, así que el primer perfil root se crea a mano
+desde la consola de Firebase (el único lugar que se saltea las reglas). El
+script te dice exactamente qué documento crear y con qué campos.
+
+Sin esas variables la suite corre contra producción, avisando fuerte por
+consola. Nada del proyecto de pruebas se versiona: el cambio de proyecto lo
+hace `scripts/servidor_dev.py` (que solo corre en local, Cloudflare Pages
+nunca lo ejecuta) sirviendo un `js/firebase-config.js` generado al vuelo, y
+el archivo real del repo queda intacto.
+
+> **Ojo:** con dos proyectos, `firestore.rules` se pega a mano en **los
+> dos**. No hay Firebase CLI en este proyecto.
+
+La suite además **limpia sola** los datos de prueba sobrantes de corridas
+anteriores al arrancar (ver `limpiar_sobrantes_al_arrancar` en
+`tests/conftest.py`). Para limpiarlos a mano, mirando antes qué se va a
+borrar:
+
+```bash
+python3 scripts/limpiar_datos_de_prueba.py
+```
