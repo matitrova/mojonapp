@@ -36,8 +36,12 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 API_KEY_PRODUCCION = "AIzaSyCR9w0fwXixk4CZV051-srq9PsTvmp5lGQ"
 PROJECT_ID_PRODUCCION = "mojonapp"
 
-FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", API_KEY_PRODUCCION)
-FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", PROJECT_ID_PRODUCCION)
+# `or` y no el default de .get(): en GitHub Actions, un secret que no
+# está definido llega igual como variable de entorno con string VACÍO, y
+# .get() devolvería "" en vez del default. Con eso, los tests apuntarían a
+# un proyecto llamado "" y fallarían de una forma incomprensible.
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY") or API_KEY_PRODUCCION
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID") or PROJECT_ID_PRODUCCION
 USA_PRODUCCION = FIREBASE_PROJECT_ID == PROJECT_ID_PRODUCCION
 
 if USA_PRODUCCION:

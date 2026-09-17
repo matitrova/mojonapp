@@ -18,11 +18,15 @@ name: Tests
 # Correr la suite contra Firebase de verdad tiene un costo real: cada
 # test inicia sesión, siembra datos y lee la colección de lotes entera.
 # Medido: UNA corrida completa agota las 50.000 lecturas diarias del plan
-# gratuito de Firestore. Y cuando la cuota se agota, Firestore deja de
-# responder para TODOS — o sea que la app en producción queda sin cargar
-# un solo lote hasta la medianoche del Pacífico. Pasó en vivo: diez
-# pushes a main en un día dejaron mojonapp.com.ar vacía para cualquier
-# visitante.
+# gratuito de Firestore, y cuando la cuota se agota Firestore deja de
+# responder para TODOS. Pasó en vivo: diez pushes a main en un día
+# dejaron mojonapp.com.ar sin cargar un solo lote para los visitantes.
+#
+# Desde b71c639 la suite apunta a un proyecto Firebase aparte, así que
+# agotar la cuota ya no voltea la app del cliente. Pero el límite de
+# 50.000 lecturas es POR PROYECTO: el de pruebas tiene el suyo, y una
+# corrida completa se lo come igual. Correr en cada push seguiría dando
+# corridas en rojo por 429 a partir de la segunda del día.
 #
 # Por eso los tests pasan a correr una vez por día y cuando alguien los
 # pide, en vez de en cada push. Es un intercambio consciente: se pierde
@@ -82,4 +86,12 @@ jobs:
         env:
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          # Sin estos dos, conftest.py cae en su valor por defecto — que es
+          # PRODUCCIÓN. O sea que la suite separada del proyecto real
+          # (commit b71c639) solo aplicaba corriendo en local con
+          # tests/.env: en GitHub seguía escribiendo en la base del
+          # cliente. Si los secrets no están cargados, conftest avisa por
+          # stderr antes de empezar.
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: pytest tests/ -v
