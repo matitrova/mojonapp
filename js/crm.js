@@ -33,6 +33,9 @@ import {
   getEtiquetasCrmActuales
 } from "./estado.js";
 import { centroideDePoligono } from "./geometria.js";
+// Navegación por URL (ver js/router.js) — capa de abajo, no importa
+// nada de la app, así que no hay riesgo de dependencia circular.
+import { navegarA, aplicarRuta } from "./router.js";
 // Catálogo de motivos de pérdida: el motivo que se tipea al mover una
 // tarjeta a "Perdido" también se unifica contra el catálogo.
 import { asegurarMotivo } from "./catalogos.js";
@@ -191,9 +194,9 @@ function irALoteDesdeCrm(loteId, contactoOrigen = null) {
     window.alert("Este lote ya no existe.");
     return;
   }
-  elPanel.classList.add("oculto");
-  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
-  document.getElementById("nav-tab-mapa").classList.add("activo");
+  // Navegar al mapa deja la URL en "/", así el "atrás" del navegador
+  // vuelve al pipeline de contactos.
+  navegarA("/");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
   mostrarFicha(feature, contactoOrigen);
@@ -936,17 +939,12 @@ elBtnCerrarEstancados.addEventListener("click", marcarEstancadosComoPerdidos);
 // también desde otro lado (dashboard.js, "Seguimientos pendientes") sin
 // duplicar el cierre de los otros paneles + reset a "Mis contactos".
 async function abrirPanelCrm() {
-  document.getElementById("vista-lista").classList.add("oculto"); // no superponer con "Ver como lista"
-  document.getElementById("btn-ver-lista").classList.remove("activo");
-  document.getElementById("panel-admin").classList.add("oculto"); // ni con "Seguridad"
-  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Zonas"
-  document.getElementById("panel-barrios").classList.add("oculto"); // ni con "Barrios"
-  document.getElementById("panel-dashboard").classList.add("oculto"); // ni con "Dashboard"
-  document.getElementById("ficha-lote").classList.add("oculto");
+  // Ya no esconde las otras pantallas ni toca #nav-secciones: lo hace
+  // js/router.js antes de que esto corra (ver el comentario allá). Lo
+  // que había acá era una lista a mano que se quedaba corta con cada
+  // pantalla nueva.
   mostrarKanban();
   elPanel.classList.remove("oculto");
-  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
-  document.getElementById("nav-tab-crm").classList.add("activo");
 
   // Siempre arranca en "Mis contactos" (default seguro, aunque tenga el
   // permiso de ver todos) — mismo criterio que cualquier vista con
@@ -982,24 +980,15 @@ elBtnAbrir.addEventListener("click", abrirPanelCrm);
 // ejemplo un caso raro de reasignación reciente) se abre igual el panel,
 // sin el formulario — mejor eso que romper.
 export async function abrirContactoEnCrm(contactoId) {
+  // aplicarRuta y no navegarA: acá hay que esperar (await) a que el CRM
+  // cargue los contactos para recién entonces abrir el formulario, y un
+  // click no se puede esperar. Deja la URL en /contactos igual.
+  aplicarRuta("/contactos");
   await abrirPanelCrm();
   const contacto = getContactosActuales().find((c) => c.id === contactoId);
   if (contacto) mostrarForm(contacto);
 }
 
-document.getElementById("cerrar-panel-crm").addEventListener("click", () => {
-  elPanel.classList.add("oculto");
-  document.getElementById("nav-tab-crm").classList.remove("activo");
-  document.getElementById("nav-tab-mapa").classList.add("activo");
-});
-
-// Cualquier otra navegación desde el menú lateral (Dashboard, Ver como
-// lista, Cargar lote, Seguridad, etc.) cierra el CRM primero — mismo
-// criterio que dashboard.js: un solo listener delegado en vez de
-// acordarse de agregarlo a mano en cada botón nuevo del drawer.
-document.getElementById("drawer-menu").addEventListener("click", (evento) => {
-  const boton = evento.target.closest(".drawer-item");
-  if (boton && boton.id !== "btn-abrir-crm") {
-    elPanel.classList.add("oculto");
-  }
-});
+// El "cerrar" del panel (ahora la flecha ← de volver) y el listener
+// delegado que lo cerraba al navegar a otra cosa del menú los absorbió
+// js/router.js — misma explicación que en dashboard.js.

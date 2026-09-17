@@ -11,7 +11,7 @@ from datetime import date, timedelta
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, borrar_contacto_de_prueba, buscar_contacto_doc_id_por_nombre
+from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, borrar_contacto_de_prueba, buscar_contacto_doc_id_por_nombre, soltar_el_mouse
 
 
 def _loguearse(page, base_url):
@@ -26,6 +26,7 @@ def _loguearse(page, base_url):
 def _abrir_dashboard(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-dashboard").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-dashboard")).to_be_visible()
 
 
@@ -42,6 +43,7 @@ def test_seguimiento_vencido_aparece_en_el_dashboard_y_abre_el_crm(page, base_ur
 
         page.locator("#btn-menu").click()
         page.locator("#btn-abrir-crm").click()
+        soltar_el_mouse(page)
         page.locator("#btn-agregar-contacto").click()
         page.locator("#contacto-nombre").fill(nombre)
         ayer = (date.today() - timedelta(days=1)).isoformat()

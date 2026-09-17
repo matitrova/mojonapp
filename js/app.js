@@ -27,7 +27,7 @@ import {
   poblarSelectBarrio,
   refrescarDatalistsCrm
 } from "./catalogos.js";
-import { configurarDashboard, abrirPanelDashboard, renderDashboard } from "./dashboard.js";
+import { configurarDashboard, renderDashboard } from "./dashboard.js";
 import { configurarCrm } from "./crm.js";
 import { configurarFavoritos } from "./favoritos.js";
 import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde } from "./vista-lista.js";
@@ -55,7 +55,7 @@ import "./auditoria.js";
 import "./ia-proximamente.js";
 import "./ia-descripcion.js";
 import "./ia-lead.js";
-import "./dibujar-area.js";
+import { entrarEnLaRutaDeLaUrl, navegarA } from "./router.js";
 import {
   collection,
   getDocs,
@@ -190,84 +190,16 @@ Object.entries(PANTALLA_POR_MODULO).forEach(([idModulo, idDestino]) => {
   });
 });
 
-// Barra de secciones persistente (Mapa | Lista | Dashboard | CRM) — ver
-// index.html/estilos.css. Cada botón dispara la MISMA función que ya
-// abre esa pantalla hoy (ningún estado nuevo que sincronizar a mano);
-// los "×" de cada panel se dejan funcionando tal cual estaban, esto es
-// un camino adicional, no un reemplazo.
-function volverAlMapa() {
-  [
-    "panel-admin",
-    "panel-auditoria",
-    "panel-ia",
-    "panel-sectores",
-    "panel-barrios",
-    "panel-dashboard",
-    "panel-favoritos",
-    "panel-comparar-lotes",
-    "panel-cartel-qr",
-    "panel-ficha-imprimir",
-    "panel-crm",
-    "vista-lista"
-  ].forEach((id) => document.getElementById(id).classList.add("oculto"));
-  document.getElementById("btn-ver-lista").classList.remove("activo");
-  // A propósito NO toca "ficha-lote" — mirar una ficha con el mapa de
-  // fondo ya es "estar en el Mapa", no hace falta cerrarla para volver.
-  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
-  document.getElementById("nav-tab-mapa").classList.add("activo");
-}
-
-// Botón "atrás" del navegador (pedido explícito del usuario) — hasta
-// ahora, al ser un solo index.html sin ninguna entrada de historial
-// propia, "atrás" sacaba de la app entera en vez de volver a la sección
-// anterior DENTRO del sistema. Se pushea un estado por cada cambio entre
-// las 4 secciones principales (Mapa/Lista/Dashboard/CRM) — alcance
-// acotado a propósito, no cubre paneles del drawer ni la ficha de un
-// lote (mirar una ficha ya "es" estar en el Mapa, ver volverAlMapa).
-let seccionActual = "mapa";
-let restaurandoDesdeHistorial = false;
-
-function irASeccion(seccion, accion) {
-  if (!restaurandoDesdeHistorial && seccion !== seccionActual) {
-    history.pushState({ seccion }, "", location.href);
-  }
-  seccionActual = seccion;
-  accion();
-}
-
-window.addEventListener("popstate", (evento) => {
-  restaurandoDesdeHistorial = true;
-  const seccion = evento.state?.seccion || "mapa";
-  document.getElementById(`nav-tab-${seccion}`).click();
-  restaurandoDesdeHistorial = false;
-});
-
-history.replaceState({ seccion: "mapa" }, "", location.href);
-
-document.getElementById("nav-tab-mapa").addEventListener("click", () => irASeccion("mapa", volverAlMapa));
-document.getElementById("nav-tab-lista").addEventListener("click", () => {
-  irASeccion("lista", () => {
-    // "Ver como lista" es un toggle (ver vista-lista.js) — solo se
-    // reenvía el click si todavía está cerrado, para no cerrarlo por
-    // error si ya era la sección activa.
-    if (document.getElementById("vista-lista").classList.contains("oculto")) {
-      document.getElementById("btn-ver-lista").click();
-    }
-  });
-});
-document.getElementById("nav-tab-dashboard").addEventListener("click", () => {
-  irASeccion("dashboard", () => document.getElementById("btn-abrir-dashboard").click());
-});
-document.getElementById("nav-tab-crm").addEventListener("click", () => {
-  irASeccion("crm", () => document.getElementById("btn-abrir-crm").click());
-});
-// "Mapa" del menú: dispara el mismo botón de la barra de secciones
-// oculta, que es quien sabe mostrar el mapa y cerrar el resto de los
-// paneles (volverAlMapa) y además deja la entrada de historial para que
-// el botón "atrás" del navegador siga funcionando entre secciones.
-document.getElementById("btn-drawer-mapa").addEventListener("click", () => {
-  elNavTabMapa.click();
-});
+// La navegación entre secciones vive ahora en js/router.js: una URL por
+// sección, un solo lugar que decide qué se ve, y el botón "atrás" del
+// navegador funcionando de verdad. Lo que había acá antes
+// (volverAlMapa + irASeccion + los handlers de cada .nav-tab) era el
+// parche previo: pusheaba historial pero SIEMPRE con la misma URL, y
+// cada pantalla escondía a mano su propia lista incompleta de las otras
+// — de ahí que abrir una sección sobre otra las superpusiera. Las
+// pestañas de #nav-secciones quedan como estaban (ocultas por CSS, con
+// su clase "activo" como fuente de verdad de si se ve el mapa), pero ya
+// no tienen handler propio: las mantiene sincronizadas el router.
 
 // #seccion-mapa se sigue solo del estado de "nav-tab-mapa" en vez de
 // tocar cada uno de los ~13 lugares que ya prenden/apagan esa clase
@@ -341,6 +273,20 @@ configurarCargarLote({ mapa, cargarLotesDesdeFirestore, anilloAGeometryFirestore
 
 iniciarEstoyYendo();
 
+// Primera pasada del router (ver entrarEnLaRutaDeLaUrl en router.js):
+// resuelve la URL con la que se abrió la app cuando todavía no se sabe
+// si hay sesión, así las secciones públicas (/lotes, /favoritos) andan
+// de una. Las que necesitan permisos se resuelven en la segunda pasada,
+// desde onAuthStateChanged más abajo. Va acá, al final del wiring, para
+// que todos los módulos ya tengan sus listeners puestos: el router
+// navega disparando el click del botón que cada módulo registró.
+entrarEnLaRutaDeLaUrl("/");
+
+// ¿Hubo una sesión de verdad en esta carga de la app? Distingue un
+// "cerró sesión" real del callback inicial de Firebase con usuario=null
+// (ver el comentario en onAuthStateChanged más abajo).
+let huboSesionActiva = false;
+
 // ---------------------------------------------------------------------------
 // Sesión del corredor (Firebase Auth): lectura de lotes es pública, cargar
 // uno nuevo requiere estar logueado (ver firestore.rules).
@@ -377,7 +323,16 @@ formularioLogin.addEventListener("submit", async (evento) => {
     // de golpe encima, tapándola. Puede arrancar mostrando números
     // desactualizados por una fracción de segundo — se refresca solo
     // cuando esa carga efectivamente termine, ver onAuthStateChanged.
-    abrirPanelDashboard();
+    //
+    // Va por el router (y no directo a abrirPanelDashboard) para que la
+    // URL quede en /dashboard y el "atrás" del navegador vuelva al mapa
+    // público en vez de sacar de la app.
+    //
+    // Solo desde la raíz: si alguien entró con la URL de una sección
+    // (/contactos, por ejemplo) y se logueó ahí, el aterrizaje no tiene
+    // que robarle el destino — de eso se encarga la segunda pasada del
+    // router en onAuthStateChanged, que ya sabe qué permisos hay.
+    if (location.pathname === "/") navegarA("/dashboard");
   } catch (error) {
     elLoginError.textContent = "Email o contraseña incorrectos.";
     elLoginError.classList.remove("oculto");
@@ -462,6 +417,7 @@ onAuthStateChanged(auth, async (usuario) => {
   setMiPerfil(usuario ? await resolverMiPerfil(usuario) : null);
 
   if (usuario) {
+    huboSesionActiva = true;
     elBtnAbrirLogin.classList.add("oculto");
     elSesionActiva.classList.remove("oculto");
     // Varios bloques del menú son solo para quien tiene sesión, y no están
@@ -498,12 +454,14 @@ onAuthStateChanged(auth, async (usuario) => {
     // abrirLoteDesdeUrlSiCorresponde/aplicarFiltrosDesdeUrlSiCorresponde)
     // ni el modo embed (mismo criterio que ficha.js con modo-embed), y
     // no hace nada si el Dashboard ya está abierto (login manual).
-    if (
-      location.search === "" &&
-      !document.documentElement.classList.contains("modo-embed") &&
-      document.getElementById("panel-dashboard").classList.contains("oculto")
-    ) {
-      abrirPanelDashboard();
+    if (location.search === "" && !document.documentElement.classList.contains("modo-embed")) {
+      // Segunda pasada del router, ya con los permisos resueltos (ver
+      // entrarEnLaRutaDeLaUrl en router.js): si la app se abrió con la
+      // URL de una sección (alguien que tiene /contactos en favoritos,
+      // o que recargó la página estando ahí), se entra a ESA sección.
+      // Si se abrió en la raíz, aterriza en el Dashboard.
+      if (location.pathname === "/") navegarA("/dashboard");
+      else entrarEnLaRutaDeLaUrl("/dashboard", true);
     }
     // El catálogo de zonas/barrios necesita sesión para leerse (ver
     // firestore.rules), así que se carga acá y no al arrancar la app.
@@ -529,7 +487,19 @@ onAuthStateChanged(auth, async (usuario) => {
     // (no queda el rail de íconos colgado de una sesión que ya cerró).
     elDrawerMenu.classList.add("oculto");
     cerrarDrawer();
-    volverAlMapa();
+    // Cerrar sesión saca de cualquier sección privada (deja la URL en
+    // "/", no en /dashboard), pero respeta las públicas: cerrar sesión
+    // estando en /lotes o /favoritos no tiene por qué mover a nadie.
+    //
+    // El `if` no es un detalle: Firebase dispara este callback con
+    // usuario=null TAMBIÉN al arrancar, antes de resolver si había una
+    // sesión persistida. Sin el guard, abrir /contactos directo (o
+    // recargar estando ahí) perdía el destino en ese instante y
+    // terminaba en /dashboard — verificado con Playwright.
+    if (huboSesionActiva) {
+      huboSesionActiva = false;
+      entrarEnLaRutaDeLaUrl("/", true);
+    }
     mapa.invalidateSize(); // el mapa recupera los 68px del rail
 
     setSectoresActuales([]);

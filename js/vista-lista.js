@@ -13,6 +13,8 @@
 
 import { getLotesActuales, getContactosActuales, getLoteEditadoDesdeFicha, setLoteEditadoDesdeFicha } from "./estado.js";
 import { centroideDePoligono } from "./geometria.js";
+// Navegación por URL (ver js/router.js) — capa de abajo, sin ciclos.
+import { navegarA } from "./router.js";
 import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
 import { registrarAuditoria } from "./auditoria.js";
 import { leerNotasInternas, guardarNotasInternas } from "./notas-internas.js";
@@ -260,8 +262,9 @@ elPaginaSiguiente.addEventListener("click", () => cambiarPagina(1));
 let modoVistaLista = "tabla";
 
 function irAFichaDesdeVistaLista(feature) {
-  elVistaLista.classList.add("oculto");
-  elBtnVerLista.classList.remove("activo");
+  // Navegar al mapa deja la URL en "/", así el "atrás" del navegador
+  // vuelve a la lista.
+  navegarA("/");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
   mostrarFicha(feature);
@@ -553,8 +556,7 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
       loteEditandoDesdeGrilla = null;
       elLoteVistaEditar.classList.add("oculto");
       elLoteVistaLista.classList.remove("oculto"); // deja la vista interna lista para la próxima vez que se entre por la grilla
-      elVistaLista.classList.add("oculto");
-      elBtnVerLista.classList.remove("activo");
+      navegarA("/"); // vuelve al mapa con la ficha, dejando la URL en "/"
       mostrarFicha(loteGuardado);
     } else {
       mostrarListaLotesGrilla();
@@ -575,35 +577,19 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
 // Compartida entre el click de "Ver como lista" y el deep link de un
 // filtro compartido (más abajo) — las dos formas de abrir este panel
 // tienen que cerrar los otros paneles de pantalla completa igual.
+// Ya no esconde las otras pantallas ni toca #nav-secciones: lo hace
+// js/router.js antes de que esto corra (ver el comentario allá).
 function abrirPanelVistaLista() {
-  document.getElementById("panel-admin").classList.add("oculto"); // no superponer con "Seguridad"
-  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Zonas"
-  document.getElementById("panel-barrios").classList.add("oculto"); // ni con "Barrios"
-  document.getElementById("panel-dashboard").classList.add("oculto"); // ni con "Dashboard"
   mostrarListaLotesGrilla(); // siempre arranca en la lista, no en edición
   elVistaLista.classList.remove("oculto");
-  elBtnVerLista.classList.add("activo");
-  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
-  document.getElementById("nav-tab-lista").classList.add("activo");
 }
 
-elBtnVerLista.addEventListener("click", () => {
-  const mostrar = elVistaLista.classList.contains("oculto");
-  if (mostrar) {
-    abrirPanelVistaLista();
-  } else {
-    elVistaLista.classList.add("oculto");
-    elBtnVerLista.classList.remove("activo");
-    document.getElementById("nav-tab-lista").classList.remove("activo");
-    document.getElementById("nav-tab-mapa").classList.add("activo");
-  }
-});
-document.getElementById("cerrar-vista-lista").addEventListener("click", () => {
-  elVistaLista.classList.add("oculto");
-  elBtnVerLista.classList.remove("activo");
-  document.getElementById("nav-tab-lista").classList.remove("activo");
-  document.getElementById("nav-tab-mapa").classList.add("activo");
-});
+// Antes era un toggle ("Ver como lista" prendía y apagaba la grilla).
+// Desde que la lista es una sección con su propia URL (/lotes) pasó a
+// ser una navegación como cualquier otra: el ítem del menú entra, y se
+// sale con la flecha ← o eligiendo otra sección. El ← es data-volver,
+// así que lo maneja el router y este archivo ya no necesita cerrarlo.
+elBtnVerLista.addEventListener("click", abrirPanelVistaLista);
 
 // "Compartir este filtro": mismo criterio que "Compartir este lote"
 // (ficha.js) pero para el estado completo de los filtros de esta grilla

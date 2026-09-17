@@ -14,7 +14,7 @@ import json
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba
+from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 RESPUESTA_OVERPASS_SIMULADA = {
     "elements": [
@@ -38,6 +38,7 @@ RESPUESTA_OVERPASS_SIMULADA = {
 def _abrir_ficha_desde_lista(page, doc_id):
     page.locator("#btn-menu").click()
     page.locator("#btn-ver-lista").click()
+    soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
     page.locator(f'tr[data-lote-id="{doc_id}"]').click()
 

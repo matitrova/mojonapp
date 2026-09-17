@@ -10,7 +10,7 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba
+from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 
 def _datos_lote(manzana, lote, offset, *, superficie_m2):
@@ -52,6 +52,7 @@ def test_comparar_dos_favoritos_muestra_tabla_con_datos_reales(page, base_url):
 
         page.locator("#btn-menu").click()
         page.locator("#btn-abrir-favoritos").click()
+        soltar_el_mouse(page)
         expect(page.locator("#lista-favoritos li")).to_have_count(2)
 
         btn_comparar = page.locator("#btn-comparar-favoritos")
@@ -96,6 +97,7 @@ def test_tocar_el_titulo_en_el_comparador_abre_la_ficha(page, base_url):
 
         page.locator("#btn-menu").click()
         page.locator("#btn-abrir-favoritos").click()
+        soltar_el_mouse(page)
         page.locator(f'li[data-lote-id="{lote_a}"] .favorito-comparar-check').check()
         page.locator(f'li[data-lote-id="{lote_b}"] .favorito-comparar-check').check()
         page.locator("#btn-comparar-favoritos").click()

@@ -23,6 +23,7 @@ from conftest import (
     TEST_USER_PASSWORD,
     borrar_lote_de_prueba,
     buscar_doc_id_por_descripcion,
+    soltar_el_mouse,
 )
 
 # Centroide del rectángulo de LOTE_PRUEBA_DATOS en conftest.py (promedio
@@ -48,6 +49,7 @@ def abrir_ficha_desde_lista(page, doc_id):
     saca esa dependencia del orden."""
     page.locator("#btn-menu").click()
     page.locator("#btn-ver-lista").click()
+    soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
     page.locator(f'tr[data-lote-id="{doc_id}"]').click()
 
@@ -126,6 +128,7 @@ def test_corredor_logueado_puede_cargar_un_lote(page, base_url):
         # index.html/estilos.css).
         page.locator("#btn-menu").click()
         page.locator("#btn-cargar-lote").click()
+        soltar_el_mouse(page)
         page.locator("#lote-superficie").fill("460.63")
         page.locator("#lote-estado").select_option("disponible")
         page.locator("#lote-descripcion").fill(marcador)

@@ -24,6 +24,7 @@ from conftest import (
     TEST_USER_PASSWORD,
     borrar_contacto_de_prueba,
     buscar_contacto_doc_id_por_nombre,
+    soltar_el_mouse,
 )
 
 MAIL_PEGADO = """De: ZonaProp <no-reply@zonaprop.com.ar>
@@ -59,6 +60,7 @@ def _loguearse(page, base_url):
 def _abrir_crm(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
 
 

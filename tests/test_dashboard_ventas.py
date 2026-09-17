@@ -15,7 +15,7 @@ sus ventas". Cubre dos cosas separadas:
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD
+from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, soltar_el_mouse
 
 
 def _loguearse(page, base_url):
@@ -39,6 +39,7 @@ def test_ventas_del_dashboard_muestra_los_mismos_numeros_que_el_crm(page, base_u
     # existan hoy en el proyecto.
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
     # #panel-crm ya está visible en cuanto se togglea la clase, pero
     # "#crm-stats" recién se rellena cuando termina cargarContactos()
@@ -50,6 +51,7 @@ def test_ventas_del_dashboard_muestra_los_mismos_numeros_que_el_crm(page, base_u
 
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-dashboard").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-dashboard")).to_be_visible()
     expect(page.locator("#dashboard-ventas-seccion")).to_be_visible()
     expect(page.locator("#dashboard-ventas-stats .crm-stat").first).to_be_visible()
@@ -58,7 +60,7 @@ def test_ventas_del_dashboard_muestra_los_mismos_numeros_que_el_crm(page, base_u
     assert valores_dashboard == valores_crm
 
 
-def test_reabrir_con_sesion_guardada_abre_el_dashboard_solo(page, base_url):
+def test_reabrir_con_sesion_guardada_abre_el_dashboard_solo(page, base_url, lote_sembrado):
     _loguearse(page, base_url)
     expect(page.locator("#panel-dashboard")).to_be_hidden()
 
@@ -72,8 +74,11 @@ def test_reabrir_con_sesion_guardada_abre_el_dashboard_solo(page, base_url):
     # Un lote puntual en la URL (deep link deliberado, ej. compartido por
     # WhatsApp) no debe taparse con el Dashboard — ver el guard en
     # onAuthStateChanged (app.js).
-    lote_id = page.evaluate("(async () => (await import('/js/estado.js')).getLotesActuales()[0].id)()")
-    page.goto(f"{base_url}/?lote={lote_id}")
+    # El lote lo siembra la fixture. Antes se tomaba el primero que
+    # hubiera en la base (getLotesActuales()[0]), lo que hacía que el
+    # test dependiera de que alguien más hubiera cargado lotes: en una
+    # base limpia era undefined y el test se caía.
+    page.goto(f"{base_url}/?lote={lote_sembrado['doc_id']}")
     expect(page.locator("#sesion-activa")).to_be_visible()
     expect(page.locator("#ficha-lote")).to_be_visible()
     expect(page.locator("#panel-dashboard")).to_be_hidden()

@@ -410,12 +410,10 @@ formularioUsuario.addEventListener("submit", async (evento) => {
 // "Seguridad" en el menú lateral no abre directo a una pestaña por
 // defecto: son dos entradas separadas ("Usuarios" y "Perfiles de
 // seguridad") y quien entra elige a cuál.
+// Esconder las otras pantallas lo hace js/router.js antes de que esto
+// corra (ver el comentario allá). Las dos entradas son dos rutas
+// distintas sobre el mismo panel: /usuarios y /perfiles.
 async function abrirPanelSeguridad(tab) {
-  document.getElementById("vista-lista").classList.add("oculto"); // no superponer con "Ver como lista"
-  document.getElementById("btn-ver-lista").classList.remove("activo");
-  document.getElementById("panel-sectores").classList.add("oculto"); // ni con "Zonas"
-  document.getElementById("panel-barrios").classList.add("oculto"); // ni con "Barrios"
-  document.getElementById("panel-dashboard").classList.add("oculto"); // ni con "Dashboard"
   mostrarListaUsuarios();
   mostrarListaPerfiles();
   if (tab === "perfiles") mostrarTabPerfiles();
@@ -428,6 +426,4 @@ async function abrirPanelSeguridad(tab) {
 elMenuSeguridadUsuarios.addEventListener("click", () => abrirPanelSeguridad("usuarios"));
 elMenuSeguridadPerfiles.addEventListener("click", () => abrirPanelSeguridad("perfiles"));
 
-document.getElementById("cerrar-panel-admin").addEventListener("click", () => {
-  elPanelAdmin.classList.add("oculto");
-});
+// El ← de este panel lo maneja js/router.js (data-volver en el botón).

@@ -28,6 +28,7 @@ from conftest import (
     buscar_contacto_doc_id_por_nombre,
     crear_contacto_de_prueba,
     crear_usuario_de_prueba,
+    soltar_el_mouse,
 )
 
 
@@ -46,6 +47,7 @@ def _loguearse(page, base_url):
 def _abrir_crm(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
 
 
@@ -116,6 +118,7 @@ def test_agregar_interesado_alimenta_el_crm(page, base_url, lote_sembrado):
         # no depender de dónde haya quedado encuadrado el mapa.
         page.locator("#btn-menu").click()
         page.locator("#btn-ver-lista").click()
+        soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")
         page.locator(f'tr[data-lote-id="{lote_sembrado["doc_id"]}"]').click()
 

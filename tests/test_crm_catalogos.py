@@ -24,7 +24,7 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD
+from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, soltar_el_mouse
 
 ANCHO_ESCRITORIO = {"width": 1200, "height": 900}
 
@@ -45,6 +45,7 @@ def _abrir_panel(page, id_boton, id_panel):
     en (0,0) — encima del rail — así que alcanza con abrirlo con el ☰."""
     page.locator("#btn-menu").click()
     page.locator(id_boton).click()
+    soltar_el_mouse(page)
     expect(page.locator(id_panel)).to_be_visible()
 
 
@@ -104,6 +105,7 @@ def test_etiqueta_escrita_en_un_contacto_queda_en_el_catalogo(page, base_url):
 
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
     page.locator("#btn-agregar-contacto").click()
     page.locator("#crm-tab-actividad").click()

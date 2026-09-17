@@ -8,7 +8,7 @@ que abre ese contacto directo en el CRM.
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, _uid_de_prueba, borrar_contacto_de_prueba, borrar_lote_de_prueba, crear_contacto_de_prueba, crear_lote_de_prueba
+from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, _uid_de_prueba, borrar_contacto_de_prueba, borrar_lote_de_prueba, crear_contacto_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 GEOMETRY_BASE = {
     "type": "Polygon",
@@ -64,6 +64,7 @@ def _loguearse(page, base_url):
 def _abrir_ficha_desde_lista(page, doc_id):
     page.locator("#btn-menu").click()
     page.locator("#btn-ver-lista").click()
+    soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
     page.locator(f'tr[data-lote-id="{doc_id}"]').click()
 

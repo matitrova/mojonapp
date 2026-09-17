@@ -7,6 +7,7 @@ probando, que funcione sin cuenta.
 """
 
 from playwright.sync_api import expect
+from conftest import soltar_el_mouse
 
 
 def _abrir_ficha_desde_lista(page, doc_id):
@@ -15,6 +16,7 @@ def _abrir_ficha_desde_lista(page, doc_id):
     depender de dónde haya quedado encuadrado el mapa."""
     page.locator("#btn-menu").click()
     page.locator("#btn-ver-lista").click()
+    soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
     page.locator(f'tr[data-lote-id="{doc_id}"]').click()
 
@@ -36,6 +38,7 @@ def test_marcar_favorito_sin_sesion_y_verlo_en_el_panel(page, base_url, lote_sem
     page.locator("#cerrar-ficha").click()
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-favoritos").click()
+    soltar_el_mouse(page)
     expect(page.locator("#lista-favoritos")).to_contain_text(
         f"Manzana {lote_sembrado['manzana']} — Lote {lote_sembrado['lote']}"
     )
@@ -49,6 +52,7 @@ def test_quitar_favorito_desde_el_panel(page, base_url, lote_sembrado):
 
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-favoritos").click()
+    soltar_el_mouse(page)
     fila = page.locator("li", has_text=f"Manzana {lote_sembrado['manzana']} — Lote {lote_sembrado['lote']}")
     expect(fila).to_have_count(1)
 

@@ -235,25 +235,19 @@ function renderFavoritos() {
   elAyudaComparar.classList.toggle("oculto", lotes.length < 2);
 }
 
+// Ya no esconde las otras pantallas: lo hace js/router.js antes de que
+// esto corra (ver el comentario allá).
 elBtnAbrir.addEventListener("click", () => {
-  document.getElementById("vista-lista").classList.add("oculto");
-  document.getElementById("btn-ver-lista").classList.remove("activo");
-  document.getElementById("panel-admin")?.classList.add("oculto");
-  document.getElementById("panel-sectores")?.classList.add("oculto");
-  document.getElementById("panel-barrios")?.classList.add("oculto");
-  document.getElementById("panel-dashboard")?.classList.add("oculto");
-  document.getElementById("panel-crm")?.classList.add("oculto");
-  document.getElementById("ficha-lote").classList.add("oculto");
   seleccionComparar = new Set(); // arranca sin nada tildado cada vez que se abre
   renderFavoritos();
   actualizarBotonComparar();
   elPanel.classList.remove("oculto");
 });
 
-document.getElementById("cerrar-panel-favoritos").addEventListener("click", () => {
-  elPanel.classList.add("oculto");
-  elPanelComparar.classList.add("oculto");
-});
+// El ← de Favoritos lo maneja js/router.js (data-volver). El panel de
+// "Comparar lotes" que se abre por encima también tiene
+// .panel-pantalla-completa, así que el router lo esconde junto con el
+// resto — no hace falta cerrarlo a mano acá.
 
 // Cualquier otra navegación desde el menú lateral cierra este panel
 // primero — mismo criterio que dashboard.js/crm.js.

@@ -35,6 +35,9 @@
   --crm-perdido: var(--color-vendido);
   --sombra-calida: 0 -4px 16px rgba(20, 30, 34, 0.22);
   --sombra-calida-suave: 0 2px 8px rgba(20, 30, 34, 0.14);
+  /* Alto del #encabezado fijo. Lo usan el mapa y el menú lateral para
+     ubicarse justo abajo — ver el comentario en #encabezado. */
+  --alto-encabezado: 50px;
   --radio-chico: 8px;
   --radio-mediano: 12px;
   --radio-grande: 18px;
@@ -59,12 +62,20 @@ button:active {
   transform: scale(0.97);
 }
 
+/* min-height fijado a --alto-encabezado: hay tres cosas que se posicionan
+   "justo abajo del header" (el mapa y los dos estados del menú lateral) y
+   antes cada una tenía un 44px a mano. El header medía 49.6px de verdad
+   —lo estiran los botones de la barra de sesión—, así que las tres se le
+   montaban 6px encima. Con el token, el alto y los desplazamientos salen
+   del mismo lugar. */
 #encabezado {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
+  box-sizing: border-box;
+  min-height: var(--alto-encabezado);
   background: var(--color-primario);
   color: #fff;
   padding: 10px 14px;
@@ -157,9 +168,14 @@ button:active {
    contraído es directamente no mostrarse. Al ser position:fixed, expandir
    SUPERPONE el contenido — no mueve el layout, así que no hace falta
    recalcular el tamaño del mapa. */
+/* Arranca debajo del #encabezado. Antes era top:0 y el menú expandido se
+   montaba ENCIMA del header, tapando el propio ☰ y la barra de sesión:
+   el usuario lo reportó como "se buguea el menú, arriba no abre bien".
+   Ahora los dos estados (rail y expandido) empiezan en el mismo lugar,
+   así que expandir no mueve nada de arriba. */
 #drawer-menu {
   position: fixed;
-  top: 0;
+  top: var(--alto-encabezado);
   bottom: 0;
   left: 0;
   z-index: 1900;
@@ -258,12 +274,55 @@ button:active {
   background: var(--color-fondo-alterno);
 }
 
+/* Sección actual marcada en el menú (pedido del usuario: "al ingresar a
+   una sección que quede marcado más oscuro como seleccionado"). La pone
+   js/router.js en cada navegación, junto con aria-current="page" para
+   que un lector de pantalla también sepa dónde está. */
+.drawer-item.ruta-activa {
+  position: relative;
+  background: var(--color-primario);
+  color: #fff;
+  font-weight: 700;
+}
+
+.drawer-item.ruta-activa:hover {
+  background: var(--color-primario-oscuro);
+}
+
+/* Barrita de acento a la izquierda: refuerza "estás acá" sin depender
+   solo del color de fondo (que se puede confundir con el hover). */
+.drawer-item.ruta-activa::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-acento);
+}
+
+/* El módulo que contiene a la sección activa. Importa sobre todo con el
+   menú CONTRAÍDO, que es un rail donde solo se ven los íconos: sin esto
+   no habría ninguna pista de en qué parte del sistema estás sin abrir
+   el menú. */
+.menu-modulo.ruta-activa > .menu-modulo-boton {
+  color: var(--color-primario-oscuro);
+}
+
+.menu-modulo.ruta-activa > .menu-modulo-boton .menu-modulo-icono {
+  border-radius: var(--radio-chico);
+  background: var(--color-acento-suave);
+  box-shadow: 0 0 0 3px var(--color-acento-suave);
+  color: var(--color-acento);
+}
+
 @media (min-width: 860px) {
   /* Rail contraído: solo con sesión. Sin sesión el menú sigue siendo
      "oculto hasta que se toca el ☰", igual que siempre. */
   body.con-nav-secciones #drawer-menu:not(.expandido) {
     display: flex;
-    top: 44px;
+    top: var(--alto-encabezado);
     width: 68px;
     max-width: 68px;
     padding: 14px 8px;
@@ -293,9 +352,19 @@ button:active {
     box-shadow: 4px 0 16px rgba(20, 30, 34, 0.22);
   }
 
+  /* El encabezado "Menú" + la × entran también al expandir por hover.
+     Antes solo volvían con .expandido, así que el menú abierto con el
+     mouse aparecía cortado arriba y sin forma de cerrarlo — la otra
+     mitad del "arriba no abre bien" que reportó el usuario. */
   body.con-nav-secciones #drawer-menu:hover .menu-modulo-nombre,
   body.con-nav-secciones #drawer-menu:hover .menu-modulo-items {
     display: block;
+  }
+
+  /* flex y no block: .panel-header alinea el título con la × (ver su
+     regla base más arriba). */
+  body.con-nav-secciones #drawer-menu:hover .panel-header {
+    display: flex;
   }
 
   body.con-nav-secciones #drawer-menu:hover .menu-modulo-boton {
@@ -305,8 +374,11 @@ button:active {
   }
 }
 
-#btn-ver-catastro-cercano.activo,
-#btn-ver-lista.activo {
+/* "Ver catastro cercano" es un interruptor de verdad (se prende y se
+   apaga sobre el mapa), así que conserva su marca propia. "Ver como
+   lista" salió de acá: dejó de ser un toggle para ser la sección
+   /lotes, y su marca de "estás acá" es .ruta-activa (ver más arriba). */
+#btn-ver-catastro-cercano.activo {
   background: var(--color-acento);
   color: #fff;
   font-weight: 700;
@@ -636,7 +708,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 #mapa {
   position: absolute;
-  top: 44px;
+  top: var(--alto-encabezado);
   bottom: 34px;
   left: 0;
   right: 0;
@@ -736,6 +808,39 @@ body.con-nav-secciones #btn-flotante-catastro {
 .btn-cerrar:hover {
   background: var(--color-borde);
   color: var(--color-texto);
+}
+
+/* Flecha "volver" de las pantallas grandes, en reemplazo de la × de
+   cerrar (pedido del usuario). El cambio no es solo de ícono: ahora que
+   cada sección tiene su URL, salir de una pantalla es VOLVER a la
+   anterior (history.back, ver data-volver en js/router.js), no "cerrar
+   un popup" y aparecer siempre en el mapa.
+   VA A LA DERECHA, en el mismo lugar donde estaba la ×, y no a la
+   izquierda del título como sería lo natural para un "atrás". El motivo
+   es concreto: el menú lateral se expande al pasar el mouse por encima
+   (pedido del usuario) y cuando lo hace tapa los primeros 288px de la
+   pantalla. Una flecha a la izquierda caía justo ahí — al mover el mouse
+   hacia ella se abría el menú y la cubría, así que no se podía tocar.
+   Verificado con Playwright: "#drawer-menu intercepts pointer events". */
+.btn-volver {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  background: var(--color-fondo-alterno);
+  border: 1px solid var(--color-borde);
+  border-radius: 50%;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.btn-volver:hover {
+  background: var(--color-borde);
+  border-color: var(--color-texto-secundario);
 }
 
 #ficha-volver-contacto {
@@ -1748,84 +1853,6 @@ body.con-nav-secciones #btn-flotante-catastro {
   color: #fff;
 }
 
-/* Mismo estilo de hoja flotante inferior que #panel-captura-vertices —
-   ver comentario ahí, acá es el equivalente para dibujar un ÁREA que
-   filtra en vez de un lote que se guarda. */
-#panel-dibujar-area {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 34px;
-  z-index: 1600;
-  background: rgba(37, 30, 20, 0.94);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-  padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
-  box-shadow: var(--sombra-calida);
-}
-
-#dibujar-area-mensaje {
-  font-size: 0.9rem;
-  max-width: 400px;
-  margin: 0;
-}
-
-#dibujar-area-contador {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-#btn-dibujar-area-deshacer,
-#btn-dibujar-area-aplicar {
-  background: rgba(255,255,255,.15);
-  color: #fff;
-}
-
-#btn-dibujar-area-aplicar {
-  background: var(--color-disponible);
-}
-
-/* Chip flotante con el resultado del filtro de área — se queda puesto
-   mientras el filtro sigue activo, arriba del todo para no competir con
-   el panel de captura ni con el mensaje de carga inicial. */
-#chip-filtro-area {
-  position: fixed;
-  top: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1500;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--color-primario);
-  color: #fff;
-  padding: 8px 8px 8px 14px;
-  border-radius: var(--radio-grande);
-  box-shadow: var(--sombra-calida);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-#btn-quitar-filtro-area {
-  background: rgba(255,255,255,.2);
-  color: #fff;
-  border: none;
-  border-radius: var(--radio-chico);
-  padding: 6px 10px;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-#btn-quitar-filtro-area:hover {
-  background: rgba(255,255,255,.32);
-}
-
 /* Panel de pantalla completa: patrón compartido por "Ver como lista" y
    "Administrar" — a diferencia de las hojas inferiores, son pantallas
    con tablas que necesitan todo el alto disponible, no un panel que
@@ -1930,6 +1957,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   position: sticky;
   top: 0;
   z-index: 5;

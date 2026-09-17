@@ -11,17 +11,8 @@
 const elPanel = document.getElementById("panel-ia");
 const elBtnAbrir = document.getElementById("btn-abrir-ia");
 
+// Esconder las otras pantallas y cerrar esta con el ← lo maneja
+// js/router.js (ver el comentario allá).
 elBtnAbrir.addEventListener("click", () => {
-  document.getElementById("vista-lista").classList.add("oculto"); // no superponer con "Ver como lista"
-  document.getElementById("btn-ver-lista").classList.remove("activo");
-  document.getElementById("panel-admin").classList.add("oculto");
-  document.getElementById("panel-sectores").classList.add("oculto");
-  document.getElementById("panel-barrios").classList.add("oculto");
-  document.getElementById("panel-dashboard").classList.add("oculto");
-  document.getElementById("panel-auditoria").classList.add("oculto");
   elPanel.classList.remove("oculto");
-});
-
-document.getElementById("cerrar-panel-ia").addEventListener("click", () => {
-  elPanel.classList.add("oculto");
 });

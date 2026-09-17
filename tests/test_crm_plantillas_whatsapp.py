@@ -11,7 +11,7 @@ from urllib.parse import unquote
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD
+from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, soltar_el_mouse
 
 
 def _loguearse(page, base_url):
@@ -28,6 +28,7 @@ def test_sin_telefono_no_se_muestran_plantillas(page, base_url):
     _loguearse(page, base_url)
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     page.locator("#btn-agregar-contacto").click()
     expect(page.locator("#crm-plantillas-whatsapp")).to_be_hidden()
 
@@ -37,6 +38,7 @@ def test_plantilla_de_seguimiento_precarga_nombre_y_telefono(page, base_url):
     _loguearse(page, base_url)
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     page.locator("#btn-agregar-contacto").click()
     page.locator("#contacto-nombre").fill(nombre)
     page.locator("#contacto-telefono").fill("3511234567")
@@ -55,6 +57,7 @@ def test_recordatorio_de_visita_solo_aparece_con_esa_etapa_y_fecha(page, base_ur
     _loguearse(page, base_url)
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     page.locator("#btn-agregar-contacto").click()
     page.locator("#contacto-nombre").fill("Juan")
     page.locator("#contacto-telefono").fill("3511234567")

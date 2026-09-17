@@ -8,11 +8,13 @@ este lote" (?lote=<id>).
 from urllib.parse import unquote
 
 from playwright.sync_api import expect
+from conftest import soltar_el_mouse
 
 
 def _abrir_ficha_desde_lista(page, doc_id):
     page.locator("#btn-menu").click()
     page.locator("#btn-ver-lista").click()
+    soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
     page.locator(f'tr[data-lote-id="{doc_id}"]').click()
 

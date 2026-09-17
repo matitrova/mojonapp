@@ -17,6 +17,7 @@ from conftest import (
     borrar_lote_de_prueba,
     crear_contacto_de_prueba,
     crear_lote_de_prueba,
+    soltar_el_mouse,
 )
 
 
@@ -75,6 +76,7 @@ def test_pin_de_interes_muestra_cantidad_y_lleva_a_la_ficha(page, base_url):
         _loguearse(page, base_url)
         page.locator("#btn-menu").click()
         page.locator("#btn-ver-interes-crm").click()
+        soltar_el_mouse(page)
 
         pin = page.locator(".marcador-interes-crm")
         expect(pin).to_have_count(1)

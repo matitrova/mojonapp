@@ -8,7 +8,7 @@ tarjeta abre la ficha igual que una fila de la tabla.
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba
+from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 LOTE_CON_FOTO = {
     "manzana": "GRID-TEST",
@@ -38,6 +38,7 @@ def test_grilla_muestra_tarjeta_con_foto_y_datos_y_abre_la_ficha(page, base_url)
         page.goto(base_url)
         page.locator("#btn-menu").click()
         page.locator("#btn-ver-lista").click()
+        soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")
 
         # Arranca en Tabla.
@@ -71,6 +72,7 @@ def test_tarjeta_sin_foto_no_muestra_imagen(page, base_url):
         page.goto(base_url)
         page.locator("#btn-menu").click()
         page.locator("#btn-ver-lista").click()
+        soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")
         page.locator("#btn-modo-grilla").click()
 

@@ -20,6 +20,7 @@ from conftest import (
     borrar_lote_de_prueba,
     crear_contacto_de_prueba,
     crear_lote_de_prueba,
+    soltar_el_mouse,
 )
 
 GEOMETRY_BASE = {
@@ -47,6 +48,7 @@ def _loguearse(page, base_url):
 def _abrir_crm(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
 
 
@@ -115,6 +117,7 @@ def test_abrir_la_ficha_por_otro_camino_no_muestra_volver(page, base_url):
         _loguearse(page, base_url)
         page.locator("#btn-menu").click()
         page.locator("#btn-ver-lista").click()
+        soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")
         page.locator(f'tr[data-lote-id="{lote_id}"]').click()
         expect(page.locator("#ficha-lote")).to_be_visible()

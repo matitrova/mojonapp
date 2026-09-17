@@ -183,6 +183,17 @@ function crearPanelCatalogo({
 
   async function cargarPanel() {
     await cargarCatalogo();
+    // Los <datalist> del formulario de contacto se arman desde el mismo
+    // estado que acaba de recargarse, así que se repueblan acá.
+    //
+    // FALTABA: crear un motivo o una etiqueta desde su panel no llegaba
+    // al autocompletado del formulario hasta recargar la página entera.
+    // El único lugar que refrescaba los datalist era asegurarEnCatalogo
+    // (el camino "lo escribo al vuelo en el contacto"), no el panel de
+    // administración. Se llama para los cuatro catálogos: para zonas y
+    // barrios es un no-op barato (repinta dos datalist con lo mismo) y
+    // evita tener que acordarse de encenderlo por catálogo.
+    refrescarDatalistsCrm();
 
     elTablaCuerpo.innerHTML = "";
     getCatalogoActual().forEach((item) => {
@@ -293,25 +304,18 @@ function crearPanelCatalogo({
     }
   }
 
+  // Ya no esconde las otras pantallas (ni los otros catálogos): lo hace
+  // js/router.js antes de que esto corra, escondiendo TODO lo que tenga
+  // .panel-pantalla-completa. Acá vivía la lista a mano que hubo que ir
+  // ampliando con cada pantalla nueva — primero "el panel hermano",
+  // después los cuatro catálogos, después el CRM…
   elBtnAbrir.addEventListener("click", async () => {
-    document.getElementById("vista-lista").classList.add("oculto"); // no superponer con "Ver como lista"
-    document.getElementById("btn-ver-lista").classList.remove("activo");
-    document.getElementById("panel-admin").classList.add("oculto"); // ni con "Seguridad"
-    document.getElementById("panel-dashboard").classList.add("oculto"); // ni con "Dashboard"
-    document.getElementById("panel-crm").classList.add("oculto"); // ni con Contactos
-    // Ni con NINGÚN otro catálogo: con cuatro paneles (zonas, barrios,
-    // motivos, etiquetas) ya no alcanza con ocultar "el hermano".
-    PANELES_CATALOGO.filter((id) => id !== panelId).forEach((id) => {
-      document.getElementById(id).classList.add("oculto");
-    });
     mostrarLista();
     elPanel.classList.remove("oculto");
     await cargarPanel();
   });
 
-  document.getElementById(`cerrar-${panelId}`).addEventListener("click", () => {
-    elPanel.classList.add("oculto");
-  });
+  // El ← de cada catálogo lo maneja el router (data-volver en el botón).
 }
 
 // Cablea los dos paneles (Sectores/Zonas y Barrios) — se llama una vez

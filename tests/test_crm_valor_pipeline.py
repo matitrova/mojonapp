@@ -11,7 +11,7 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, _uid_de_prueba, borrar_contacto_de_prueba, borrar_lote_de_prueba, crear_contacto_de_prueba, crear_lote_de_prueba
+from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, _uid_de_prueba, borrar_contacto_de_prueba, borrar_lote_de_prueba, crear_contacto_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 GEOMETRY_BASE = {
     "type": "Polygon",
@@ -38,6 +38,7 @@ def _loguearse(page, base_url):
 def _abrir_crm(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
 
 
@@ -108,12 +109,12 @@ def test_valor_pipeline_suma_precio_de_lotes_de_interes_activos(page, base_url):
     try:
         page.reload()
         expect(page.locator("#sesion-activa")).to_be_visible()
-        # Un reload con la sesión ya persistida (Firebase Auth) vuelve a
-        # abrir el Dashboard solo, igual que el login manual (ver
-        # onAuthStateChanged en app.js) — hay que cerrarlo antes de
-        # poder llegar al CRM por el drawer.
-        page.locator("#cerrar-panel-dashboard").click()
-        _abrir_crm(page)
+        # Recargar estando en el CRM devuelve AL CRM, no al Dashboard:
+        # cada sección tiene su URL y la recarga la respeta (ver
+        # entrarEnLaRutaDeLaUrl en js/router.js). Antes esto abría el
+        # Dashboard encima y había que cerrarlo para volver acá.
+        expect(page).to_have_url(f"{base_url}/contactos")
+        expect(page.locator("#panel-crm")).to_be_visible()
 
         expect(page.locator("#crm-stats .crm-stat-valor strong")).to_be_visible()
         valor_despues = _valor_a_numero(page.locator("#crm-stats .crm-stat-valor strong").inner_text())

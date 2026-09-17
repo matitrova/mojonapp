@@ -11,10 +11,11 @@ búsqueda ya existente.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, _uid_de_prueba, borrar_contacto_de_prueba, crear_contacto_de_prueba
+from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, _uid_de_prueba, borrar_contacto_de_prueba, crear_contacto_de_prueba, soltar_el_mouse
 
 
 def _loguearse(page, base_url):
@@ -30,6 +31,7 @@ def _loguearse(page, base_url):
 def _abrir_crm(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
 
 
@@ -101,7 +103,12 @@ def test_filtro_por_etiqueta_muestra_solo_coincidencias(page, base_url):
 
 def test_filtro_por_calificacion_muestra_solo_coincidencias(page, base_url):
     marcador = uuid.uuid4().hex[:8]
-    ahora = "2026-09-07T00:00:00.000Z"
+    # La fecha se calcula al momento y NO va fija: "caliente" exige, entre
+    # otras señales, actividad de hace 3 días o menos (ver calificacion en
+    # js/crm-metricas.js). Con una fecha escrita a mano el test funciona
+    # la semana que se escribe y empieza a fallar solo cuando esa fecha
+    # envejece — que es justo lo que venía pasando con "2026-09-07".
+    ahora = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     caliente_id = crear_contacto_de_prueba(
         _datos_base(
             f"CALIF-CALIENTE-{marcador}",

@@ -57,7 +57,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/estilos.css?v=2026-09-16-05" />
+<!-- Rutas ABSOLUTAS (con "/" adelante), no relativas: desde que cada
+     sección tiene su propia URL (ver js/router.js), la app se sirve
+     también en /contactos, /dashboard, etc. Con "css/estilos.css" el
+     navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-17-01" />
 </head>
 <body>
 
@@ -102,7 +106,7 @@
         <span class="menu-modulo-nombre">Inicio</span>
       </button>
       <div class="menu-modulo-items">
-        <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard">Dashboard</button>
+        <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard" data-ruta="/dashboard">Dashboard</button>
       </div>
     </div>
 
@@ -121,33 +125,29 @@
       <div class="menu-modulo-items">
         <!-- Dispara el mismo botón de la barra de secciones oculta, que es
              quien sabe mostrar el mapa y ocultar el resto (volverAlMapa). -->
-        <button type="button" class="drawer-item" id="btn-drawer-mapa" data-testid="btn-drawer-mapa">Mapa</button>
-        <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista">Ver como lista</button>
+        <button type="button" class="drawer-item" id="btn-drawer-mapa" data-testid="btn-drawer-mapa" data-ruta="/">Mapa</button>
+        <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista" data-ruta="/lotes">Ver como lista</button>
         <!-- Visible sin sesión (guarda en el propio navegador, no en
              Firestore) — un comprador anónimo también puede armarse su
              propia lista para volver a verla después. -->
-        <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos">Favoritos</button>
-        <!-- También visible sin sesión, mismo criterio que "Favoritos" — un
-             visitante anónimo del catálogo público también puede acotar el
-             mapa a una zona dibujada a mano. -->
-        <button type="button" class="drawer-item" id="btn-dibujar-area" data-testid="btn-dibujar-area">Dibujar área</button>
+        <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos" data-ruta="/favoritos">Favoritos</button>
 
         <div class="solo-con-sesion oculto">
           <p class="menu-categoria">Carga</p>
-          <button type="button" class="drawer-item" id="btn-cargar-lote" data-testid="btn-cargar-lote">Cargar a mano</button>
-          <button type="button" class="drawer-item" id="btn-abrir-manzana" data-testid="btn-abrir-manzana">Agregar manzana</button>
-          <button type="button" class="drawer-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela">Agregar parcela</button>
+          <button type="button" class="drawer-item" id="btn-cargar-lote" data-testid="btn-cargar-lote" data-ruta="/">Cargar a mano</button>
+          <button type="button" class="drawer-item" id="btn-abrir-manzana" data-testid="btn-abrir-manzana" data-ruta="/">Agregar manzana</button>
+          <button type="button" class="drawer-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela" data-ruta="/">Agregar parcela</button>
 
           <p class="menu-categoria">Catastro</p>
-          <button type="button" class="drawer-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano">Ver catastro cercano</button>
+          <button type="button" class="drawer-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano" data-ruta="/">Ver catastro cercano</button>
         </div>
 
         <!-- Gateado por el permiso "administrar_sectores" (ver
              actualizarUIPorPermisos en app.js): el id no cambia. -->
         <div id="drawer-grupo-sectores" class="solo-con-sesion oculto">
           <p class="menu-categoria">Clasificación</p>
-          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores">Zonas</button>
-          <button type="button" class="drawer-item" id="btn-abrir-barrios" data-testid="btn-abrir-barrios">Barrios</button>
+          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores" data-ruta="/zonas">Zonas</button>
+          <button type="button" class="drawer-item" id="btn-abrir-barrios" data-testid="btn-abrir-barrios" data-ruta="/barrios">Barrios</button>
         </div>
       </div>
     </div>
@@ -167,20 +167,20 @@
       <div class="menu-modulo-items">
         <!-- Los dos gateados por "gestionar_contactos" en
              actualizarUIPorPermisos (app.js) — ids sin cambios. -->
-        <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm">Pipeline de contactos</button>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm" data-ruta="/contactos">Pipeline de contactos</button>
         <!-- "Interés del CRM" (idea propia #5 de "el mapa como una cualidad
              del CRM" — resaltar, no filtrar): un pin con la cantidad de
              contactos activos interesados sobre cada lote, ver
              activarInteresCrm en js/mapa.js. -->
-        <button type="button" class="drawer-item oculto" id="btn-ver-interes-crm" data-testid="btn-ver-interes-crm">Interés del CRM en el mapa</button>
+        <button type="button" class="drawer-item oculto" id="btn-ver-interes-crm" data-testid="btn-ver-interes-crm" data-ruta="/">Interés del CRM en el mapa</button>
 
         <!-- Misma categoría CONFIGURACIÓN que tiene Gestor dentro de su
              módulo CRM. Gateada por el permiso administrar_catalogos_crm
              (ver actualizarUIPorPermisos en app.js). -->
         <div id="drawer-grupo-catalogos-crm" class="oculto">
           <p class="menu-categoria">Configuración</p>
-          <button type="button" class="drawer-item" id="btn-abrir-motivos" data-testid="btn-abrir-motivos">Motivos de pérdida</button>
-          <button type="button" class="drawer-item" id="btn-abrir-etiquetas-crm" data-testid="btn-abrir-etiquetas-crm">Etiquetas</button>
+          <button type="button" class="drawer-item" id="btn-abrir-motivos" data-testid="btn-abrir-motivos" data-ruta="/motivos-de-perdida">Motivos de pérdida</button>
+          <button type="button" class="drawer-item" id="btn-abrir-etiquetas-crm" data-testid="btn-abrir-etiquetas-crm" data-ruta="/etiquetas">Etiquetas</button>
         </div>
       </div>
     </div>
@@ -200,21 +200,21 @@
         <!-- Gateado por "administrar_usuarios" (app.js) — id sin cambios. -->
         <div id="drawer-grupo-seguridad" class="oculto">
           <p class="menu-categoria">Seguridad</p>
-          <button type="button" class="drawer-item" id="menu-seguridad-usuarios" data-testid="menu-seguridad-usuarios">Usuarios</button>
-          <button type="button" class="drawer-item" id="menu-seguridad-perfiles" data-testid="menu-seguridad-perfiles">Perfiles de seguridad</button>
+          <button type="button" class="drawer-item" id="menu-seguridad-usuarios" data-testid="menu-seguridad-usuarios" data-ruta="/usuarios">Usuarios</button>
+          <button type="button" class="drawer-item" id="menu-seguridad-perfiles" data-testid="menu-seguridad-perfiles" data-ruta="/perfiles">Perfiles de seguridad</button>
         </div>
 
         <p class="menu-categoria">Control</p>
         <!-- A diferencia de "Usuarios"/"Perfiles" (permiso
              administrar_usuarios), esto se muestra con esRootActual()
              directo: quién hizo qué lo ve solo root. -->
-        <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria">Auditoría</button>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria" data-ruta="/auditoria">Auditoría</button>
 
         <p class="menu-categoria">Avanzado</p>
         <!-- Vidriera de funciones de IA todavía no conectadas a ningún
              servicio pago (ver panel-ia más abajo) — mismo criterio de
              visibilidad que Auditoría. -->
-        <button type="button" class="drawer-item oculto" id="btn-abrir-ia" data-testid="btn-abrir-ia">Inteligencia Artificial</button>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-ia" data-testid="btn-abrir-ia" data-ruta="/ia">Inteligencia Artificial</button>
       </div>
     </div>
   </nav>
@@ -237,29 +237,6 @@
        Firestore el mapa se queda sin ningún cambio visible y parece que
        no está haciendo nada, sobre todo con conexión rural lenta. -->
   <p id="mensaje-carga-inicial" class="oculto" data-testid="mensaje-carga-inicial">Cargando lotes…</p>
-
-  <!-- "Dibujar área" (idea #5): tocar el mapa para marcar los vértices de
-       un área a mano, mismo patrón que "Cargar a mano → en el mapa"
-       (panel-captura-vertices) pero para FILTRAR lotes ya cargados en vez
-       de crear uno nuevo — ver js/dibujar-area.js. -->
-  <div id="panel-dibujar-area" class="oculto" data-testid="panel-dibujar-area">
-    <button id="cerrar-dibujar-area" class="btn-cerrar" aria-label="Cancelar">&times;</button>
-    <p id="dibujar-area-mensaje">Tocá el mapa para marcar cada esquina del área que te interesa.</p>
-    <p id="dibujar-area-contador" data-testid="dibujar-area-contador">0 puntos marcados</p>
-    <div class="botones-captura">
-      <button id="btn-dibujar-area-deshacer" data-testid="btn-dibujar-area-deshacer">Deshacer último</button>
-      <button id="btn-dibujar-area-aplicar" data-testid="btn-dibujar-area-aplicar">Aplicar (mínimo 3 puntos)</button>
-    </div>
-    <p id="dibujar-area-error" class="mensaje-error oculto" data-testid="dibujar-area-error"></p>
-  </div>
-
-  <!-- Chip flotante con el resultado, mientras el filtro de área sigue
-       activo (se puede seguir usando el resto de la app con el mapa
-       acotado) — el usuario decide cuándo sacarlo, no desaparece solo. -->
-  <div id="chip-filtro-area" class="oculto" data-testid="chip-filtro-area">
-    <span id="chip-filtro-area-texto"></span>
-    <button id="btn-quitar-filtro-area" data-testid="btn-quitar-filtro-area">Quitar filtro ×</button>
-  </div>
 
   <div id="catastro-cercano-mensaje" class="oculto" data-testid="catastro-cercano-mensaje"></div>
 
@@ -726,7 +703,7 @@
   <div id="panel-admin" class="oculto panel-pantalla-completa" data-testid="panel-admin">
     <div class="panel-header">
       <h2>Seguridad</h2>
-      <button id="cerrar-panel-admin" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-admin" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
     <div class="tabs-admin">
@@ -839,7 +816,7 @@
   <div id="panel-auditoria" class="oculto panel-pantalla-completa" data-testid="panel-auditoria">
     <div class="panel-header">
       <h2>Auditoría</h2>
-      <button id="cerrar-panel-auditoria" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-auditoria" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
     <p class="dashboard-ayuda">Quién cargó, editó o borró cada lote, y los cambios en zonas/barrios.</p>
     <ul id="auditoria-lista" class="auditoria-lista" data-testid="auditoria-lista"></ul>
@@ -856,7 +833,7 @@
   <div id="panel-ia" class="oculto panel-pantalla-completa" data-testid="panel-ia">
     <div class="panel-header">
       <h2>Inteligencia Artificial</h2>
-      <button id="cerrar-panel-ia" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-ia" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
     <p class="dashboard-ayuda">
       La primera de estas funciones ya está andando de verdad. Las otras están pensadas y con su lugar
@@ -915,7 +892,7 @@
   <div id="panel-sectores" class="oculto panel-pantalla-completa" data-testid="panel-sectores">
     <div class="panel-header">
       <h2>Zonas</h2>
-      <button id="cerrar-panel-sectores" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-sectores" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
     <div id="sectores-vista-lista">
@@ -950,7 +927,7 @@
   <div id="panel-barrios" class="oculto panel-pantalla-completa" data-testid="panel-barrios">
     <div class="panel-header">
       <h2>Barrios</h2>
-      <button id="cerrar-panel-barrios" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-barrios" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
     <div id="barrios-vista-lista">
@@ -987,7 +964,7 @@
   <div id="panel-motivos" class="oculto panel-pantalla-completa" data-testid="panel-motivos">
     <div class="panel-header">
       <h2>Motivos de pérdida</h2>
-      <button id="cerrar-panel-motivos" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-motivos" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
     <div id="motivos-vista-lista">
@@ -1022,7 +999,7 @@
   <div id="panel-etiquetas-crm" class="oculto panel-pantalla-completa" data-testid="panel-etiquetas-crm">
     <div class="panel-header">
       <h2>Etiquetas</h2>
-      <button id="cerrar-panel-etiquetas-crm" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-etiquetas-crm" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
     <div id="etiquetas-crm-vista-lista">
@@ -1059,7 +1036,7 @@
   <div id="panel-dashboard" class="oculto panel-pantalla-completa" data-testid="panel-dashboard">
     <div class="panel-header">
       <h2>Dashboard</h2>
-      <button id="cerrar-panel-dashboard" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-dashboard" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
     <div id="dashboard-contenido">
@@ -1212,7 +1189,7 @@
   <div id="panel-favoritos" class="oculto panel-pantalla-completa" data-testid="panel-favoritos">
     <div class="panel-header">
       <h2>Favoritos</h2>
-      <button id="cerrar-panel-favoritos" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-favoritos" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
     <p id="favoritos-comparar-ayuda" class="dashboard-ayuda oculto">Tildá 2 a 4 para compararlos lado a lado.</p>
     <ul id="lista-favoritos" class="dashboard-lista" data-testid="lista-favoritos"></ul>
@@ -1225,7 +1202,7 @@
   <div id="panel-comparar-lotes" class="oculto panel-pantalla-completa" data-testid="panel-comparar-lotes">
     <div class="panel-header">
       <h2>Comparar lotes</h2>
-      <button id="cerrar-comparar-lotes" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-comparar-lotes" class="btn-volver" aria-label="Volver">&larr;</button>
     </div>
     <div class="tabla-scroll">
       <table id="tabla-comparar-lotes" class="tabla-panel" data-testid="tabla-comparar-lotes"></table>
@@ -1240,7 +1217,7 @@
   <div id="panel-cartel-qr" class="oculto panel-pantalla-completa" data-testid="panel-cartel-qr">
     <div class="panel-header">
       <h2>Cartel para el terreno</h2>
-      <button id="cerrar-cartel-qr" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-cartel-qr" class="btn-volver" aria-label="Volver">&larr;</button>
     </div>
     <div class="hoja-imprimible">
       <p class="hoja-imprimible-marca">MojonApp</p>
@@ -1261,7 +1238,7 @@
   <div id="panel-ficha-imprimir" class="oculto panel-pantalla-completa" data-testid="panel-ficha-imprimir">
     <div class="panel-header">
       <h2>Ficha para imprimir</h2>
-      <button id="cerrar-ficha-imprimir" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-ficha-imprimir" class="btn-volver" aria-label="Volver">&larr;</button>
     </div>
     <div class="hoja-imprimible">
       <p class="hoja-imprimible-marca">MojonApp</p>
@@ -1285,7 +1262,7 @@
   <div id="panel-crm" class="oculto panel-pantalla-completa" data-testid="panel-crm">
     <div class="panel-header">
       <h2>CRM</h2>
-      <button id="cerrar-panel-crm" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-panel-crm" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
     <div id="crm-vista-kanban" data-testid="crm-vista-kanban">
@@ -1671,7 +1648,7 @@
   <div id="vista-lista" class="oculto panel-pantalla-completa" data-testid="vista-lista">
     <div id="vista-lista-header" class="panel-header">
       <h2>Lotes cargados</h2>
-      <button id="cerrar-vista-lista" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+      <button id="cerrar-vista-lista" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
     <div id="lote-vista-lista">
@@ -1904,6 +1881,9 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=2026-09-16-05"></script>
+  <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
+       Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
+       así que siguen andando sin tocarlos. -->
+  <script type="module" src="/js/app.js?v=2026-09-17-01"></script>
 </body>
 </html>

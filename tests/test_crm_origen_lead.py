@@ -17,6 +17,7 @@ from conftest import (
     TEST_USER_PASSWORD,
     borrar_contacto_de_prueba,
     buscar_contacto_doc_id_por_nombre,
+    soltar_el_mouse,
 )
 
 
@@ -33,6 +34,7 @@ def _loguearse(page, base_url):
 def _abrir_crm(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
 
 
@@ -69,6 +71,7 @@ def test_agregar_interesado_queda_marcado_como_origen_ficha(page, base_url, lote
         _loguearse(page, base_url)
         page.locator("#btn-menu").click()
         page.locator("#btn-ver-lista").click()
+        soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")
         page.locator(f'tr[data-lote-id="{lote_sembrado["doc_id"]}"]').click()
 

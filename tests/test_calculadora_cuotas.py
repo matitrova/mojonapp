@@ -8,7 +8,7 @@ inmobiliaria en cuotas fijas), solo visible con precio cargado.
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba
+from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 LOTE_CON_PRECIO = {
     "manzana": "CALC",
@@ -36,6 +36,7 @@ LOTE_SIN_PRECIO = {**LOTE_CON_PRECIO, "manzana": "CALC-SIN", "precio_usd": None}
 def _abrir_ficha_desde_lista(page, doc_id):
     page.locator("#btn-menu").click()
     page.locator("#btn-ver-lista").click()
+    soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
     page.locator(f'tr[data-lote-id="{doc_id}"]').click()
 

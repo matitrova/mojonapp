@@ -11,7 +11,7 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, borrar_contacto_de_prueba, crear_contacto_de_prueba
+from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, borrar_contacto_de_prueba, crear_contacto_de_prueba, soltar_el_mouse
 
 OTRO_CORREDOR_UID = "uid-de-otro-corredor-inexistente"
 
@@ -29,6 +29,7 @@ def _loguearse(page, base_url):
 def _abrir_crm(page):
     page.locator("#btn-menu").click()
     page.locator("#btn-abrir-crm").click()
+    soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
 
 

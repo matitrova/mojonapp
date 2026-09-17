@@ -13,6 +13,9 @@
 
 import { getLotesActuales, getContactosActuales } from "./estado.js";
 import { centroideDePoligono } from "./geometria.js";
+// Navegación por URL (ver js/router.js). Sin dependencia circular:
+// router.js no importa nada de la app, es la capa de abajo.
+import { navegarA } from "./router.js";
 // Idea #11: "Seguimientos pendientes (CRM)" reusa el mismo criterio de
 // "qué cuenta como pendiente" que la sección propia del CRM (evita que
 // las dos pantallas se desincronicen), y abre el CRM directo en el
@@ -73,20 +76,16 @@ export function registrarVistaDeLote(feature) {
 const elPanelDashboard = document.getElementById("panel-dashboard");
 const elBtnAbrirDashboard = document.getElementById("btn-abrir-dashboard");
 
+// Abre el Dashboard. Ya NO tiene que esconder las otras pantallas ni
+// tocar #nav-secciones: de eso se encarga js/router.js, que corre antes
+// (en fase de captura del click) y garantiza que solo quede una sección
+// visible. Antes acá había una lista a mano de paneles a ocultar —
+// vista-lista, admin, sectores, barrios — que se quedó corta cuando se
+// sumaron el CRM y los catálogos, y por eso el Dashboard se abría por
+// debajo del CRM.
 export function abrirPanelDashboard() {
-  document.getElementById("vista-lista").classList.add("oculto");
-  document.getElementById("btn-ver-lista").classList.remove("activo");
-  document.getElementById("panel-admin").classList.add("oculto");
-  document.getElementById("panel-sectores").classList.add("oculto");
-  document.getElementById("panel-barrios").classList.add("oculto");
-  document.getElementById("ficha-lote").classList.add("oculto");
   renderDashboard();
   elPanelDashboard.classList.remove("oculto");
-  // Resalta "Dashboard" en la barra de secciones persistente (ver
-  // index.html/app.js) — puro DOM, sin import nuevo, mismo criterio que
-  // el resto de esta función para tocar elementos de otros módulos.
-  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
-  document.getElementById("nav-tab-dashboard").classList.add("activo");
 
   // A diferencia de getLotesActuales() (ya en memoria desde que arrancó
   // la app), los contactos del CRM recién se piden la primera vez que
@@ -108,33 +107,22 @@ export function abrirPanelDashboard() {
 }
 
 elBtnAbrirDashboard.addEventListener("click", abrirPanelDashboard);
-document.getElementById("cerrar-panel-dashboard").addEventListener("click", () => {
-  elPanelDashboard.classList.add("oculto");
-  document.getElementById("nav-tab-dashboard").classList.remove("activo");
-  document.getElementById("nav-tab-mapa").classList.add("activo");
-});
 
-// Cualquier navegación desde el menú lateral (Cargar lote, +Manzana,
-// Ver catastro cercano, Seguridad, etc.) cierra el dashboard primero —
-// un solo listener delegado en vez de acordarse de agregarlo a mano en
-// cada botón nuevo del drawer. Hace falta de verdad: el dashboard tiene
-// más z-index que las "hojas inferiores" (ficha, formularios), así que
-// sin esto se quedaba tapando cualquiera de esas por encima.
-document.getElementById("drawer-menu").addEventListener("click", (evento) => {
-  const boton = evento.target.closest(".drawer-item");
-  if (boton && boton.id !== "btn-abrir-dashboard") {
-    elPanelDashboard.classList.add("oculto");
-  }
-});
+// El "cerrar" del Dashboard (ahora la flecha ← de volver) y el listener
+// delegado que lo cerraba al navegar a cualquier otra cosa del menú
+// vivían acá. Los dos los absorbió js/router.js: el ← es data-volver
+// (vuelve a la sección anterior por historial) y el cierre al navegar
+// sale de que el router esconde todas las .panel-pantalla-completa
+// antes de abrir la siguiente.
 
 // Lleva directo a la ficha de un lote puntual desde una fila del
 // dashboard (reservas por vencer, incompletos, rankings) — mismo criterio
 // que abrir desde "Ver como lista": centra el mapa primero para que la
 // ficha no se abra sobre un punto fuera de la vista actual.
 function irAFichaDesdeDashboard(feature, contactoOrigen = null) {
-  elPanelDashboard.classList.add("oculto");
-  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
-  document.getElementById("nav-tab-mapa").classList.add("activo");
+  // Navegar al mapa (y no esconder paneles a mano) deja además la URL en
+  // "/", así el "atrás" del navegador vuelve al Dashboard.
+  navegarA("/");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
   mapa.setView([lat, lon], 19);
   mostrarFicha(feature, contactoOrigen);
@@ -354,9 +342,7 @@ function verVisitasEnElMapa(paradas) {
   });
   capaVisitasHoy = L.layerGroup(marcadores.map((m) => m.marcador)).addTo(mapa);
 
-  elPanelDashboard.classList.add("oculto");
-  document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
-  document.getElementById("nav-tab-mapa").classList.add("activo");
+  navegarA("/"); // "Ver las visitas en el mapa": misma idea que irAFichaDesdeDashboard
   mapa.fitBounds(L.featureGroup(marcadores.map((m) => m.marcador)).getBounds(), { padding: [40, 40], maxZoom: 17 });
 }
 
