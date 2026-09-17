@@ -19,6 +19,7 @@ OJO: listar también consume cuota de lectura. Si el proyecto está en 429
 a la medianoche del Pacífico — las 4 AM en Argentina.
 """
 
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -31,8 +32,23 @@ import requests  # noqa: E402
 import conftest  # noqa: E402  (carga tests/.env y resuelve el token de sesión)
 
 
+def sin_credenciales(texto):
+    """Saca la API key de un mensaje de error antes de mostrarlo.
+
+    El endpoint de login de Firebase la lleva en la query string, así que
+    un raise_for_status() la mete en el texto de la excepción y de ahí
+    puede terminar en un log o en una captura pegada en un chat. Ya pasó
+    con el script de sembrado.
+    """
+    return re.sub(r"key=[^&\s]+", "key=<oculta>", str(texto))
+
+
 def main():
     borrar = "--borrar" in sys.argv
+
+    print(f"Proyecto Firebase: {conftest.FIREBASE_PROJECT_ID}")
+    if conftest.USA_PRODUCCION:
+        print("  >> es PRODUCCION: lo que se borre acá son datos reales.")
 
     try:
         sobrantes = conftest.datos_de_prueba_sobrantes()
@@ -42,7 +58,7 @@ def main():
                 "Firestore devolvió 429 (cuota diaria agotada): no se puede ni "
                 "listar. Reintentar cuando la cuota se reponga."
             )
-        raise
+        sys.exit(f"Falló al listar: {sin_credenciales(error)}")
 
     total = sum(len(v) for v in sobrantes.values())
     for coleccion, documentos in sobrantes.items():
