@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-09" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-11" />
 </head>
 <body>
 
@@ -486,6 +486,7 @@
       <button id="btn-como-llegar" data-testid="btn-como-llegar">Ver en el mapa</button>
       <button id="btn-estoy-yendo" data-testid="btn-estoy-yendo">Estoy yendo</button>
     </div>
+    <button id="btn-ver-publicacion" class="btn-editar-ficha" data-testid="btn-ver-publicacion">Ver publicación</button>
     <button id="btn-compartir-lote" class="btn-editar-ficha" data-testid="btn-compartir-lote">Compartir este lote</button>
     <p id="compartir-lote-mensaje" class="oculto" data-testid="compartir-lote-mensaje">Link copiado.</p>
     <!-- Idea #7: cartel con QR para imprimir y dejar en el terreno — el
@@ -1292,6 +1293,101 @@
        la lectura/escritura). Los textos de esta pantalla están en español
        neutro por decisión del usuario del 2026-09-18; el resto de la app
        todavía usa voseo y se pasa junto con el rediseño. -->
+  <!-- Página pública de un lote: /lote/<id> (ver PREFIJO_LOTE_PUBLICO en
+       js/router.js y js/lote-publico.js).
+
+       POR QUÉ EXISTE, si ya está la ficha. La ficha es la hoja de trabajo
+       del corredor sobre el mapa: rápida, con notas internas, tasación y
+       edición. Esta es la que se le manda al comprador — fotos grandes,
+       precio a la vista, el mapa como un bloque más y un formulario para
+       dejar los datos. Decisión del usuario del 2026-09-18: conviven, son
+       dos usos distintos.
+
+       Textos en español neutro, como el resto de lo nuevo. -->
+  <div id="panel-lote-publico" class="oculto panel-pantalla-completa" data-testid="panel-lote-publico">
+    <div class="panel-header">
+      <h2 id="lp-titulo">Lote</h2>
+      <button id="cerrar-panel-lote-publico" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
+    </div>
+
+    <p id="lp-no-encontrado" class="dashboard-vacio oculto" data-testid="lp-no-encontrado">
+      No se encontró este lote. Puede que ya no esté publicado.
+    </p>
+
+    <div id="lp-contenido" class="oculto" data-testid="lp-contenido">
+      <!-- Galería: foto grande + miniaturas, como cualquier portal. Un
+           lote sin fotos no muestra un placeholder genérico (mismo
+           criterio que la grilla): muestra el aviso de que faltan. -->
+      <section class="lp-galeria" data-testid="lp-galeria">
+        <img id="lp-foto-principal" class="oculto" alt="" data-testid="lp-foto-principal" />
+        <p id="lp-sin-fotos" class="lp-sin-fotos oculto" data-testid="lp-sin-fotos">
+          Este lote todavía no tiene fotos.
+        </p>
+        <div id="lp-miniaturas" class="lp-miniaturas" data-testid="lp-miniaturas"></div>
+        <div id="lp-subir" class="oculto" data-testid="lp-subir">
+          <label class="lp-subir-boton">
+            Agregar fotos
+            <input type="file" id="lp-subir-input" accept="image/*" multiple data-testid="lp-subir-input" />
+          </label>
+          <span id="lp-subir-estado" class="lp-subir-estado"></span>
+        </div>
+      </section>
+
+      <div class="lp-columnas">
+        <div class="lp-principal">
+          <p id="lp-precio" class="lp-precio" data-testid="lp-precio"></p>
+          <p id="lp-ubicacion" class="lp-ubicacion" data-testid="lp-ubicacion"></p>
+
+          <dl id="lp-datos" class="lp-datos" data-testid="lp-datos"></dl>
+
+          <section class="lp-bloque">
+            <h3>Servicios</h3>
+            <div id="lp-servicios" data-testid="lp-servicios"></div>
+          </section>
+
+          <section class="lp-bloque">
+            <h3>Descripción</h3>
+            <p id="lp-descripcion" data-testid="lp-descripcion"></p>
+          </section>
+        </div>
+
+        <aside class="lp-lateral">
+          <!-- El mapa como un bloque al costado, no como fondo de la
+               pantalla: acá el protagonista es la propiedad. Es una
+               segunda instancia de Leaflet, independiente del mapa
+               principal. -->
+          <section class="lp-bloque">
+            <h3>Dónde está</h3>
+            <div id="lp-mapa" class="lp-mapa" data-testid="lp-mapa"></div>
+          </section>
+
+          <section class="lp-bloque lp-contacto" data-testid="lp-contacto">
+            <h3>Consultar por este lote</h3>
+            <form id="lp-form" data-testid="lp-form">
+              <label for="lp-nombre">Nombre
+                <input type="text" id="lp-nombre" maxlength="80" required data-testid="lp-nombre" />
+              </label>
+              <label for="lp-telefono">Teléfono
+                <input type="tel" id="lp-telefono" maxlength="30" required data-testid="lp-telefono" />
+              </label>
+              <label for="lp-email">Email (opcional)
+                <input type="email" id="lp-email" maxlength="120" data-testid="lp-email" />
+              </label>
+              <label for="lp-mensaje">Mensaje
+                <textarea id="lp-mensaje" rows="3" maxlength="500" data-testid="lp-mensaje"></textarea>
+              </label>
+              <p id="lp-form-mensaje" class="oculto" data-testid="lp-form-mensaje"></p>
+              <button type="submit" id="lp-enviar" data-testid="lp-enviar">Enviar consulta</button>
+            </form>
+            <button type="button" id="lp-whatsapp" class="lp-whatsapp" data-testid="lp-whatsapp">
+              Consultar por WhatsApp
+            </button>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+
   <div id="panel-tareas" class="oculto panel-pantalla-completa" data-testid="panel-tareas">
     <div class="panel-header">
       <h2>Tareas</h2>
@@ -2121,6 +2217,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-09"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-11"></script>
 </body>
 </html>

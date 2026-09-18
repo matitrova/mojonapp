@@ -63,8 +63,43 @@ const RUTAS = [
 
 const RUTA_MAPA = RUTAS[0];
 
+// Prefijo de la página pública de un lote: /lote/<id>. Es la única ruta
+// con una parte variable, y por eso no puede estar en la tabla de
+// arriba, que compara por igualdad.
+//
+// POR QUÉ UNA RUTA PROPIA Y NO "?lote=". El "?lote=" abre la ficha de
+// trabajo sobre el mapa, que es la pantalla del corredor. Esta otra es
+// la página pública, la que se le manda al comprador: tiene que tener
+// una dirección que se lea como la dirección de una propiedad, no como
+// un parámetro pegado al mapa.
+export const PREFIJO_LOTE_PUBLICO = "/lote/";
+
+export function idDeLotePublico(path) {
+  if (!path.startsWith(PREFIJO_LOTE_PUBLICO)) return null;
+  const id = path.slice(PREFIJO_LOTE_PUBLICO.length).split("/")[0];
+  return id || null;
+}
+
 export function rutaPorPath(path) {
-  return RUTAS.find((r) => r.path === path) || null;
+  const exacta = RUTAS.find((r) => r.path === path);
+  if (exacta) return exacta;
+
+  // La página pública de un lote: misma forma que una ruta de la tabla,
+  // armada al vuelo con el id que trae la URL. El título se completa
+  // después, cuando se sabe de qué lote se trata (js/lote-publico.js).
+  const id = idDeLotePublico(path);
+  if (id) {
+    return {
+      path,
+      clave: "lote-publico",
+      panel: "panel-lote-publico",
+      boton: null,
+      navTab: null,
+      titulo: "Lote",
+      loteId: id
+    };
+  }
+  return null;
 }
 
 // Posición dentro del historial DE LA APP. Se guarda en el propio
@@ -82,6 +117,18 @@ let indiceEnHistorial = 0;
 // carga inicial: en esos dos casos la URL ya es la correcta y pushear
 // otra entrada duplicaría el historial.
 let pusheando = true;
+
+// Quién quiere enterarse de cada navegación. Lo usa la página pública de
+// un lote, que no tiene botón en el menú que la abra: se dibuja cuando
+// el router entra en su ruta.
+//
+// Es una suscripción y no un import al revés a propósito: router.js es
+// la capa de abajo y no conoce ningún módulo de la app.
+const suscriptores = [];
+
+export function onRutaAplicada(callback) {
+  suscriptores.push(callback);
+}
 
 // ---------------------------------------------------------------------------
 
@@ -166,6 +213,8 @@ function aplicarEstado(ruta) {
   if (ruta.navTab) document.getElementById(ruta.navTab).classList.add("activo");
 
   document.title = ruta.clave === "mapa" ? "MojonApp" : `${ruta.titulo} — MojonApp`;
+
+  for (const avisar of suscriptores) avisar(ruta);
   marcarEnElMenu(ruta);
 
   if (pusheando && location.pathname !== ruta.path) {
@@ -273,6 +322,10 @@ window.addEventListener("popstate", (evento) => {
 // .solo-con-sesion).
 function rutaDisponible(ruta) {
   if (ruta.clave === "mapa") return true;
+  // La página pública de un lote no cuelga de ningún botón del menú: es
+  // una dirección que se comparte, y tiene que abrirse para cualquiera,
+  // igual que el mapa. Sin esto, entrar por el link caía al mapa.
+  if (ruta.clave === "lote-publico") return true;
   const boton = document.getElementById(ruta.boton);
   if (!boton) return false;
   // Se sube hasta #drawer-menu SIN incluirlo: ese elemento también usa

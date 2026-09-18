@@ -35,6 +35,7 @@ import { centroideDePoligono } from "./geometria.js";
 import "./tareas-panel.js";
 import "./actividades-panel.js";
 import "./fab-carga.js";
+import { refrescarLotePublicoSiCorresponde } from "./lote-publico.js";
 import { configurarBuscador, mostrarBuscador } from "./buscador-panel.js";
 import { configurarFavoritos } from "./favoritos.js";
 import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde, actualizarVistaLista } from "./vista-lista.js";
@@ -269,6 +270,9 @@ configurarMapa({ mostrarFicha, contenidoTooltipLote });
 // abrirLoteDesdeUrlSiCorresponde (ficha.js).
 iniciarMapa().then(() => {
   abrirLoteDesdeUrlSiCorresponde();
+  // La página pública (/lote/<id>) puede haberse abierto antes de que
+  // llegaran los lotes: entrar por el link es más rápido que Firestore.
+  refrescarLotePublicoSiCorresponde();
   aplicarFiltrosDesdeUrlSiCorresponde();
 });
 
@@ -600,6 +604,9 @@ onAuthStateChanged(auth, async (usuario) => {
   // arrancar la app.
   cargarLotesDesdeFirestore().then(() => {
     abrirLoteDesdeUrlSiCorresponde();
+    // La página pública (/lote/<id>) puede haberse abierto antes de que
+    // llegaran los lotes: entrar por el link es más rápido que Firestore.
+    refrescarLotePublicoSiCorresponde();
     aplicarFiltrosDesdeUrlSiCorresponde();
     // Si el dashboard se abrió recién (ver formularioLogin más arriba)
     // con datos todavía viejos/vacíos, esto lo refresca con los reales

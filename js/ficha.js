@@ -37,6 +37,9 @@ import { mostrarEditarLoteDesdeGrilla } from "./vista-lista.js";
 import { registrarVistaDeLote } from "./dashboard.js";
 import { registrarAuditoria } from "./auditoria.js";
 import { crearContactoDesdeInteresado, abrirContactoEnCrm } from "./crm.js";
+// router.js es la capa de abajo: no importa nada de la app, así que no
+// hay riesgo de ciclo.
+import { navegarA } from "./router.js";
 import { esFavorito, alternarFavorito } from "./favoritos.js";
 import { distanciasReferenciaCercanas } from "./distancias-referencia.js";
 import { leerNotasInternas } from "./notas-internas.js";
@@ -277,7 +280,11 @@ const elInputFotoLote = document.getElementById("input-foto-lote");
 const elFichaFotoCargando = document.getElementById("ficha-foto-cargando");
 const elFichaFotoError = document.getElementById("ficha-foto-error");
 
-async function subirFotoACloudinary(archivo) {
+// Se exporta para que la página pública del lote suba fotos por el mismo
+// camino (js/lote-publico.js): una sola implementación de la subida, y
+// el formato del objeto guardado queda garantizado igual — arrayRemove,
+// que usa borrarFoto, necesita coincidir EXACTO con lo guardado.
+export async function subirFotoACloudinary(archivo) {
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
     throw new Error("Cloudinary todavía no está configurado en la app (falta CLOUDINARY_CLOUD_NAME/CLOUDINARY_UPLOAD_PRESET).");
   }
@@ -607,6 +614,15 @@ export function sacarElLoteDeLaUrl() {
   url.searchParams.delete("lote");
   history.replaceState(history.state, "", url);
 }
+
+// "Ver publicación": lleva a la página pública del lote (/lote/<id>),
+// que es la que se le muestra a un comprador. La ficha sigue siendo la
+// hoja de trabajo del corredor; desde acá se pasa a ver cómo la ve el
+// cliente, sin tener que copiar el link y pegarlo.
+document.getElementById("btn-ver-publicacion").addEventListener("click", () => {
+  const feature = getLoteSeleccionado();
+  if (feature) navegarA(`/lote/${feature.id}`);
+});
 
 document.getElementById("cerrar-ficha").addEventListener("click", () => {
   elFicha.classList.add("oculto");
