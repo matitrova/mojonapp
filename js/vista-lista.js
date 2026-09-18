@@ -17,8 +17,10 @@ import {
   getLoteEditadoDesdeFicha,
   setLoteEditadoDesdeFicha,
   getSectoresActuales,
-  getBarriosActuales
+  getBarriosActuales,
+  getCorredorLogueado
 } from "./estado.js";
+import { pintarEstadoVacio } from "./estado-vacio.js";
 import { SIN_CAMBIO, VACIAR, armarCambios, textoDeConfirmacion, detalleParaAuditoria } from "./edicion-masiva.js";
 import { centroideDePoligono } from "./geometria.js";
 // Navegación por URL (ver js/router.js) — capa de abajo, sin ciclos.
@@ -656,7 +658,11 @@ export function actualizarVistaLista() {
   elPaginaSiguiente.disabled = paginaActual >= totalPaginas;
   elPaginaInfo.textContent = `Página ${paginaActual} de ${totalPaginas} (${lotes.length} lotes)`;
 
-  elVistaListaVacio.classList.toggle("oculto", getLotesActuales().length > 0);
+  const sinLotesCargados = getLotesActuales().length === 0;
+  elVistaListaVacio.classList.toggle("oculto", !sinLotesCargados);
+  if (sinLotesCargados) {
+    pintarEstadoVacio(elVistaListaVacio, { pantalla: "lista", conSesion: getCorredorLogueado() });
+  }
   // Distinto de "no hay lotes cargados": acá SÍ hay lotes, pero ninguno
   // coincide con el sector/estado elegido — un mensaje genérico de
   // "vacío" hubiera hecho pensar que se perdió todo lo cargado.

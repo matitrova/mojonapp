@@ -237,6 +237,11 @@
        Firestore el mapa se queda sin ningún cambio visible y parece que
        no está haciendo nada, sobre todo con conexión rural lenta. -->
   <p id="mensaje-carga-inicial" class="oculto" data-testid="mensaje-carga-inicial">Cargando lotes…</p>
+  <!-- Estado vacío del mapa: aparece cuando terminó de cargar y no hay
+       ni un lote. Distinto del mensaje de carga de arriba, que dice
+       "esperá"; este dice qué hacer. El texto y los botones los decide
+       js/estado-vacio.js, que distingue corredor de visitante. -->
+  <div id="mapa-vacio" class="estado-vacio oculto" data-testid="mapa-vacio"></div>
 
   <div id="catastro-cercano-mensaje" class="oculto" data-testid="catastro-cercano-mensaje"></div>
 
@@ -1040,6 +1045,10 @@
     </div>
 
     <div id="dashboard-contenido">
+      <!-- Con la base vacía, el dashboard entero es una pared de ceros
+           que no dice nada. En ese caso se muestra esto en su lugar (ver
+           js/dashboard.js) y se esconden las secciones. -->
+      <div id="dashboard-vacio-total" class="estado-vacio oculto" data-testid="dashboard-vacio-total"></div>
       <!-- "Ventas" (pedido explícito del usuario: "apenas inicie sesión
            que tenga un dashboard con información importante para él y
            que le sirva para mejorar sus ventas") — mismas 6 tarjetas
@@ -1727,7 +1736,9 @@
         <button type="button" id="btn-compartir-filtro" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-compartir-filtro">Compartir este filtro</button>
       </div>
       <p id="compartir-filtro-mensaje" class="oculto" data-testid="compartir-filtro-mensaje">Link copiado.</p>
-      <p id="vista-lista-vacio" class="oculto">Todavía no hay lotes cargados.</p>
+      <!-- Lo pinta js/estado-vacio.js: con sesión ofrece las dos formas
+           de cargar, sin sesión solo avisa que no hay nada publicado. -->
+      <div id="vista-lista-vacio" class="estado-vacio oculto" data-testid="vista-lista-vacio"></div>
       <p id="vista-lista-sin-resultados" class="oculto">Ningún lote coincide con el filtro.</p>
       <!-- Idea propia, investigada en LandWatch/Zonaprop antes de
            armarla (ver feedback_buscar_inspiracion_real): los dos

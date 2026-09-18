@@ -11,7 +11,8 @@
 // una dependencia circular mientras tanto.
 // ---------------------------------------------------------------------------
 
-import { getLotesActuales, getContactosActuales } from "./estado.js";
+import { getLotesActuales, getContactosActuales, getCorredorLogueado } from "./estado.js";
+import { pintarEstadoVacio } from "./estado-vacio.js";
 import { centroideDePoligono } from "./geometria.js";
 // Navegación por URL (ver js/router.js). Sin dependencia circular:
 // router.js no importa nada de la app, es la capa de abajo.
@@ -453,6 +454,26 @@ function renderVentas() {
 export function renderDashboard() {
   const m = calcularMetricasDashboard();
   const total = getLotesActuales().length;
+
+  // Sin lotes NI contactos no hay nada que resumir: el dashboard entero
+  // queda en ceros y guiones, que se lee como "está roto" en vez de
+  // "todavía no cargaste nada". En ese caso se muestra el estado vacío y
+  // se esconden las secciones. Con una sola de las dos cosas cargada sí
+  // se muestran las métricas: ahí los ceros significan algo.
+  const sinNada = total === 0 && getContactosActuales().length === 0;
+  const elVacioTotal = document.getElementById("dashboard-vacio-total");
+  elVacioTotal.classList.toggle("oculto", !sinNada);
+  // Las secciones Y el desplegable de métricas: ese último no es una
+  // ".dashboard-seccion", así que sin nombrarlo aparte quedaba un
+  // "Ver métricas y estadísticas" suelto debajo del cartel, que al
+  // abrirlo mostraba un bloque vacío. Se vio en la captura de revisión.
+  document
+    .querySelectorAll("#dashboard-contenido .dashboard-seccion, #dashboard-metricas-detalle")
+    .forEach((seccion) => seccion.classList.toggle("oculto-por-vacio", sinNada));
+  if (sinNada) {
+    pintarEstadoVacio(elVacioTotal, { pantalla: "dashboard", conSesion: getCorredorLogueado() });
+    return;
+  }
 
   renderSeguimientosCrm();
   renderVisitasDeHoy();

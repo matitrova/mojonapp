@@ -4176,3 +4176,89 @@ body.con-nav-secciones #btn-flotante-catastro {
   background: var(--color-texto-secundario);
   cursor: not-allowed;
 }
+
+/* ---------------------------------------------------------------------------
+   Estados vacíos de mapa, lista y dashboard.
+
+   El contenido lo pinta js/estado-vacio.js. Acá solo la presentación, con
+   una diferencia que importa: sobre el mapa es una tarjeta flotante
+   (el mapa sigue abajo, con sus tiles), y en lista y dashboard es un
+   bloque en el flujo normal de la pantalla.
+   --------------------------------------------------------------------------- */
+
+.estado-vacio {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  padding: 18px 20px;
+  box-shadow: var(--sombra-calida-suave);
+}
+
+.vacio-titulo {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--color-texto);
+}
+
+.vacio-texto {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-texto-secundario);
+}
+
+.vacio-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.vacio-boton {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: var(--color-primario);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.vacio-boton + .vacio-boton {
+  background: #fff;
+  color: var(--color-primario);
+  border: 1px solid var(--color-primario);
+}
+
+/* Sobre el mapa: centrado y flotante. Mismo z-index que el mensaje de
+   carga (son excluyentes: uno dice "esperá" y el otro "no hay nada"), y
+   por debajo del menú (1800) para que el drawer lo tape al abrirse. */
+#mapa-vacio {
+  position: fixed;
+  top: calc(var(--alto-encabezado) + 24px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: min(420px, calc(100vw - 32px));
+  text-align: center;
+}
+
+#mapa-vacio .vacio-acciones {
+  justify-content: center;
+}
+
+/* Lista y dashboard: en el flujo, sin ancho fijo. */
+#vista-lista-vacio,
+#dashboard-vacio-total {
+  max-width: 520px;
+  margin: 8px 0 16px;
+}
+
+/* Las secciones del dashboard se esconden cuando no hay NADA cargado
+   (ver renderDashboard): si no, quedan como una pared de ceros debajo
+   del cartel que explica que todavía no hay datos. */
+.oculto-por-vacio {
+  display: none !important;
+}

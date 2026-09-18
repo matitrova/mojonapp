@@ -38,7 +38,16 @@ import {
   normalizarParcelaBuenosAires,
   primerAnilloDeGeometria
 } from "./catastro-normalizacion.js";
-import { getMiPerfil, getLotesActuales, getContactosActuales, setLotesActuales, getModoCaptura, onSesionCerrada } from "./estado.js";
+import {
+  getMiPerfil,
+  getLotesActuales,
+  getContactosActuales,
+  setLotesActuales,
+  getModoCaptura,
+  onSesionCerrada,
+  getCorredorLogueado
+} from "./estado.js";
+import { pintarEstadoVacio } from "./estado-vacio.js";
 import { esRootActual, tienePermiso } from "./permisos.js";
 import { actualizarVistaLista } from "./vista-lista.js";
 import { bboxDelMapaVisible, cargarParcelaEnFormLote } from "./cargar-lote.js";
@@ -342,6 +351,16 @@ export async function cargarLotesDesdeFirestore() {
   }
 
   if (habiaCatastroCercano) capaCatastroCercano.addTo(mapa);
+
+  // Terminó de cargar y no hay ni un lote: el mapa se ve como una foto
+  // satelital cualquiera y no hay forma de saber si falta cargar o si la
+  // app falló. El texto y los botones los decide js/estado-vacio.js
+  // según haya sesión o no.
+  const elMapaVacio = document.getElementById("mapa-vacio");
+  elMapaVacio.classList.toggle("oculto", features.length > 0);
+  if (features.length === 0) {
+    pintarEstadoVacio(elMapaVacio, { pantalla: "mapa", conSesion: getCorredorLogueado() });
+  }
 
   elMensajeCargaInicial.classList.add("oculto");
   primeraCargaDeLotesHecha = true;
