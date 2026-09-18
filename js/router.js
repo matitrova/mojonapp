@@ -147,7 +147,20 @@ function aplicarEstado(ruta) {
   // La ficha de un lote es una hoja sobre el mapa: tiene sentido en el
   // mapa y en ninguna otra sección. (Antes cada panel la escondía por su
   // cuenta, o se olvidaba.)
-  if (ruta.clave !== "mapa") document.getElementById("ficha-lote").classList.add("oculto");
+  if (ruta.clave !== "mapa") {
+    document.getElementById("ficha-lote").classList.add("oculto");
+    // Y se saca el lote de la URL: si quedara "?lote=" estando en
+    // /contactos, recargar ahí volvería a abrir una ficha que ya no está
+    // en pantalla. La escritura del parámetro vive en js/ficha.js
+    // (ponerElLoteEnLaUrl); acá solo se limpia, sin importar nada de
+    // ese módulo — router.js es la capa de abajo y no importa nada de
+    // la app.
+    const url = new URL(location.href);
+    if (url.searchParams.has("lote")) {
+      url.searchParams.delete("lote");
+      history.replaceState(history.state, "", url);
+    }
+  }
 
   document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
   if (ruta.navTab) document.getElementById(ruta.navTab).classList.add("activo");

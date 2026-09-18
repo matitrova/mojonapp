@@ -567,10 +567,52 @@ export function mostrarFicha(feature, contactoOrigen = null) {
 
   abrirHoja(elFicha);
   registrarVistaDeLote(feature);
+  ponerElLoteEnLaUrl(feature.id);
+}
+
+// ---------------------------------------------------------------------------
+// El lote abierto vive en la URL
+//
+// POR QUÉ ES ESTRUCTURAL Y NO UN DETALLE (pedido del usuario del
+// 2026-09-18: "sin un ID en la URL es info flotante que puede ser
+// duplicable"). Un lote abierto sin identificador en la dirección no es
+// una cosa a la que se pueda volver: no se puede recargar sin perderlo,
+// no se puede mandar por WhatsApp, no se puede tener dos abiertos en dos
+// pestañas, y el "atrás" del navegador no significa nada. Para una
+// inmobiliaria eso es peor que una molestia: el link a una propiedad es
+// el objeto que circula entre el corredor y el cliente.
+//
+// Se usa el MISMO parámetro que ya usaba "Compartir este lote"
+// (?lote=<id>), que ya estaba probado de punta a punta: abrirlo desde
+// una URL pegada a mano funciona desde antes. Lo que faltaba era que la
+// URL se mantuviera sola al abrir un lote desde adentro de la app.
+//
+// replaceState y no pushState: el "atrás" sigue significando "volver a
+// la sección anterior", que es lo que hace el resto de la app (ver
+// js/router.js). Con pushState, cada lote mirado agregaría una entrada
+// al historial y para salir del mapa habría que apretar atrás diez
+// veces.
+// ---------------------------------------------------------------------------
+
+function ponerElLoteEnLaUrl(id) {
+  const url = new URL(location.href);
+  if (url.searchParams.get("lote") === id) return;
+  url.searchParams.set("lote", id);
+  history.replaceState(history.state, "", url);
+}
+
+export function sacarElLoteDeLaUrl() {
+  const url = new URL(location.href);
+  if (!url.searchParams.has("lote")) return;
+  url.searchParams.delete("lote");
+  history.replaceState(history.state, "", url);
 }
 
 document.getElementById("cerrar-ficha").addEventListener("click", () => {
   elFicha.classList.add("oculto");
+  // Cerrar la ficha saca el lote de la URL: si quedara, recargar
+  // volvería a abrir un lote que el usuario ya cerró.
+  sacarElLoteDeLaUrl();
 });
 
 // "Editar lote" en la ficha abre el mismo formulario completo que
