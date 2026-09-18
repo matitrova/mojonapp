@@ -26,7 +26,7 @@ motivo.
 import pytest
 from playwright.sync_api import expect
 
-from conftest import soltar_el_mouse
+from conftest import abrir_menu, soltar_el_mouse
 
 ANCHO_ESCRITORIO = {"width": 1200, "height": 900}
 
@@ -52,7 +52,7 @@ def _ir_por_el_menu(page, id_boton):
     el rail—, lo que ya causó clicks interceptados en otros tests (ver
     [[gotcha-playwright-hover-rail]]).
     """
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator(id_boton).click()
     soltar_el_mouse(page)
 
@@ -178,12 +178,12 @@ def test_una_seccion_publica_se_abre_sin_sesion(page, base_url):
 @pytest.mark.con_sesion
 def test_el_menu_marca_la_seccion_activa(page, base_url):
     _loguearse(page, base_url)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     expect(page.locator("#btn-abrir-dashboard")).to_have_class("drawer-item ruta-activa")
 
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     expect(page.locator("#btn-abrir-crm")).to_have_class("drawer-item ruta-activa")
     # Y la marca anterior se fue: no puede haber dos secciones activas.
     expect(page.locator(".drawer-item.ruta-activa")).to_have_count(1)

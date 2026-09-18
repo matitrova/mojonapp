@@ -621,6 +621,28 @@ def lote_sembrado():
 
 
 # ---------------------------------------------------------------------------
+# Abrir el menú, sin que cada test tenga que saber en qué ancho corre
+# ---------------------------------------------------------------------------
+
+
+def abrir_menu(page):
+    """Deja las secciones del menú a mano.
+
+    POR QUÉ HACE FALTA UN HELPER. Desde el rediseño del 2026-09-18 la
+    barra lateral está SIEMPRE desplegada en escritorio y el ☰ no existe
+    ahí: no hay nada que abrir. En teléfono el menú sigue siendo un cajón
+    y el ☰ es el único acceso.
+
+    Los 65 tests que antes clickeaban "#btn-menu" a ciegas fallaban en
+    escritorio ("element is not visible") y seguían necesitándolo en
+    teléfono, así que la condición vive acá y no repetida en cada test.
+    """
+    boton = page.locator("#btn-menu")
+    if boton.is_visible():
+        boton.click()
+
+
+# ---------------------------------------------------------------------------
 # Soltar el hover del menú lateral
 # ---------------------------------------------------------------------------
 

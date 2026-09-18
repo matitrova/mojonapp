@@ -21,6 +21,7 @@ import pytest
 from playwright.sync_api import expect
 
 from conftest import (
+    abrir_menu,
     LOTE_PRUEBA_DATOS,
     borrar_contacto_de_prueba,
     borrar_usuario_de_prueba,
@@ -47,7 +48,7 @@ def _loguearse(page, base_url):
 
 
 def _abrir_crm(page):
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
@@ -118,7 +119,7 @@ def test_agregar_interesado_alimenta_el_crm(page, base_url, lote_sembrado):
         # Mismo patrón que abrir_ficha_desde_lista en test_lotes.py: entra
         # por "Ver como lista" en vez de tocar el polígono en el mapa, para
         # no depender de dónde haya quedado encuadrado el mapa.
-        page.locator("#btn-menu").click()
+        abrir_menu(page)
         page.locator("#btn-ver-lista").click()
         soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")

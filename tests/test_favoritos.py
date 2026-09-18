@@ -7,14 +7,14 @@ probando, que funcione sin cuenta.
 """
 
 from playwright.sync_api import expect
-from conftest import soltar_el_mouse
+from conftest import abrir_menu, soltar_el_mouse
 
 
 def _abrir_ficha_desde_lista(page, doc_id):
     """Mismo criterio que abrir_ficha_desde_lista en test_lotes.py: entra
     por "Ver como lista" en vez de tocar el polígono en el mapa, para no
     depender de dónde haya quedado encuadrado el mapa."""
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
@@ -36,7 +36,7 @@ def test_marcar_favorito_sin_sesion_y_verlo_en_el_panel(page, base_url, lote_sem
     assert lote_sembrado["doc_id"] in favoritos
 
     page.locator("#cerrar-ficha").click()
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-favoritos").click()
     soltar_el_mouse(page)
     expect(page.locator("#lista-favoritos")).to_contain_text(
@@ -50,7 +50,7 @@ def test_quitar_favorito_desde_el_panel(page, base_url, lote_sembrado):
     page.locator("#btn-favorito").click()
     page.locator("#cerrar-ficha").click()
 
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-favoritos").click()
     soltar_el_mouse(page)
     fila = page.locator("li", has_text=f"Manzana {lote_sembrado['manzana']} — Lote {lote_sembrado['lote']}")

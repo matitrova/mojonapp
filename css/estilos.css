@@ -4809,14 +4809,17 @@ body.con-nav-secciones #btn-flotante-catastro {
 }
 
 
-/* EL ☰ SE QUEDA EN ESCRITORIO, aunque el mockup no lo tenga.
-   Con la barra lateral fija no hace falta, pero 30 archivos de test lo
-   clickean para abrir el menú antes de entrar a una sección, y la cuota
-   de lecturas de Firestore estaba agotada cuando se hizo este rediseño:
-   no se podía correr la suite entera para verificar el cambio. Esconderlo
-   a ciegas era romper 30 archivos sin red.
-   Queda como pendiente para cuando la suite pueda correr completa. */
+/* En escritorio con sesión la barra lateral está siempre desplegada, así
+   que el ☰ no tiene nada que abrir y se esconde. En teléfono sigue
+   siendo el único acceso al menú.
+   Los 65 clicks al ☰ que tenían los tests pasaron a un helper que mira
+   si está visible (ver abrir_menu en tests/conftest.py): la condición
+   vive en un solo lugar y no repetida en 46 archivos. */
 @media (min-width: 860px) {
+  body.con-nav-secciones #btn-menu {
+    display: none;
+  }
+
   /* El título deja de competir con el logo de la barra lateral. */
   body.con-nav-secciones #encabezado h1 {
     font-size: 0.95rem;

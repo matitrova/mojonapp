@@ -11,7 +11,7 @@ import datetime
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import abrir_menu, borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 
 def _datos_lote(manzana, offset, *, creado_en):
@@ -40,7 +40,7 @@ def _datos_lote(manzana, offset, *, creado_en):
 
 
 def _abrir_ficha_desde_lista(page, doc_id):
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
@@ -56,7 +56,7 @@ def test_badge_nuevo_en_lista_y_ficha_segun_antiguedad(page, base_url):
     sin_campo = crear_lote_de_prueba(_datos_lote("NUEVO-C", 0.002, creado_en=None))
     try:
         page.goto(base_url)
-        page.locator("#btn-menu").click()
+        abrir_menu(page)
         page.locator("#btn-ver-lista").click()
         soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")

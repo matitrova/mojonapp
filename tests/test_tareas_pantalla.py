@@ -17,7 +17,7 @@ import pytest
 import requests
 from playwright.sync_api import expect
 
-from conftest import FIRESTORE_RAIZ, _id_token_de_prueba, soltar_el_mouse
+from conftest import FIRESTORE_RAIZ, _id_token_de_prueba, abrir_menu, soltar_el_mouse
 
 pytestmark = pytest.mark.con_sesion
 
@@ -38,7 +38,7 @@ def _abrir_tareas(page, base_url):
     expect(page.locator("#sesion-activa")).to_be_visible()
     # Con sesión la app aterriza en el Dashboard, que tapa el menú.
     page.locator("#cerrar-panel-dashboard").click()
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-tareas").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-tareas")).to_be_visible()

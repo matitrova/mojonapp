@@ -11,6 +11,7 @@ import pytest
 from playwright.sync_api import expect
 
 from conftest import (
+    abrir_menu,
     _uid_de_prueba,
     borrar_contacto_de_prueba,
     borrar_lote_de_prueba,
@@ -76,7 +77,7 @@ def test_pin_de_interes_muestra_cantidad_y_lleva_a_la_ficha(page, base_url):
     ]
     try:
         _loguearse(page, base_url)
-        page.locator("#btn-menu").click()
+        abrir_menu(page)
         page.locator("#btn-ver-interes-crm").click()
         soltar_el_mouse(page)
 

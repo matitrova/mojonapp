@@ -25,7 +25,7 @@ import uuid
 import pytest
 from playwright.sync_api import expect
 
-from conftest import soltar_el_mouse
+from conftest import abrir_menu, soltar_el_mouse
 
 # Todos los tests de este archivo arrancan logueados: el login se hace
 # una sola vez por corrida (ver estado_de_sesion en conftest.py).
@@ -47,7 +47,7 @@ def _loguearse(page, base_url):
 def _abrir_panel(page, id_boton, id_panel):
     """El menú se expande al pasar el mouse, y Playwright deja el puntero
     en (0,0) — encima del rail — así que alcanza con abrirlo con el ☰."""
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator(id_boton).click()
     soltar_el_mouse(page)
     expect(page.locator(id_panel)).to_be_visible()
@@ -107,7 +107,7 @@ def test_etiqueta_escrita_en_un_contacto_queda_en_el_catalogo(page, base_url):
     etiqueta = f"ETQ-{uuid.uuid4().hex[:8]}"
     _loguearse(page, base_url)
 
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()

@@ -16,7 +16,7 @@ sus ventas". Cubre dos cosas separadas:
 import pytest
 from playwright.sync_api import expect
 
-from conftest import soltar_el_mouse
+from conftest import abrir_menu, soltar_el_mouse
 
 # Todos los tests de este archivo arrancan logueados: el login se hace
 # una sola vez por corrida (ver estado_de_sesion en conftest.py).
@@ -41,7 +41,7 @@ def test_ventas_del_dashboard_muestra_los_mismos_numeros_que_el_crm(page, base_u
     # pantallas lean exactamente el mismo conjunto de contactos ya en
     # memoria (getContactosActuales), sin depender de qué usuarios reales
     # existan hoy en el proyecto.
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
@@ -53,7 +53,7 @@ def test_ventas_del_dashboard_muestra_los_mismos_numeros_que_el_crm(page, base_u
     valores_crm = page.locator("#crm-stats .crm-stat strong").all_inner_texts()
     page.locator("#cerrar-panel-crm").click()
 
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-dashboard").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-dashboard")).to_be_visible()

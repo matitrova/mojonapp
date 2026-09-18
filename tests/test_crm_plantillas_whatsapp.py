@@ -12,7 +12,7 @@ from urllib.parse import unquote
 import pytest
 from playwright.sync_api import expect
 
-from conftest import soltar_el_mouse
+from conftest import abrir_menu, soltar_el_mouse
 
 # Todos los tests de este archivo arrancan logueados: el login se hace
 # una sola vez por corrida (ver estado_de_sesion en conftest.py).
@@ -30,7 +30,7 @@ def _loguearse(page, base_url):
 
 def test_sin_telefono_no_se_muestran_plantillas(page, base_url):
     _loguearse(page, base_url)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     page.locator("#btn-agregar-contacto").click()
@@ -40,7 +40,7 @@ def test_sin_telefono_no_se_muestran_plantillas(page, base_url):
 def test_plantilla_de_seguimiento_precarga_nombre_y_telefono(page, base_url):
     nombre = f"PLANTILLA-{uuid.uuid4().hex[:8]}"
     _loguearse(page, base_url)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     page.locator("#btn-agregar-contacto").click()
@@ -59,7 +59,7 @@ def test_plantilla_de_seguimiento_precarga_nombre_y_telefono(page, base_url):
 
 def test_recordatorio_de_visita_solo_aparece_con_esa_etapa_y_fecha(page, base_url):
     _loguearse(page, base_url)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     page.locator("#btn-agregar-contacto").click()

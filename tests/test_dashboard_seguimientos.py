@@ -12,7 +12,7 @@ from datetime import date, timedelta
 import pytest
 from playwright.sync_api import expect
 
-from conftest import borrar_contacto_de_prueba, buscar_contacto_doc_id_por_nombre, soltar_el_mouse
+from conftest import abrir_menu, borrar_contacto_de_prueba, buscar_contacto_doc_id_por_nombre, soltar_el_mouse
 
 # Todos los tests de este archivo arrancan logueados: el login se hace
 # una sola vez por corrida (ver estado_de_sesion en conftest.py).
@@ -28,7 +28,7 @@ def _loguearse(page, base_url):
 
 
 def _abrir_dashboard(page):
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-dashboard").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-dashboard")).to_be_visible()
@@ -45,7 +45,7 @@ def test_seguimiento_vencido_aparece_en_el_dashboard_y_abre_el_crm(page, base_ur
         _loguearse(page, base_url)
         page.locator("#cerrar-panel-dashboard").click()
 
-        page.locator("#btn-menu").click()
+        abrir_menu(page)
         page.locator("#btn-abrir-crm").click()
         soltar_el_mouse(page)
         page.locator("#btn-agregar-contacto").click()

@@ -10,7 +10,7 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import abrir_menu, borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 ZONA_PRUEBA = "ZonaTestBuscar"
 
@@ -44,7 +44,7 @@ def test_buscar_filtra_por_manzana_zona_y_descripcion(page, base_url):
     c = crear_lote_de_prueba(_datos_lote("OTRA2", "3", 0.002, sector="ZonaDistinta"))
     try:
         page.goto(base_url)
-        page.locator("#btn-menu").click()
+        abrir_menu(page)
         page.locator("#btn-ver-lista").click()
         soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")
@@ -81,7 +81,7 @@ def test_buscar_filtra_por_manzana_zona_y_descripcion(page, base_url):
 
 def test_compartir_filtro_incluye_la_busqueda(page, base_url):
     page.goto(base_url)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-buscar").fill("Piedra Blanca")

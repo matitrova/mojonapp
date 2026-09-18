@@ -19,6 +19,7 @@ import uuid
 from playwright.sync_api import expect
 
 from conftest import (
+    abrir_menu,
     TEST_USER_EMAIL,
     TEST_USER_PASSWORD,
     borrar_lote_de_prueba,
@@ -47,7 +48,7 @@ def abrir_ficha_desde_lista(page, doc_id):
     página por default), el lote recién sembrado por el test puede caer
     en cualquier página según el orden que devuelva Firestore — "Todos"
     saca esa dependencia del orden."""
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")

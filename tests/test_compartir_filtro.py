@@ -11,7 +11,7 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import abrir_menu, borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 ZONA_PRUEBA = "ZonaTestCompartirFiltro"
 
@@ -43,7 +43,7 @@ def test_compartir_filtro_arma_un_link_con_los_filtros_actuales(page, base_url):
     grande = crear_lote_de_prueba(_datos_lote(f"CF-GRANDE-{marcador}", "2", 0.001, superficie_m2=5000))
     try:
         page.goto(base_url)
-        page.locator("#btn-menu").click()
+        abrir_menu(page)
         page.locator("#btn-ver-lista").click()
         soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")

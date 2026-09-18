@@ -12,7 +12,7 @@ import uuid
 import pytest
 from playwright.sync_api import expect
 
-from conftest import borrar_contacto_de_prueba, crear_contacto_de_prueba, soltar_el_mouse
+from conftest import abrir_menu, borrar_contacto_de_prueba, crear_contacto_de_prueba, soltar_el_mouse
 
 # Todos los tests de este archivo arrancan logueados: el login se hace
 # una sola vez por corrida (ver estado_de_sesion en conftest.py).
@@ -31,7 +31,7 @@ def _loguearse(page, base_url):
 
 
 def _abrir_crm(page):
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()

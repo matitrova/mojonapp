@@ -14,6 +14,7 @@ import pytest
 from playwright.sync_api import expect
 
 from conftest import (
+    abrir_menu,
     borrar_contacto_de_prueba,
     borrar_lote_de_prueba,
     crear_contacto_de_prueba,
@@ -48,7 +49,7 @@ def _abrir_crm(page, base_url):
     page.goto(base_url)
     expect(page.locator("#sesion-activa")).to_be_visible()
     page.locator("#cerrar-panel-dashboard").click()
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()

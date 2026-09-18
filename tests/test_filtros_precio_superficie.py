@@ -10,7 +10,7 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import abrir_menu, borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 ZONA_PRUEBA = "ZonaTestFiltros"
 
@@ -39,7 +39,7 @@ def _datos_lote(manzana, lote, offset, *, superficie_m2=None, precio_usd=None):
 
 def _abrir_lista_filtrada_por_zona(page, base_url):
     page.goto(base_url)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")

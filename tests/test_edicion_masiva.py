@@ -23,6 +23,7 @@ import requests
 from playwright.sync_api import expect
 
 from conftest import (
+    abrir_menu,
     FIREBASE_PROJECT_ID,
     _id_token_de_prueba,
     borrar_lote_de_prueba,
@@ -175,7 +176,7 @@ def _abrir_lista_filtrada_por(page, base_url, termino, filas):
     los lotes de demo, y pasaba al correrlo suelto.
     """
     page.goto(base_url)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")

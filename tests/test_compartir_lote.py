@@ -7,7 +7,7 @@ esos datos en vez de mandar un link pelado), y omitirlos si no están.
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import abrir_menu, borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 LOTE_COMPLETO = {
     "manzana": "SHARE",
@@ -33,7 +33,7 @@ LOTE_SIN_DATOS = {**LOTE_COMPLETO, "manzana": "SHARE-SIN", "superficie_m2": None
 
 
 def _abrir_ficha_desde_lista(page, doc_id):
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")

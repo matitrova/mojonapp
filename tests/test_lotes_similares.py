@@ -8,7 +8,7 @@ import uuid
 
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import abrir_menu, borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
 
 ZONA_PRUEBA = "ZonaTestSimilares"
 
@@ -35,7 +35,7 @@ def _datos_lote(manzana, lote, offset):
 
 
 def _abrir_ficha_desde_lista(page, doc_id):
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")

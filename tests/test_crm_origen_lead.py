@@ -14,6 +14,7 @@ import pytest
 from playwright.sync_api import expect
 
 from conftest import (
+    abrir_menu,
     borrar_contacto_de_prueba,
     buscar_contacto_doc_id_por_nombre,
     soltar_el_mouse,
@@ -34,7 +35,7 @@ def _loguearse(page, base_url):
 
 
 def _abrir_crm(page):
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-crm").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
@@ -71,7 +72,7 @@ def test_agregar_interesado_queda_marcado_como_origen_ficha(page, base_url, lote
     doc_id = None
     try:
         _loguearse(page, base_url)
-        page.locator("#btn-menu").click()
+        abrir_menu(page)
         page.locator("#btn-ver-lista").click()
         soltar_el_mouse(page)
         page.locator("#filtro-cantidad").select_option("0")

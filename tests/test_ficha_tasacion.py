@@ -13,6 +13,7 @@ import requests
 from playwright.sync_api import expect
 
 from conftest import (
+    abrir_menu,
     FIREBASE_PROJECT_ID,
     _id_token_de_prueba,
     borrar_lote_de_prueba,
@@ -80,7 +81,7 @@ def _lote(manzana, *, superficie_m2, precio_usd, sector):
 
 
 def _abrir_ficha_desde_lista(page, doc_id):
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")

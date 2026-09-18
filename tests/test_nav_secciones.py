@@ -19,7 +19,7 @@ clase, aunque el usuario ya no la vea.
 import pytest
 from playwright.sync_api import expect
 
-from conftest import soltar_el_mouse
+from conftest import abrir_menu, soltar_el_mouse
 
 ANCHO_ESCRITORIO = {"width": 1200, "height": 900}
 
@@ -51,7 +51,7 @@ def test_sin_sesion_no_hay_rail_y_el_menu_solo_muestra_lo_publico(page, base_url
     # Contraído y sin sesión, el menú no se muestra para nada.
     expect(page.locator("#drawer-menu")).to_be_hidden()
 
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     expect(page.locator("#drawer-menu")).to_be_visible()
     # Lo público del catálogo sí (mapa/lista/favoritos)...
     expect(page.locator("#btn-ver-lista")).to_be_visible()
@@ -109,7 +109,7 @@ def test_el_rail_muestra_los_4_modulos_y_cada_uno_lleva_a_su_pantalla(page, base
 @pytest.mark.con_sesion
 def test_abrir_el_menu_muestra_las_pantallas_agrupadas_por_categoria(page, base_url):
     _loguearse(page, base_url)
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
 
     # Expandido se ven los ítems de cada módulo, con sus categorías.
     expect(page.locator("#btn-ver-lista")).to_be_visible()
@@ -137,7 +137,7 @@ def test_en_celular_no_hay_rail_y_el_menu_se_abre_con_el_boton(page, base_url):
     # Sin rail: contraído no ocupa lugar en una pantalla chica.
     expect(page.locator("#btn-modulo-lotes")).to_be_hidden()
 
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     expect(page.locator("#btn-modulo-lotes")).to_be_visible()
     expect(page.locator("#fab-carga")).to_be_visible()
     expect(page.locator("#btn-modulo-lotes")).to_be_visible()

@@ -10,7 +10,7 @@ en qué), no algo que deba ver cualquiera con sesión.
 import pytest
 from playwright.sync_api import expect
 
-from conftest import soltar_el_mouse
+from conftest import abrir_menu, soltar_el_mouse
 
 pytestmark = pytest.mark.con_sesion
 
@@ -19,7 +19,7 @@ def _abrir_actividades(page, base_url):
     page.goto(base_url)
     expect(page.locator("#sesion-activa")).to_be_visible()
     page.locator("#cerrar-panel-dashboard").click()
-    page.locator("#btn-menu").click()
+    abrir_menu(page)
     page.locator("#btn-abrir-actividades").click()
     soltar_el_mouse(page)
     expect(page.locator("#panel-actividades")).to_be_visible()
