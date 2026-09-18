@@ -4,6 +4,7 @@ import socket
 import subprocess
 import sys
 import time
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -70,6 +71,11 @@ FIRESTORE_URL_BASE = (
     f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}"
     "/databases/(default)/documents/lotes"
 )
+
+# La raíz de documentos, sin colección: la necesitan ":runQuery" y
+# ":commit", que trabajan sobre la base entera y no sobre una colección.
+FIRESTORE_RAIZ_RELATIVA = f"projects/{FIREBASE_PROJECT_ID}/databases/(default)/documents"
+FIRESTORE_RAIZ = f"https://firestore.googleapis.com/v1/{FIRESTORE_RAIZ_RELATIVA}"
 
 
 def _puerto_libre():
@@ -275,23 +281,14 @@ def _a_valor_firestore(valor):
 
 
 def crear_lote_de_prueba(datos):
-    """Crea un documento en la colección "lotes" y devuelve su id.
-    Agrega "creado_por" solo si datos no lo trae ya — la regla de
-    creación en firestore.rules exige que sea el uid real de quien
-    crea, así que no alcanza con omitirlo."""
-    id_token = _id_token_de_prueba()
-    if "creado_por" not in datos:
-        datos = {**datos, "creado_por": _uid_de_prueba()}
-    campos = {clave: _a_valor_firestore(valor) for clave, valor in datos.items()}
-    respuesta = requests.post(
-        FIRESTORE_URL_BASE,
-        headers={"Authorization": f"Bearer {id_token}"},
-        json={"fields": campos},
-        timeout=10,
-    )
-    respuesta.raise_for_status()
-    nombre_completo = respuesta.json()["name"]
-    return nombre_completo.rsplit("/", 1)[-1]
+    """Crea un lote y devuelve su id.
+
+    Delega en el plural para que haya UN solo camino de escritura (ver
+    _commit). "creado_por" se completa solo si no vino: la regla de
+    creación de firestore.rules exige que sea el uid real de quien crea,
+    así que no alcanza con omitirlo.
+    """
+    return crear_lotes_de_prueba([datos])[0]
 
 
 def _borrar_con_verificacion(url, nombre_para_avisos):
@@ -354,41 +351,169 @@ def _con_reintento(intentar, intentos=8, espera=0.5):
     return None
 
 
-def buscar_doc_id_por_descripcion(texto):
-    """Lectura pública (sin login): busca un lote por su texto de
-    descripción exacto. Se usa para encontrar y limpiar el lote que un
-    test creó a través del formulario de la UI (que no expone el id del
-    documento nuevo).
+def _commit(escrituras):
+    """Manda varias escrituras a Firestore en UN solo pedido HTTP.
 
-    Pide pageSize=300 (por encima de la cantidad de lotes de prueba que
-    hay hoy) para traer todo en un solo pedido — Firestore REST devuelve
-    como mucho ~100 documentos por página si no se pide un tamaño mayor,
-    y con más de 100 lotes ya cargados en la base de prueba, quedarse con
-    el tamaño de página por default hacía que este helper no encontrara
-    lotes recién creados que cayeran fuera de la primera página, y el
-    test fallaba con "no apareció en Firestore" de forma intermitente
-    aunque el lote sí se había guardado bien. Igual recorre nextPageToken
-    por si en algún momento se supera ese tamaño, para no reintroducir el
-    mismo bug más adelante."""
+    Un test que crea tres lotes y después los borra hacía seis pedidos;
+    con esto hace dos. La cuota que se agotó el 2026-09-18 fue la de
+    lecturas, no la de escrituras, así que esto no era lo más urgente —
+    pero cada pedido de menos es un pedido que no puede fallar, y el
+    "finally" de limpieza de cada test pasa a ser una sola llamada en vez
+    de una por documento.
+
+    Firestore acepta hasta 500 escrituras por commit; los tests de acá
+    trabajan con puñados, así que no hace falta partir en tandas. Si
+    alguna vez hiciera falta, este es el lugar.
+    """
+    respuesta = requests.post(
+        f"{FIRESTORE_RAIZ}:commit",
+        headers={"Authorization": f"Bearer {_id_token_de_prueba()}"},
+        json={"writes": escrituras},
+        timeout=20,
+    )
+    respuesta.raise_for_status()
+    return respuesta.json()
+
+
+def _escritura_de_alta(coleccion, doc_id, datos):
+    """Una entrada de commit que crea un documento con id elegido por acá.
+
+    El id lo genera el cliente porque un commit necesita saber el nombre
+    del documento antes de escribirlo — a diferencia del POST a la
+    colección, donde lo inventa Firestore. Da igual para los tests: lo
+    único que importa es que sea único.
+    """
+    if "creado_por" not in datos:
+        datos = {**datos, "creado_por": _uid_de_prueba()}
+    return {
+        "update": {
+            "name": f"{FIRESTORE_RAIZ_RELATIVA}/{coleccion}/{doc_id}",
+            "fields": {clave: _a_valor_firestore(valor) for clave, valor in datos.items()},
+        }
+    }
+
+
+def _id_nuevo():
+    return uuid.uuid4().hex[:20]
+
+
+def crear_lotes_de_prueba(lista_de_datos):
+    """Crea varios lotes en un solo pedido y devuelve sus ids, en orden."""
+    ids = [_id_nuevo() for _ in lista_de_datos]
+    _commit([_escritura_de_alta("lotes", doc_id, datos) for doc_id, datos in zip(ids, lista_de_datos)])
+    return ids
+
+
+def crear_contactos_de_prueba(lista_de_datos):
+    """Crea varios contactos en un solo pedido y devuelve sus ids, en orden."""
+    ids = [_id_nuevo() for _ in lista_de_datos]
+    _commit([_escritura_de_alta("contactos", doc_id, datos) for doc_id, datos in zip(ids, lista_de_datos)])
+    return ids
+
+
+def _borrar_varios(coleccion, doc_ids, nombre_para_avisos):
+    """Borra varios documentos en un solo pedido.
+
+    Mismo criterio que _borrar_con_verificacion: reintenta y, si igual no
+    puede, avisa por stdout en vez de lanzar. Esto se llama casi siempre
+    desde un "finally", y una excepción ahí taparía el error real del
+    test.
+    """
+    doc_ids = [doc_id for doc_id in doc_ids if doc_id]
+    if not doc_ids:
+        return
 
     def intentar():
-        pagina_token = None
-        while True:
-            parametros = {"pageSize": 300}
-            if pagina_token:
-                parametros["pageToken"] = pagina_token
-            respuesta = requests.get(FIRESTORE_URL_BASE, params=parametros, timeout=10)
-            respuesta.raise_for_status()
-            cuerpo = respuesta.json()
-            for doc in cuerpo.get("documents", []):
-                campos = doc.get("fields", {})
-                if campos.get("descripcion", {}).get("stringValue") == texto:
-                    return doc["name"].rsplit("/", 1)[-1]
-            pagina_token = cuerpo.get("nextPageToken")
-            if not pagina_token:
-                return None
+        _commit([{"delete": f"{FIRESTORE_RAIZ_RELATIVA}/{coleccion}/{doc_id}"} for doc_id in doc_ids])
+        return True
 
-    return _con_reintento(intentar)
+    if not _con_reintento(intentar):
+        print(f"\n⚠️  No se pudieron borrar {len(doc_ids)} {nombre_para_avisos} — revisar a mano en Firestore.")
+
+
+def borrar_lotes_de_prueba(doc_ids):
+    _borrar_varios("lotes", doc_ids, "lotes de prueba")
+
+
+def borrar_contactos_de_prueba(doc_ids):
+    _borrar_varios("contactos", doc_ids, "contactos de prueba")
+
+
+def _buscar_por_campo_exacto(coleccion, campo, valor, con_sesion):
+    """Busca UN documento por el valor exacto de un campo, filtrando del
+    lado del servidor.
+
+    POR QUÉ ESTO EXISTE, Y POR QUÉ IMPORTA MÁS DE LO QUE PARECE. Antes
+    estos buscadores se traían la colección ENTERA (pageSize=300) y
+    filtraban en Python. Con el reintento de por medio, una búsqueda que
+    no encontraba nada a la primera hacía hasta OCHO barridos completos,
+    y cada documento leído cuenta contra la cuota de lecturas de
+    Firestore. Con 108 lotes en la base eso eran 864 lecturas por una
+    sola búsqueda fallida.
+
+    El 2026-09-18 la cuota de LECTURAS por REST del proyecto de pruebas
+    se agotó a media mañana (escrituras y borrados seguían andando, y el
+    SDK del navegador también: era solo el camino de lectura REST). Esto
+    es lo que más la consumía.
+
+    Con el filtro del lado del servidor, la misma búsqueda lee un
+    documento en vez de la colección entera, y los reintentos pasan a
+    ser baratos.
+    """
+    consulta = {
+        "structuredQuery": {
+            "from": [{"collectionId": coleccion}],
+            "where": {
+                "fieldFilter": {
+                    "field": {"fieldPath": campo},
+                    "op": "EQUAL",
+                    "value": {"stringValue": valor},
+                }
+            },
+            "limit": 1,
+        }
+    }
+    cabeceras = {"Authorization": f"Bearer {_id_token_de_prueba()}"} if con_sesion else {}
+    respuesta = requests.post(f"{FIRESTORE_RAIZ}:runQuery", headers=cabeceras, json=consulta, timeout=10)
+    respuesta.raise_for_status()
+    return id_del_primer_documento(respuesta.json())
+
+
+def id_del_primer_documento(respuesta_de_runquery):
+    """El id del primer documento de una respuesta de ":runQuery", o None.
+
+    Está separado de la llamada HTTP para poder testearlo sin red: es
+    parseo de una forma de respuesta que no es obvia. runQuery NO devuelve
+    un objeto con "documents" como el GET de una colección, sino una
+    LISTA de entradas, y las entradas sin resultado traen solo un
+    "readTime" — una consulta que no encuentra nada devuelve
+    [{"readTime": "..."}], no una lista vacía.
+
+    Verificado contra Firestore real (una consulta sin resultados sobre
+    el proyecto de producción, que devolvió exactamente esa forma).
+    """
+    for entrada in respuesta_de_runquery:
+        documento = entrada.get("document")
+        if documento:
+            return documento["name"].rsplit("/", 1)[-1]
+    return None
+
+
+def buscar_doc_id_por_descripcion(texto):
+    """Busca un lote por su texto de descripción exacto.
+
+    Se usa para encontrar el lote que un test creó a través del
+    formulario de la UI, que no expone el id del documento nuevo.
+
+    Lectura pública: la colección "lotes" se lee sin sesión (ver
+    firestore.rules), así que no hace falta token acá.
+
+    El reintento sigue: la UI ya confirmó el guardado, pero esta lectura
+    va por una vía distinta (REST desde Python) y puede llegar un
+    instante antes que el dato. Ahora cada reintento cuesta una lectura
+    en vez de un barrido entero — ver _buscar_por_campo_exacto.
+    """
+    return _con_reintento(lambda: _buscar_por_campo_exacto("lotes", "descripcion", texto, con_sesion=False))
 
 
 FIRESTORE_URL_BASE_CONTACTOS = (
@@ -404,21 +529,7 @@ def buscar_contacto_doc_id_por_nombre(nombre):
     diferencia de "lotes", leer "contactos" requiere sesión (ver
     firestore.rules), así que este helper sí manda el token."""
 
-    def intentar():
-        id_token = _id_token_de_prueba()
-        respuesta = requests.get(
-            FIRESTORE_URL_BASE_CONTACTOS,
-            headers={"Authorization": f"Bearer {id_token}"},
-            timeout=10,
-        )
-        respuesta.raise_for_status()
-        for doc in respuesta.json().get("documents", []):
-            campos = doc.get("fields", {})
-            if campos.get("nombre", {}).get("stringValue") == nombre:
-                return doc["name"].rsplit("/", 1)[-1]
-        return None
-
-    return _con_reintento(intentar)
+    return _con_reintento(lambda: _buscar_por_campo_exacto("contactos", "nombre", nombre, con_sesion=True))
 
 
 def borrar_contacto_de_prueba(doc_id):
@@ -455,27 +566,17 @@ def borrar_usuario_de_prueba(uid):
 
 
 def crear_contacto_de_prueba(datos):
-    """Crea un documento en "contactos" directo por REST (sin pasar por
-    la UI) y devuelve su id — para tests que necesitan un contacto con
-    datos puntuales difíciles de armar clickeando (ej. "asignado_a" de
-    OTRO corredor, para probar la vista "Todos"). "creado_por" tiene que
-    ser el uid real de la cuenta de prueba (la regla de creación en
-    firestore.rules lo exige, igual que en lotes) aunque "asignado_a" sea
-    distinto — en la app real los dos siempre coinciden al crear un
-    contacto, esto es solo para poder simular la cartera de "otro
-    corredor" sin una segunda cuenta."""
-    id_token = _id_token_de_prueba()
-    if "creado_por" not in datos:
-        datos = {**datos, "creado_por": _uid_de_prueba()}
-    campos = {clave: _a_valor_firestore(valor) for clave, valor in datos.items()}
-    respuesta = requests.post(
-        FIRESTORE_URL_BASE_CONTACTOS,
-        headers={"Authorization": f"Bearer {id_token}"},
-        json={"fields": campos},
-        timeout=10,
-    )
-    respuesta.raise_for_status()
-    return respuesta.json()["name"].rsplit("/", 1)[-1]
+    """Crea un contacto y devuelve su id.
+
+    Sirve para tests que necesitan un contacto con datos difíciles de
+    armar clickeando (por ejemplo "asignado_a" de OTRO corredor, para
+    probar la vista "Todos"). "creado_por" tiene que ser el uid real de
+    la cuenta de prueba aunque "asignado_a" sea distinto: la regla de
+    creación lo exige, y en la app real los dos siempre coinciden.
+
+    Delega en el plural, que escribe por commit (ver _commit).
+    """
+    return crear_contactos_de_prueba([datos])[0]
 
 
 LOTE_PRUEBA_DATOS = {

@@ -26,7 +26,9 @@ from conftest import (
     FIREBASE_PROJECT_ID,
     _id_token_de_prueba,
     borrar_lote_de_prueba,
+    borrar_lotes_de_prueba,
     crear_lote_de_prueba,
+    crear_lotes_de_prueba,
     soltar_el_mouse,
 )
 
@@ -192,7 +194,7 @@ def test_aplicar_a_varios_escribe_en_todos_los_seleccionados(page, base_url):
     """El caso que motivó la pantalla: una manzana entera, un solo cambio."""
     marcador = uuid.uuid4().hex[:8]
     manzana = f"MASIVA-{marcador}"
-    ids = [crear_lote_de_prueba(_lote(manzana, str(n))) for n in (1, 2, 3)]
+    ids = crear_lotes_de_prueba([_lote(manzana, str(n)) for n in (1, 2, 3)])
     try:
         _abrir_lista_filtrada_por(page, base_url, manzana, filas=3)
 
@@ -212,8 +214,7 @@ def test_aplicar_a_varios_escribe_en_todos_los_seleccionados(page, base_url):
             assert campos["precio_usd"]["integerValue"] == "18000", f"{doc_id} no quedó con el precio"
             assert _servicios_de(campos)["luz"] is True, f"{doc_id} no quedó con luz"
     finally:
-        for doc_id in ids:
-            borrar_lote_de_prueba(doc_id)
+        borrar_lotes_de_prueba(ids)
 
 
 @pytest.mark.con_sesion
@@ -258,7 +259,7 @@ def test_cambiar_el_filtro_limpia_la_seleccion(page, base_url):
     """Si no, se le aplicaría un cambio a lotes que no están en pantalla."""
     marcador = uuid.uuid4().hex[:8]
     manzana = f"FILTRO-{marcador}"
-    ids = [crear_lote_de_prueba(_lote(manzana, str(n))) for n in (1, 2)]
+    ids = crear_lotes_de_prueba([_lote(manzana, str(n)) for n in (1, 2)])
     try:
         _abrir_lista_filtrada_por(page, base_url, manzana, filas=2)
         page.locator("#seleccionar-pagina").check()
@@ -267,8 +268,7 @@ def test_cambiar_el_filtro_limpia_la_seleccion(page, base_url):
         page.locator("#filtro-buscar").fill(f"NADA-{marcador}")
         expect(page.locator("#seleccion-barra")).to_be_hidden()
     finally:
-        for doc_id in ids:
-            borrar_lote_de_prueba(doc_id)
+        borrar_lotes_de_prueba(ids)
 
 
 @pytest.mark.con_sesion

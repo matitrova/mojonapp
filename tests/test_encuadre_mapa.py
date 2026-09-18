@@ -18,7 +18,7 @@ import uuid
 
 from playwright.sync_api import expect  # noqa: F401  (consistencia con el resto de la suite)
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba
+from conftest import borrar_lotes_de_prueba, crear_lote_de_prueba
 
 # El zoom del que se sirven los tiles va en su propia URL
 # (.../MapServer/tile/{z}/{y}/{x}), así que se puede leer el zoom real
@@ -185,5 +185,4 @@ def test_el_mapa_nunca_arranca_mas_lejos_que_el_minimo(page, base_url):
             f"{ZOOM_MINIMO_ESPERADO}: con lotes dispersos se ve vacío"
         )
     finally:
-        for doc_id in lejanos:
-            borrar_lote_de_prueba(doc_id)
+        borrar_lotes_de_prueba(lejanos)

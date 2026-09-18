@@ -16,6 +16,7 @@ from conftest import (
     FIREBASE_PROJECT_ID,
     _id_token_de_prueba,
     borrar_lote_de_prueba,
+    borrar_lotes_de_prueba,
     crear_lote_de_prueba,
     soltar_el_mouse,
 )
@@ -106,8 +107,7 @@ def test_tasacion_usa_mediana_de_la_misma_zona(page, base_url):
         expect(page.locator("#tasacion-nota")).to_contain_text("misma zona")
     finally:
         borrar_lote_de_prueba(objetivo)
-        for doc_id in comparables:
-            borrar_lote_de_prueba(doc_id)
+        borrar_lotes_de_prueba(comparables)
 
 
 def test_tasacion_usa_toda_la_cartera_si_la_zona_no_alcanza(page, base_url):
@@ -136,8 +136,7 @@ def test_tasacion_usa_toda_la_cartera_si_la_zona_no_alcanza(page, base_url):
         expect(page.locator("#tasacion-nota")).to_contain_text("de la cartera")
     finally:
         borrar_lote_de_prueba(objetivo)
-        for doc_id in comparables:
-            borrar_lote_de_prueba(doc_id)
+        borrar_lotes_de_prueba(comparables)
 
 
 def test_tasacion_oculta_sin_comparables_suficientes(page, base_url):
@@ -191,5 +190,4 @@ def test_tasacion_oculta_sin_superficie_cargada(page, base_url):
         expect(page.locator("#ficha-tasacion")).to_be_hidden()
     finally:
         borrar_lote_de_prueba(objetivo)
-        for doc_id in comparables:
-            borrar_lote_de_prueba(doc_id)
+        borrar_lotes_de_prueba(comparables)
