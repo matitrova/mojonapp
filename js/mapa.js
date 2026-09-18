@@ -16,6 +16,11 @@
 
 import { db, auth } from "./firebase-config.js";
 import {
+  ZOOM_MINIMO_ENCUADRE,
+  centroDelGrupoMasNumeroso,
+  convieneEnfocarUnGrupo
+} from "./encuadre-mapa.js";
+import {
   collection,
   getDocs,
   query,
@@ -307,7 +312,33 @@ export async function cargarLotesDesdeFirestore() {
     // consistente: con animate:false en AMBAS llamadas (acá y en
     // ficha.js) cada cambio de vista se aplica de una, sin animación en
     // curso que pueda pisarse con la siguiente.
-    mapa.fitBounds(capaLotes.getBounds(), { padding: [20, 20], maxZoom: 18, animate: false });
+    //
+    // Si los lotes están tan desparramados que para que entren todos
+    // habría que alejarse más allá de ZOOM_MINIMO_ENCUADRE, se enfoca el
+    // grupo más numeroso: alejarse tanto deja cada lote del tamaño de un
+    // punto y el mapa se ve vacío aunque esté todo dibujado (ver
+    // js/encuadre-mapa.js, que explica el caso real que lo motivó).
+    //
+    // Ojo con el orden: getBoundsZoom depende del tamaño del contenedor,
+    // y cuando el contenedor todavía mide 0×0 devuelve el maxZoom del
+    // mapa (24) — o sea que cae en la rama de fitBounds, que es la que
+    // ya sabía convivir con ese caso. Bien así: la rama nueva solo entra
+    // cuando el tamaño es real y los lotes están de verdad dispersos.
+    const limites = capaLotes.getBounds();
+    const centroDelGrupo = convieneEnfocarUnGrupo(mapa.getBoundsZoom(limites, false, L.point(20, 20)))
+      ? centroDelGrupoMasNumeroso(
+          capaLotes.getLayers().map((capaDeUnLote) => capaDeUnLote.getBounds().getCenter())
+        )
+      : null;
+    if (centroDelGrupo) mapa.setView(centroDelGrupo, ZOOM_MINIMO_ENCUADRE, { animate: false });
+    else mapa.fitBounds(limites, { padding: [20, 20], maxZoom: 18, animate: false });
+    // Queda anotado cuál de las dos ramas encuadró. Sirve para dos
+    // cosas: explicar en vivo por qué el mapa abrió donde abrió, y que
+    // el test pueda afirmar que el encuadre efectivamente corrió. Sin
+    // esto, un test que mire solo el zoom pasa igual si el encuadre
+    // nunca se ejecutó (el mapa se queda en el zoom del setView inicial,
+    // que ya es cerca) — un verde que no prueba nada.
+    mapa.getContainer().dataset.encuadre = centroDelGrupo ? "grupo-mas-numeroso" : "todos-los-lotes";
   }
 
   if (habiaCatastroCercano) capaCatastroCercano.addTo(mapa);
