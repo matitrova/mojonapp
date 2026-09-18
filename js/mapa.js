@@ -57,6 +57,11 @@ import { bboxDelMapaVisible, cargarParcelaEnFormLote } from "./cargar-lote.js";
 // así que importarlos acá de una sola dirección no crea ningún ciclo.
 import { cargarContactos } from "./crm-datos.js";
 import { interesPorLote } from "./crm-metricas.js";
+// Calce de la foto satelital. calce-aplicar.js no importa nada de acá,
+// así que no hay ciclo; a calce-panel.js se le pasa el seguimiento por
+// inyección justamente para no tener que importarlo al revés.
+import { capaConMargen, seguirElCalce } from "./calce-aplicar.js";
+import { configurarCalce } from "./calce-panel.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -129,17 +134,50 @@ export function configurarMapa(deps) {
 // donde se vende queden en gris, no.
 export const mapa = L.map("mapa", { zoomControl: true, maxZoom: 24 }).setView([-32.34715, -65.01300], 18);
 
+// LA FOTO VIVE EN SU PROPIO PANE, y no en el de siempre, para poder
+// CORRERLA sin mover nada más.
+//
+// La foto satelital no coincide con el catastro: hasta 20-25 metros de
+// diferencia en algunas zonas de San Luis (verificado el 2026-09-18
+// dibujando las mismas parcelas sobre OpenStreetMap, donde calzan, y
+// sobre Esri, donde no). Lo que está mal es la foto — las parcelas son
+// el dato legal del catastro provincial y los lotes se dibujaron contra
+// ellas —, así que se corrige la foto y nunca los datos.
+//
+// Un pane propio es lo que permite eso: se le pone un transform de CSS
+// con los píxeles de corrección y se mueve SOLO la imagen. Los
+// polígonos de lotes, las parcelas del catastro y los marcadores viven
+// en los panes de siempre y no se enteran. Ver js/calce-imagen.js para
+// el cálculo y js/calce-panel.js para el control.
+//
+// El zIndex 199 lo deja abajo de todo lo dibujado (el pane de overlays
+// es 400) y arriba del fondo del mapa.
+export const PANE_FOTO = "foto-satelital";
+mapa.createPane(PANE_FOTO).style.zIndex = 199;
+
 // Capa satelital gratuita (Esri World Imagery, sin API key).
 // Si más adelante contratan un proveedor con mejor resolución (Mapbox, Google Maps
 // Platform, etc.), la capa se cambia acá: reemplazar la URL y el "attribution".
-L.tileLayer(
+// capaConMargen y no L.tileLayer: carga un poco más allá de lo visible,
+// así al correr la foto para calzarla no queda una franja gris sin
+// imagen en el borde contrario.
+capaConMargen(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {
     maxZoom: 24,
     maxNativeZoom: 17,
+    pane: PANE_FOTO,
     attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics"
   }
 ).addTo(mapa);
+
+// Deja la foto calzada con el catastro en esta zona, y la mantiene así
+// al moverse y al hacer zoom (la corrección está en metros, y los
+// metros son distinta cantidad de píxeles en cada zoom).
+// Se exporta para que el panel de calibración lo reciba por inyección y
+// para poder probarlo sin pasar por la UI (tests/test_calce_en_el_mapa.py).
+export const calceDelMapa = seguirElCalce(mapa, PANE_FOTO);
+configurarCalce(calceDelMapa);
 
 // Capas de referencia (calles, localidades, límites) — mismo proveedor
 // gratis y sin API key que la imagen satelital, pensadas por Esri

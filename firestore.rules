@@ -96,6 +96,27 @@ service cloud.firestore {
     // corredor logueado ve todos los lotes o solo los propios (filtro que
     // hace la propia app en la consulta, ver cargarLotesDesdeFirestore en
     // js/app.js — esta regla solo cubre la escritura).
+    // Calce de la foto satelital: cuántos metros hay que correr la
+    // imagen de Esri, por zona, para que coincida con las parcelas del
+    // catastro. La foto está corrida hasta 20-25 m en algunas zonas de
+    // San Luis y el corrimiento no se puede medir solo, así que lo calza
+    // el corredor a ojo una vez por zona (ver js/calce-imagen.js).
+    //
+    // LECTURA ABIERTA, igual que los lotes: la usa también la página
+    // pública de un lote, que ve un comprador sin cuenta — es la
+    // pantalla donde peor se vería la propiedad corrida 20 metros. No
+    // hay nada sensible acá: son dos números que dicen cuánto mover un
+    // dibujo de fondo.
+    //
+    // ESCRIBIR ES OTRA COSA. Un calce mal hecho desalinea el mapa para
+    // todo el equipo, así que pide el mismo permiso que administrar las
+    // zonas: es la misma clase de tarea (configurar cómo se ve el mapa)
+    // y la misma clase de daño si se hace mal.
+    match /calces_imagen/{celdaId} {
+      allow read: if true;
+      allow write: if esRoot() || tienePermiso('administrar_sectores');
+    }
+
     match /lotes/{loteId} {
       allow read: if true;
 

@@ -23,6 +23,12 @@ import { doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/1
 import { crearContactoDesdeInteresado } from "./crm-datos.js";
 // Las mismas reglas que aplica functions/consulta-lote.js del otro lado.
 import { validarConsulta } from "./consulta-lote.js";
+import { capaConMargen, seguirElCalce } from "./calce-aplicar.js";
+
+// Pane propio para la foto, como en el mapa principal (ver PANE_FOTO en
+// js/mapa.js). Nombre distinto porque son dos mapas de Leaflet
+// independientes y cada uno tiene sus panes.
+const PANE_FOTO_PUBLICO = "foto-satelital-publica";
 
 const elPanel = document.getElementById("panel-lote-publico");
 const elTitulo = document.getElementById("lp-titulo");
@@ -135,16 +141,23 @@ function renderMapa(feature) {
   // contenedor tenga tamaño real, y mientras el panel está oculto mide 0.
   if (!mapaChico) {
     mapaChico = L.map("lp-mapa", { zoomControl: true, scrollWheelZoom: false, maxZoom: 24 });
+    // La foto en su propio pane, igual que el mapa principal, para que
+    // le pueda aplicar el calce de la zona: si el corredor calzó la
+    // foto, el comprador tiene que ver la propiedad en el lugar
+    // correcto. Es la pantalla donde peor se vería un error de 20 m.
+    mapaChico.createPane(PANE_FOTO_PUBLICO).style.zIndex = 199;
     // maxNativeZoom 17 por el mismo motivo que el mapa principal, y acá
     // importa todavía más: esta es la página que ve un comprador, y un
     // recuadro gris que dice "Map data not yet available" donde tendría
     // que estar la propiedad es lo peor que puede mostrar. Ver el
     // comentario largo en js/mapa.js.
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    capaConMargen("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
       maxZoom: 24,
       maxNativeZoom: 17,
+      pane: PANE_FOTO_PUBLICO,
       attribution: "Tiles &copy; Esri"
     }).addTo(mapaChico);
+    seguirElCalce(mapaChico, PANE_FOTO_PUBLICO);
   }
   if (capaDelLote) capaDelLote.remove();
   capaDelLote = L.geoJSON(feature, { style: { color: "#e2591f", weight: 2, fillOpacity: 0.25 } }).addTo(mapaChico);

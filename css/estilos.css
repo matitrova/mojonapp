@@ -443,6 +443,135 @@ button:active {
   background: var(--color-primario-oscuro);
 }
 
+/* ---------------------------------------------------------------------------
+   Modo "calzar la foto" (js/calce-panel.js).
+
+   Va arriba a la izquierda y no centrado: se usa MIRANDO el mapa, así
+   que el panel no puede tapar la zona que estás tratando de calzar. Y
+   queda chico a propósito — son cuatro flechas y un número.
+   --------------------------------------------------------------------------- */
+
+/* A LA DERECHA, no a la izquierda: ahí está la barra lateral fija
+   (--ancho-lateral) y el panel quedaba abajo de ella, imposible de
+   tocar. Lo agarró un test cuyo click nunca llegaba al botón.
+   Además queda del lado del flotante que lo abre, que es de donde viene
+   la mano. */
+#panel-calce {
+  position: fixed;
+  top: calc(var(--alto-encabezado) + 12px);
+  right: 12px;
+  z-index: 1150;
+  width: 232px;
+  padding: 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: #fff;
+  box-shadow: var(--sombra-calida-suave);
+}
+
+.calce-titulo {
+  margin: 0 0 4px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.calce-ayuda {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--color-texto-secundario);
+}
+
+.calce-flechas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.calce-flechas > div {
+  display: flex;
+  gap: 4px;
+}
+
+.calce-flechas button {
+  width: 38px;
+  height: 34px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: var(--color-fondo-alterno);
+  color: var(--color-texto);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.calce-flechas button:hover {
+  background: var(--color-primario-suave);
+  border-color: var(--color-primario);
+}
+
+.calce-estado {
+  margin: 10px 0;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.calce-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.calce-acciones button {
+  padding: 8px;
+  border: none;
+  border-radius: var(--radio-chico);
+  background: var(--color-primario);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calce-acciones .calce-secundario {
+  background: none;
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto-secundario);
+  font-weight: 500;
+}
+
+.calce-mensaje {
+  margin: 8px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--color-texto-secundario);
+}
+
+/* En teléfono el panel va abajo: arriba taparía justo el centro de la
+   pantalla, que es donde uno mira para calzar. */
+@media (max-width: 640px) {
+  #panel-calce {
+    top: auto;
+    bottom: 84px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}
+
+/* El "+" del flotante queda abajo a la derecha y el panel arriba a la
+   derecha, así que no se pisan. Pero si la pantalla es baja, el panel
+   crece hacia abajo y sí lo taparía: se le pone un tope y se le deja
+   scroll propio antes que taparle el botón al que hay que volver. */
+@media (max-height: 620px) and (min-width: 641px) {
+  #panel-calce {
+    max-height: calc(100vh - var(--alto-encabezado) - 110px);
+    overflow-y: auto;
+  }
+}
+
 /* "Ver catastro cercano" es una herramienta pública (sin sesión
    también) — con la barra de secciones (solo con sesión, ver
    con-nav-secciones en app.js) encima del mapa, este botón quedaba

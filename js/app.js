@@ -35,6 +35,7 @@ import { centroideDePoligono } from "./geometria.js";
 import "./tareas-panel.js";
 import "./actividades-panel.js";
 import "./fab-carga.js";
+import { actualizarBotonCalce } from "./calce-panel.js";
 import { refrescarLotePublicoSiCorresponde } from "./lote-publico.js";
 import { configurarBuscador, mostrarBuscador } from "./buscador-panel.js";
 import { configurarFavoritos } from "./favoritos.js";
@@ -427,6 +428,10 @@ function actualizarUIPorPermisos() {
   // js/fab-carga.js), así que se gatea el flotante entero: esconder los
   // botones uno por uno dejaría un "+" que se abre y no ofrece nada.
   document.getElementById("fab-carga").classList.toggle("oculto", !tienePermiso("cargar_lote"));
+  // "Calzar la foto" se esconde sin el permiso: mostrarlo sería ofrecer
+  // algo que después las reglas rechazan al guardar, y el trabajo de
+  // calzar a ojo se perdería recién al final.
+  actualizarBotonCalce();
   document.getElementById("drawer-grupo-seguridad").classList.toggle("oculto", !tienePermiso("administrar_usuarios"));
   // A diferencia de "Usuarios"/"Perfiles de seguridad" (permiso
   // administrar_usuarios, que un corredor no-root puede tener), "quién

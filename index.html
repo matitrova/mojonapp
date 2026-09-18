@@ -75,7 +75,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-14" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-16" />
 </head>
 <body>
 
@@ -309,6 +309,11 @@
       <button type="button" class="fab-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 8 4l8 3 4 13-8-2Z"/></svg></span><span>Agregar parcela</span></button>
       <span class="fab-separador" aria-hidden="true"></span>
       <button type="button" class="fab-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><span>Ver catastro cercano</span></button>
+      <!-- Calzar la foto con el catastro. Va acá abajo, junto al
+           catastro y no con las opciones de carga, porque es la misma
+           clase de tarea: mirar el terreno, no cargar datos. Ver
+           js/calce-panel.js. -->
+      <button type="button" class="fab-item" id="btn-calzar-foto" data-testid="btn-calzar-foto" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M3 12h18"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg></span><span>Calzar la foto</span></button>
     </div>
     <button type="button" id="fab-carga-boton" data-testid="fab-carga-boton"
             aria-label="Cargar un lote" aria-expanded="false">
@@ -317,6 +322,37 @@
   </div>
 
   <button id="btn-flotante-catastro" class="oculto" data-testid="btn-flotante-catastro">✕ Ocultar catastro</button>
+
+  <!-- Modo "calzar la foto": corre la imagen satelital hasta que
+       coincida con las parcelas del catastro, y lo guarda para esa zona.
+       La foto de Esri está corrida hasta 20-25 m en algunas zonas de San
+       Luis y no se puede medir solo (ver el comentario de
+       js/calce-imagen.js), así que lo calza el corredor a ojo: una vez
+       por zona y queda para todo el equipo.
+
+       LO QUE SE MUEVE ES LA FOTO. Las parcelas y los lotes no se tocan
+       nunca: son el dato bueno. -->
+  <div id="panel-calce" class="oculto" data-testid="panel-calce">
+    <p class="calce-titulo">Calzar la foto con el catastro</p>
+    <p class="calce-ayuda">
+      Movela hasta que las líneas del catastro caigan sobre lo que se ve en la foto.
+    </p>
+    <div class="calce-flechas">
+      <button type="button" id="calce-norte" aria-label="Mover la foto al norte" data-testid="calce-norte">↑</button>
+      <div>
+        <button type="button" id="calce-oeste" aria-label="Mover la foto al oeste" data-testid="calce-oeste">←</button>
+        <button type="button" id="calce-este" aria-label="Mover la foto al este" data-testid="calce-este">→</button>
+      </div>
+      <button type="button" id="calce-sur" aria-label="Mover la foto al sur" data-testid="calce-sur">↓</button>
+    </div>
+    <p id="calce-estado" class="calce-estado" data-testid="calce-estado">sin corrección</p>
+    <div class="calce-acciones">
+      <button type="button" id="calce-guardar" data-testid="calce-guardar">Guardar para esta zona</button>
+      <button type="button" id="calce-cero" class="calce-secundario" data-testid="calce-cero">Volver a cero</button>
+      <button type="button" id="calce-cerrar" class="calce-secundario" data-testid="calce-cerrar">Cerrar</button>
+    </div>
+    <p id="calce-mensaje" class="calce-mensaje oculto" data-testid="calce-mensaje"></p>
+  </div>
 
   <!-- Mismo criterio que btn-flotante-catastro: apagar "Interés del CRM"
        sin volver a abrir el drawer. -->
@@ -2257,6 +2293,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-14"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-16"></script>
 </body>
 </html>
