@@ -21,7 +21,7 @@ Lo que se protege acá:
 import pytest
 from playwright.sync_api import expect
 
-from conftest import soltar_el_mouse
+from conftest import abrir_menu, soltar_el_mouse
 
 pytestmark = pytest.mark.con_sesion
 
@@ -81,3 +81,35 @@ def test_la_carga_ya_no_esta_en_el_menu_lateral(page, base_url):
     _entrar(page, base_url)
     expect(page.locator("#drawer-menu")).not_to_contain_text("Cargar a mano")
     expect(page.locator("#drawer-menu")).not_to_contain_text("Agregar manzana")
+
+
+def test_el_catastro_tambien_sale_del_flotante(page, base_url):
+    """Pedido del usuario: que el catastro se active desde un flotante.
+
+    Va en el mismo menú que la carga y no en uno propio: dos botones
+    flotantes a diez píxeles uno del otro compiten por el mismo rincón
+    de la pantalla. Las cuatro cosas se hacen mirando el mapa.
+    """
+    _entrar(page, base_url)
+    page.locator("#fab-carga-boton").click()
+    expect(page.locator("#btn-ver-catastro-cercano")).to_be_visible()
+    expect(page.locator("#drawer-menu")).not_to_contain_text("Ver catastro cercano")
+
+
+def test_lo_flotante_solo_existe_en_el_mapa(page, base_url):
+    """Fuera del mapa no tienen sobre qué actuar, y taparían el contenido
+    de la pantalla en la que sí estás."""
+    _entrar(page, base_url)
+    expect(page.locator("#fab-carga")).to_be_visible()
+
+    abrir_menu(page)
+    page.locator("#btn-ver-lista").click()
+    soltar_el_mouse(page)
+    expect(page.locator("#vista-lista")).to_be_visible()
+    expect(page.locator("#fab-carga")).to_be_hidden()
+
+    # Y vuelve al volver al mapa.
+    abrir_menu(page)
+    page.locator("#btn-drawer-mapa").click()
+    soltar_el_mouse(page)
+    expect(page.locator("#fab-carga")).to_be_visible()

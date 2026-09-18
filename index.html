@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-08" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-09" />
 </head>
 <body>
 
@@ -159,8 +159,6 @@
 
         <div class="solo-con-sesion oculto">
 
-          <p class="menu-categoria">Catastro</p>
-          <button type="button" class="drawer-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><span>Ver catastro cercano</span></button>
         </div>
 
         <!-- Gateado por el permiso "administrar_sectores" (ver
@@ -295,6 +293,8 @@
       <button type="button" class="fab-item" id="btn-cargar-lote" data-testid="btn-cargar-lote" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span><span>Cargar a mano</span></button>
       <button type="button" class="fab-item" id="btn-abrir-manzana" data-testid="btn-abrir-manzana" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></span><span>Agregar manzana</span></button>
       <button type="button" class="fab-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 8 4l8 3 4 13-8-2Z"/></svg></span><span>Agregar parcela</span></button>
+      <span class="fab-separador" aria-hidden="true"></span>
+      <button type="button" class="fab-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><span>Ver catastro cercano</span></button>
     </div>
     <button type="button" id="fab-carga-boton" data-testid="fab-carga-boton"
             aria-label="Cargar un lote" aria-expanded="false">
@@ -2121,6 +2121,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-08"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-09"></script>
 </body>
 </html>

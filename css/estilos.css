@@ -5142,3 +5142,22 @@ body.con-nav-secciones #btn-flotante-catastro {
   width: 100%;
   height: 100%;
 }
+
+/* Los controles flotantes son del mapa y solo del mapa (ver aplicarEstado
+   en js/router.js). Fuera de él no tienen sobre qué actuar, y encima
+   quedarían tapando el contenido de la pantalla en la que sí estás. */
+body:not(.en-el-mapa) #fab-carga,
+body:not(.en-el-mapa) #btn-flotante-catastro,
+body:not(.en-el-mapa) #btn-flotante-interes-crm {
+  display: none;
+}
+
+/* Separa la carga (sumar un lote) de mirar el catastro: son dos cosas
+   distintas que conviven en el mismo menú porque las dos se hacen
+   mirando el mapa. */
+.fab-separador {
+  display: block;
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--color-borde);
+}

@@ -133,6 +133,17 @@ function marcarEnElMenu(ruta) {
 function aplicarEstado(ruta) {
   ocultarPantallasGrandes();
 
+  // Lo que flota sobre el mapa (el botón "+" de carga y catastro, y los
+  // avisos de "ocultar catastro"/"ocultar interés") existe SOLO en la
+  // vista mapa. Pedido del usuario del 2026-09-18: fuera del mapa esos
+  // controles no tienen sobre qué actuar, y encima quedan tapando el
+  // contenido de la pantalla en la que sí estás.
+  //
+  // Se marca en el <body> y lo esconde el CSS, en vez de tocar cada
+  // elemento acá: así sumar un flotante nuevo no obliga a acordarse de
+  // agregarlo a esta lista.
+  document.body.classList.toggle("en-el-mapa", ruta.path === "/");
+
   // La ficha de un lote es una hoja sobre el mapa: tiene sentido en el
   // mapa y en ninguna otra sección. (Antes cada panel la escondía por su
   // cuenta, o se olvidaba.)
