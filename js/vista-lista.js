@@ -539,8 +539,31 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
 
     await updateDoc(doc(db, COLECCION_LOTES, loteEditandoDesdeGrilla.id), datos);
     // Las notas no son un campo del lote sino una subcolección aparte
-    // (js/notas-internas.js), así que se guardan con su propia escritura.
-    await guardarNotasInternas(loteEditandoDesdeGrilla.id, elEditarLoteNotas.value);
+    // (js/notas-internas.js), así que son una escritura PROPIA y pueden
+    // fallar solas — con el lote ya guardado.
+    //
+    // Por eso este try/catch y no dejar que el error suba al de afuera:
+    // así el corredor veía "No tenés permiso para editar este lote", que
+    // es falso (lo tenía, y el lote se guardó), y además el error cortaba
+    // antes de refrescar la pantalla, así que parecía que no había pasado
+    // nada mientras Firestore ya tenía los cambios. Pasó de verdad: con
+    // la regla de lotes/{id}/privado sin publicar, toda edición con nota
+    // terminaba así.
+    try {
+      await guardarNotasInternas(loteEditandoDesdeGrilla.id, elEditarLoteNotas.value);
+    } catch (error) {
+      // El lote sí se guardó: se refleja en memoria y en la lista igual
+      // que en el camino feliz, y el formulario queda abierto para poder
+      // reintentar la nota sin recargar nada.
+      Object.assign(loteEditandoDesdeGrilla.properties, datos);
+      await cargarLotesDesdeFirestore();
+      elEditarLoteError.textContent =
+        error.code === "permission-denied"
+          ? "Los cambios del lote se guardaron, pero la nota interna no: falta un permiso. Avisale a quien administra la app."
+          : "Los cambios del lote se guardaron, pero la nota interna no se pudo guardar.";
+      elEditarLoteError.classList.remove("oculto");
+      return;
+    }
     Object.assign(loteEditandoDesdeGrilla.properties, datos);
     registrarAuditoria({
       accion: accionAuditoria,
