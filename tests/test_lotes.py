@@ -129,10 +129,11 @@ def test_corredor_logueado_puede_cargar_un_lote(page, base_url):
         # pantalla completa de esta app; hay que cerrarlo primero.
         page.locator("#cerrar-panel-dashboard").click()
 
-        # El menú ya no tiene grupos plegables: al abrirlo con el ☰ se ven
-        # todas las secciones con sus ítems (ver el menú de módulos en
-        # index.html/estilos.css).
-        page.locator("#btn-menu").click()
+        # Cargar un lote ya no sale del menú lateral: vive en el botón
+        # flotante "+" sobre el mapa (ver js/fab-carga.js), porque es una
+        # acción que se hace mirando el mapa y no una sección a la que se
+        # entra.
+        page.locator("#fab-carga-boton").click()
         page.locator("#btn-cargar-lote").click()
         soltar_el_mouse(page)
         page.locator("#lote-superficie").fill("460.63")

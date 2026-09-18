@@ -29,10 +29,13 @@ import {
   refrescarDatalistsCrm
 } from "./catalogos.js";
 import { configurarDashboard, renderDashboard } from "./dashboard.js";
-import { configurarCrm } from "./crm.js";
+import { configurarCrm, abrirContactoEnCrm } from "./crm.js";
+import { centroideDePoligono } from "./geometria.js";
 // Tareas: el módulo se registra solo al importarse (engancha su botón).
 import "./tareas-panel.js";
 import "./actividades-panel.js";
+import "./fab-carga.js";
+import { configurarBuscador, mostrarBuscador } from "./buscador-panel.js";
 import { configurarFavoritos } from "./favoritos.js";
 import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde, actualizarVistaLista } from "./vista-lista.js";
 import { configurarEditorForma } from "./editor-forma.js";
@@ -81,6 +84,19 @@ import {
 
 configurarCatalogos({ db, getDocs, addDoc, setDoc, deleteDoc, collection, doc });
 iniciarCatalogos();
+
+// El buscador global necesita saber llevar a un lote y a un lead, y las
+// dos cosas viven en módulos que no puede importar sin armar un ciclo
+// (ficha.js y crm.js lo importarían de vuelta). Se le pasan por
+// parámetro, mismo criterio que dashboard.js y vista-lista.js.
+configurarBuscador({
+  irAlLote: (feature) => {
+    const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+    mapa.setView([lat, lon], 19);
+    mostrarFicha(feature);
+  },
+  irAlLead: (contacto) => abrirContactoEnCrm(contacto.id)
+});
 
 const ETIQUETA_ESTADO = {
   disponible: "Disponible",
@@ -398,9 +414,10 @@ function actualizarUIPorPermisos() {
   // intermitente era real, no ruido.
   actualizarVistaLista();
   pintarTarjetaDeUsuario(auth.currentUser);
-  document.getElementById("btn-abrir-manzana").classList.toggle("oculto", !tienePermiso("cargar_lote"));
-  document.getElementById("btn-abrir-parcela").classList.toggle("oculto", !tienePermiso("cargar_lote"));
-  elBtnCargarLote.classList.toggle("oculto", !tienePermiso("cargar_lote"));
+  // Los tres botones de carga viven ahora dentro del flotante (ver
+  // js/fab-carga.js), así que se gatea el flotante entero: esconder los
+  // botones uno por uno dejaría un "+" que se abre y no ofrece nada.
+  document.getElementById("fab-carga").classList.toggle("oculto", !tienePermiso("cargar_lote"));
   document.getElementById("drawer-grupo-seguridad").classList.toggle("oculto", !tienePermiso("administrar_usuarios"));
   // A diferencia de "Usuarios"/"Perfiles de seguridad" (permiso
   // administrar_usuarios, que un corredor no-root puede tener), "quién
@@ -469,6 +486,7 @@ onAuthStateChanged(auth, async (usuario) => {
     document.querySelectorAll(".solo-con-sesion").forEach((el) => el.classList.remove("oculto"));
     elSesionEmail.textContent = usuario.email;
     pintarTarjetaDeUsuario(usuario);
+    mostrarBuscador(true);
     actualizarUIPorPermisos();
     // El rail de íconos del menú (menú contraído, ver estilos.css) es
     // solo para quien tiene sesión, nunca para un visitante anónimo ni en
@@ -523,6 +541,7 @@ onAuthStateChanged(auth, async (usuario) => {
   } else {
     elBtnAbrirLogin.classList.remove("oculto");
     elSesionActiva.classList.add("oculto");
+    mostrarBuscador(false);
     document.querySelectorAll(".solo-con-sesion").forEach((el) => el.classList.add("oculto"));
     document.getElementById("nav-secciones").classList.add("oculto");
     document.body.classList.remove("con-nav-secciones");

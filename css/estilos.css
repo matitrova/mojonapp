@@ -4933,3 +4933,209 @@ body.con-nav-secciones #btn-flotante-catastro {
 .drawer-item.ruta-activa .item-icono {
   opacity: 1;
 }
+
+/* ---------------------------------------------------------------------------
+   Buscador global de la barra superior (js/buscador-panel.js).
+
+   Ocupa el centro de la barra, como en el mockup. Los resultados salen
+   en una capa flotante debajo, por encima de todo lo demás.
+   --------------------------------------------------------------------------- */
+
+#buscador {
+  position: relative;
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+#buscador-texto {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-size: 0.85rem;
+}
+
+#buscador-texto:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--color-primario-suave);
+}
+
+/* z-index por encima del encabezado (1000) y de los paneles (1700): la
+   lista tiene que verse esté abierta la pantalla que esté. */
+#buscador-resultados {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.buscador-grupo + .buscador-grupo {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-borde);
+}
+
+.buscador-grupo-titulo {
+  margin: 4px 8px 4px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-texto-secundario);
+}
+
+.buscador-fila {
+  display: block;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.buscador-fila:hover {
+  background: var(--color-fondo-alterno);
+}
+
+.buscador-fila-titulo {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.buscador-fila-detalle {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--color-texto-secundario);
+}
+
+.buscador-vacio {
+  margin: 0;
+  padding: 10px 8px;
+  font-size: 0.8rem;
+  color: var(--color-texto-secundario);
+}
+
+/* En teléfono el campo no entra al lado del título y el email: se le da
+   toda la fila propia debajo. */
+@media (max-width: 640px) {
+  #encabezado {
+    flex-wrap: wrap;
+  }
+
+  #buscador {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Botón flotante de carga (js/fab-carga.js).
+
+   Abajo a la derecha, que es donde no tapa nada: los otros flotantes de
+   la app ("Ocultar catastro", "Ocultar interés del CRM") están centrados
+   abajo, y el zoom de Leaflet arriba a la izquierda.
+   --------------------------------------------------------------------------- */
+
+#fab-carga {
+  position: fixed;
+  right: 18px;
+  /* Por encima del aviso legal del pie, que mide unos 34px. */
+  bottom: 52px;
+  z-index: 1150;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+#fab-carga-boton {
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-primario);
+  color: #fff;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(226, 89, 31, 0.4);
+  transition: transform 0.15s ease;
+}
+
+#fab-carga-boton:hover {
+  background: var(--color-primario-oscuro);
+}
+
+/* El "+" gira hasta ser una × cuando está abierto: dice que el mismo
+   botón cierra, sin agregar un segundo control. */
+#fab-carga.abierto #fab-carga-boton {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #fab-carga-boton {
+    transition: none;
+  }
+}
+
+#fab-carga-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+
+.fab-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: none;
+  color: var(--color-texto);
+  font-size: 0.86rem;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.fab-item:hover {
+  background: var(--color-primario-suave);
+  color: var(--color-primario-oscuro);
+}
+
+.fab-item .item-icono {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.fab-item .item-icono svg {
+  width: 100%;
+  height: 100%;
+}

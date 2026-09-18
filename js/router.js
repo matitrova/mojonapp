@@ -111,10 +111,12 @@ function marcarEnElMenu(ruta) {
   //
   // El dueño de cada sección es ruta.boton: la misma tabla que ya decide
   // qué panel abrir. Un solo lugar donde se declara la verdad.
-  const propios = [ruta.boton, ruta.navTab]
-    .filter(Boolean)
-    .map((id) => document.getElementById(id))
-    .filter(Boolean);
+  // Solo el botón del menú, NO la pestaña de #nav-secciones: esas
+  // pestañas tienen su propia clase "activo", que maneja
+  // sincronizarSeccionMapa en app.js. Marcarlas también con
+  // "ruta-activa" les dejaba dos clases de estado para lo mismo — y
+  // rompía el test que compara la lista de clases exacta.
+  const propios = [document.getElementById(ruta.boton)].filter(Boolean);
   propios.forEach((el) => {
     el.classList.add("ruta-activa");
     el.setAttribute("aria-current", "page");

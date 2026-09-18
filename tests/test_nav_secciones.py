@@ -57,21 +57,31 @@ def test_sin_sesion_no_hay_rail_y_el_menu_solo_muestra_lo_publico(page, base_url
     expect(page.locator("#btn-ver-lista")).to_be_visible()
     expect(page.locator("#btn-abrir-favoritos")).to_be_visible()
     # ...y nada de gestión: ni cargar lotes, ni zonas, ni usuarios.
-    expect(page.locator("#btn-cargar-lote")).to_be_hidden()
+    # La carga vive ahora en el botón flotante "+" (ver js/fab-carga.js),
+    # así que lo que tiene que estar escondido sin sesión es ese.
+    expect(page.locator("#fab-carga")).to_be_hidden()
     expect(page.locator("#btn-abrir-sectores")).to_be_hidden()
     expect(page.locator("#menu-seguridad-usuarios")).to_be_hidden()
 
 
 @pytest.mark.con_sesion
 def test_el_rail_muestra_los_4_modulos_y_cada_uno_lleva_a_su_pantalla(page, base_url):
+    """La barra lateral está SIEMPRE desplegada en escritorio.
+
+    Antes era un rail de íconos que se expandía al pasar el mouse, y
+    este test verificaba que los ítems estuvieran escondidos hasta
+    entonces. El rediseño del 2026-09-18 la dejó fija con sus ítems a la
+    vista, así que lo que corresponde verificar ahora es lo contrario:
+    que se llegue a cada pantalla sin tener que abrir nada.
+    """
     _loguearse(page, base_url)
 
-    # Contraído: se ven los 4 íconos de módulo, ningún ítem suelto.
+    # Los cuatro grupos y sus ítems, a la vista sin abrir nada.
     expect(page.locator("#btn-modulo-inicio")).to_be_visible()
     expect(page.locator("#btn-modulo-lotes")).to_be_visible()
     expect(page.locator("#btn-modulo-contactos")).to_be_visible()
     expect(page.locator("#btn-modulo-sistema")).to_be_visible()
-    expect(page.locator("#btn-abrir-dashboard")).to_be_hidden()
+    expect(page.locator("#btn-abrir-dashboard")).to_be_visible()
 
     page.locator("#btn-modulo-inicio").click()
     soltar_el_mouse(page)
@@ -103,18 +113,19 @@ def test_abrir_el_menu_muestra_las_pantallas_agrupadas_por_categoria(page, base_
 
     # Expandido se ven los ítems de cada módulo, con sus categorías.
     expect(page.locator("#btn-ver-lista")).to_be_visible()
-    expect(page.locator("#btn-cargar-lote")).to_be_visible()
+    expect(page.locator("#fab-carga")).to_be_visible()
     expect(page.locator("#btn-abrir-sectores")).to_be_visible()
     # El texto en el DOM va en capitalización normal; las mayúsculas las
     # pone el CSS (text-transform), y Playwright compara el DOM.
-    expect(page.locator("#drawer-menu")).to_contain_text("Carga")
     expect(page.locator("#drawer-menu")).to_contain_text("Clasificación")
+    # "Carga" ya NO es una categoría del menú: las tres formas de sumar un
+    # lote se mudaron al botón flotante "+" (ver js/fab-carga.js).
+    expect(page.locator("#drawer-menu")).not_to_contain_text("Carga")
 
-    # Elegir un ítem navega y cierra el menú (vuelve al rail).
+    # Elegir un ítem navega a esa sección.
     page.locator("#btn-ver-lista").click()
     expect(page.locator("#vista-lista")).to_be_visible()
     _soltar_el_mouse(page)
-    expect(page.locator("#btn-cargar-lote")).to_be_hidden()
 
 
 @pytest.mark.con_sesion
@@ -128,6 +139,6 @@ def test_en_celular_no_hay_rail_y_el_menu_se_abre_con_el_boton(page, base_url):
 
     page.locator("#btn-menu").click()
     expect(page.locator("#btn-modulo-lotes")).to_be_visible()
-    expect(page.locator("#btn-cargar-lote")).to_be_visible()
+    expect(page.locator("#fab-carga")).to_be_visible()
     expect(page.locator("#btn-modulo-lotes")).to_be_visible()
-    expect(page.locator("#btn-cargar-lote")).to_be_visible()
+    expect(page.locator("#fab-carga")).to_be_visible()
