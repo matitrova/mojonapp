@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-02" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-03" />
 </head>
 <body>
 
@@ -168,6 +168,9 @@
         <!-- Los dos gateados por "gestionar_contactos" en
              actualizarUIPorPermisos (app.js) — ids sin cambios. -->
         <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm" data-ruta="/contactos">Pipeline de contactos</button>
+        <!-- Tareas: mismo permiso que el pipeline, porque son las cosas
+             que hay que hacer con esos contactos (ver js/tareas.js). -->
+        <button type="button" class="drawer-item oculto" id="btn-abrir-tareas" data-testid="btn-abrir-tareas" data-ruta="/tareas">Tareas</button>
         <!-- "Interés del CRM" (idea propia #5 de "el mapa como una cualidad
              del CRM" — resaltar, no filtrar): un pin con la cantidad de
              contactos activos interesados sobre cada lote, ver
@@ -1207,6 +1210,61 @@
        o más favoritos tildados aparece "Comparar" para verlos lado a
        lado — mismo criterio real de "estoy dudando entre estos dos
        lotes". -->
+  <!-- Tareas (ver js/tareas.js para las reglas y js/tareas-datos.js para
+       la lectura/escritura). Los textos de esta pantalla están en español
+       neutro por decisión del usuario del 2026-09-18; el resto de la app
+       todavía usa voseo y se pasa junto con el rediseño. -->
+  <div id="panel-tareas" class="oculto panel-pantalla-completa" data-testid="panel-tareas">
+    <div class="panel-header">
+      <h2>Tareas</h2>
+      <button id="cerrar-panel-tareas" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
+    </div>
+    <p class="dashboard-ayuda">Lo que tienes pendiente, y lo que le queda pendiente al equipo.</p>
+
+    <div id="tareas-toolbar" data-testid="tareas-toolbar">
+      <div id="tareas-modo-vista">
+        <button type="button" id="btn-tareas-mias" class="activo" data-testid="btn-tareas-mias">Mis tareas</button>
+        <button type="button" id="btn-tareas-todas" data-testid="btn-tareas-todas">Todas</button>
+      </div>
+      <button type="button" id="btn-nueva-tarea" data-testid="btn-nueva-tarea">+ Nueva tarea</button>
+    </div>
+
+    <form id="tarea-form" class="oculto" data-testid="tarea-form">
+      <div class="tarea-campos">
+        <label for="tarea-titulo">Qué hay que hacer
+          <input type="text" id="tarea-titulo" maxlength="120" placeholder="Llamar para confirmar la visita" data-testid="tarea-titulo" />
+        </label>
+        <label for="tarea-tipo">Tipo
+          <select id="tarea-tipo" data-testid="tarea-tipo"></select>
+        </label>
+        <label for="tarea-vence">Vence
+          <input type="date" id="tarea-vence" data-testid="tarea-vence" />
+        </label>
+        <label for="tarea-contacto">Contacto (opcional)
+          <select id="tarea-contacto" data-testid="tarea-contacto"></select>
+        </label>
+        <label for="tarea-responsable">Responsable
+          <select id="tarea-responsable" data-testid="tarea-responsable"></select>
+        </label>
+      </div>
+      <p id="tarea-error" class="mensaje-error oculto" data-testid="tarea-error"></p>
+      <div class="tarea-botones">
+        <button type="submit" id="tarea-guardar" data-testid="tarea-guardar">Guardar</button>
+        <button type="button" id="tarea-cancelar" class="crm-btn-fantasma" data-testid="tarea-cancelar">Cancelar</button>
+      </div>
+    </form>
+
+    <!-- Solo en la vista "Todas": cómo viene cada corredor. Ordenado por
+         quien tiene más vencidas, que es a quien hay que mirar. -->
+    <div id="tareas-resumen" class="oculto" data-testid="tareas-resumen"></div>
+
+    <div id="tareas-grupos" data-testid="tareas-grupos"></div>
+    <p id="tareas-vacio" class="dashboard-vacio oculto" data-testid="tareas-vacio">
+      No tienes tareas pendientes. Cuando crees una, aparece acá ordenada por vencimiento.
+    </p>
+    <p id="tareas-error" class="mensaje-error oculto" data-testid="tareas-error"></p>
+  </div>
+
   <div id="panel-favoritos" class="oculto panel-pantalla-completa" data-testid="panel-favoritos">
     <div class="panel-header">
       <h2>Favoritos</h2>
@@ -1985,6 +2043,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-02"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-03"></script>
 </body>
 </html>

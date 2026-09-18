@@ -4328,3 +4328,199 @@ body.con-nav-secciones #btn-flotante-catastro {
 .crm-stat-comision-ganada strong {
   color: var(--color-disponible);
 }
+
+/* ---------------------------------------------------------------------------
+   Tareas (js/tareas-panel.js). Tres grupos por vencimiento, con el borde
+   izquierdo marcando la urgencia: es lo que se lee de un vistazo sin
+   tener que procesar las fechas.
+   --------------------------------------------------------------------------- */
+
+#tareas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+#tareas-modo-vista {
+  display: flex;
+  gap: 4px;
+}
+
+#tareas-modo-vista button {
+  padding: 6px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: #fff;
+  color: var(--color-texto-secundario);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+#tareas-modo-vista button.activo {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+  color: #fff;
+  font-weight: 600;
+}
+
+#btn-nueva-tarea {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: var(--color-primario);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#tarea-form {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: var(--color-fondo-alterno);
+}
+
+.tarea-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.tarea-campos label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+  color: var(--color-texto-secundario);
+}
+
+.tarea-campos input,
+.tarea-campos select {
+  padding: 6px 8px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: #fff;
+  color: var(--color-texto);
+  font-size: 0.85rem;
+}
+
+.tarea-botones {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#tarea-guardar {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: var(--color-primario);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tareas-grupo {
+  margin-bottom: 18px;
+}
+
+.tareas-grupo h3 {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  color: var(--color-texto-secundario);
+}
+
+.tareas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.tarea-fila {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-borde);
+  border-left: 3px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: #fff;
+}
+
+/* La urgencia se lee por el borde, sin tener que interpretar la fecha. */
+.tareas-grupo-vencidas .tarea-fila {
+  border-left-color: var(--color-acento);
+}
+
+.tareas-grupo-hoy .tarea-fila {
+  border-left-color: var(--color-reservado);
+}
+
+.tarea-fila.tarea-hecha {
+  background: var(--color-fondo-alterno);
+}
+
+.tarea-hecha .tarea-titulo {
+  text-decoration: line-through;
+  color: var(--color-texto-secundario);
+}
+
+.tarea-tilde {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--color-primario);
+}
+
+.tarea-titulo {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.tarea-meta {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  color: var(--color-texto-secundario);
+}
+
+.tarea-borrar {
+  border: 0;
+  background: none;
+  color: var(--color-acento);
+  font-size: 0.76rem;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+#tareas-resumen {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: var(--color-fondo-alterno);
+}
+
+.tareas-resumen-fila {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 0.82rem;
+}
+
+.tareas-resumen-numeros {
+  color: var(--color-texto-secundario);
+}

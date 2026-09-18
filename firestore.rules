@@ -177,5 +177,27 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.creado_por == request.auth.uid;
       allow update, delete: if esRoot() || tienePermiso('gestionar_contactos');
     }
+
+    // Tareas: qué hay que hacer, quién y para cuándo (ver js/tareas.js).
+    //
+    // NUNCA SON PÚBLICAS. Una tarea dice el nombre de un cliente y qué se
+    // está negociando con él; es información interna de la inmobiliaria,
+    // igual que los contactos. Por eso hasta leerlas pide sesión.
+    //
+    // CUALQUIERA CON SESIÓN PUEDE COMPLETARLAS, a propósito: en una
+    // inmobiliaria chica el que atiende no siempre es el que cargó la
+    // tarea, y exigir que solo el responsable pueda marcarla hecha
+    // termina en tareas viejas que nadie puede cerrar. Quién la hizo
+    // queda registrado igual en la auditoría.
+    //
+    // BORRARLAS ES OTRA COSA. Completar es parte del trabajo diario;
+    // borrar hace desaparecer el rastro de que algo había que hacerse.
+    // Mismo criterio que los contactos: pide el permiso de gestión.
+    match /tareas/{tareaId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.creado_por == request.auth.uid;
+      allow update: if request.auth != null;
+      allow delete: if esRoot() || tienePermiso('gestionar_contactos');
+    }
   }
 }

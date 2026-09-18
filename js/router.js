@@ -46,6 +46,7 @@ const RUTAS = [
   { path: "/favoritos", clave: "favoritos", panel: "panel-favoritos", boton: "btn-abrir-favoritos", navTab: null, titulo: "Favoritos" },
   { path: "/dashboard", clave: "dashboard", panel: "panel-dashboard", boton: "btn-abrir-dashboard", navTab: "nav-tab-dashboard", titulo: "Dashboard" },
   { path: "/contactos", clave: "contactos", panel: "panel-crm", boton: "btn-abrir-crm", navTab: "nav-tab-crm", titulo: "Pipeline de contactos" },
+  { path: "/tareas", clave: "tareas", panel: "panel-tareas", boton: "btn-abrir-tareas", navTab: null, titulo: "Tareas" },
   { path: "/zonas", clave: "zonas", panel: "panel-sectores", boton: "btn-abrir-sectores", navTab: null, titulo: "Zonas" },
   { path: "/barrios", clave: "barrios", panel: "panel-barrios", boton: "btn-abrir-barrios", navTab: null, titulo: "Barrios" },
   { path: "/motivos-de-perdida", clave: "motivos", panel: "panel-motivos", boton: "btn-abrir-motivos", navTab: null, titulo: "Motivos de pérdida" },

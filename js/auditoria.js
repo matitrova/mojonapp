@@ -88,7 +88,12 @@ const ETIQUETA_ACCION = {
   crear_contacto: "Creó el contacto",
   editar_contacto: "Editó el contacto",
   borrar_contacto: "Borró el contacto",
-  mover_contacto: "Movió el contacto de etapa"
+  mover_contacto: "Movió el contacto de etapa",
+  crear_tarea: "Creó la tarea",
+  editar_tarea: "Editó la tarea",
+  completar_tarea: "Completó la tarea",
+  reabrir_tarea: "Reabrió la tarea",
+  borrar_tarea: "Borró la tarea"
 };
 
 const elPanel = document.getElementById("panel-auditoria");

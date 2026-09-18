@@ -29,6 +29,8 @@ import {
 } from "./catalogos.js";
 import { configurarDashboard, renderDashboard } from "./dashboard.js";
 import { configurarCrm } from "./crm.js";
+// Tareas: el módulo se registra solo al importarse (engancha su botón).
+import "./tareas-panel.js";
 import { configurarFavoritos } from "./favoritos.js";
 import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde, actualizarVistaLista } from "./vista-lista.js";
 import { configurarEditorForma } from "./editor-forma.js";
@@ -423,6 +425,9 @@ function actualizarUIPorPermisos() {
   // Tab "CRM" de la barra de secciones — mismo permiso que el botón del
   // drawer (#btn-abrir-crm).
   document.getElementById("nav-tab-crm").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
+  // Las tareas son las cosas que hay que hacer con esos contactos:
+  // mismo permiso que el pipeline.
+  document.getElementById("btn-abrir-tareas").classList.toggle("oculto", !tienePermiso("gestionar_contactos"));
 }
 
 onAuthStateChanged(auth, async (usuario) => {
