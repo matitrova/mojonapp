@@ -206,7 +206,16 @@ def main():
     lotes_nuevos = [l for l in LOTES if (l["manzana"], l["lote"]) not in lotes_ya]
     contactos_nuevos = [c for c in CONTACTOS if c[0] not in contactos_ya]
 
-    print(f"Lotes:     {len(lotes_nuevos)} a crear, {len(LOTES) - len(lotes_nuevos)} ya estaban")
+    # Se listan por nombre los que se saltean, no solo la cantidad. Salió
+    # de un problema real: una corrida informó "11 a crear, 1 ya estaba" y
+    # terminó con 11 lotes en la base. El que faltaba era el único
+    # "vendido", así que el Dashboard de ventas de la demo mostraba cero
+    # ventas. Con el contador agregado no había forma de ver CUÁL se
+    # salteó ni de sospechar que la base no tenía lo que el script creía.
+    ya_estaban = [l for l in LOTES if (l["manzana"], l["lote"]) in lotes_ya]
+    print(f"Lotes:     {len(lotes_nuevos)} a crear, {len(ya_estaban)} ya estaban")
+    for l in ya_estaban:
+        print(f"  ya estaba: Mz {l['manzana']} lote {l['lote']} ({l['estado']})")
     for l in lotes_nuevos:
         print(f"  Mz {l['manzana']} lote {l['lote']:<3} {l['sector']:<22} {l['superficie_m2']:>5} m²  {l['estado']}")
     print(f"\nContactos: {len(contactos_nuevos)} a crear, {len(CONTACTOS) - len(contactos_nuevos)} ya estaban")
@@ -252,7 +261,55 @@ def main():
         })
         print(f"  contacto creado: {nombre} ({doc_id})")
 
-    print(f"\nListo: {len(lotes_nuevos)} lotes y {len(contactos_nuevos)} contactos.")
+    print(f"\nEscritos: {len(lotes_nuevos)} lotes y {len(contactos_nuevos)} contactos.")
+    verificar_el_estado_final()
+
+
+def verificar_el_estado_final():
+    """Relee la base y confirma que está TODA la demo, no que no hubo errores.
+
+    POR QUÉ EXISTE. La primera versión terminaba con "Listo: N lotes y M
+    contactos" contando lo que había intentado escribir. Eso informa que
+    ninguna escritura tiró excepción, que no es lo mismo que que la demo
+    esté completa: un lote salteado por el chequeo de duplicados no
+    escribe nada, no falla, y sale contado como "ya estaba". Fue
+    exactamente lo que pasó con el lote vendido.
+
+    Acá se compara contra la base de verdad y se sale con error si falta
+    algo, así que la demo incompleta deja de ser un final feliz.
+    """
+    print("\nVerificando contra la base...")
+    docs_de_lotes = existentes("lotes")
+    estado_por_clave = {(texto(d, "manzana"), texto(d, "lote")): texto(d, "estado") for d in docs_de_lotes}
+    contactos_en_base = {texto(d, "nombre") for d in existentes("contactos")}
+
+    faltan_lotes = [l for l in LOTES if (l["manzana"], l["lote"]) not in estado_por_clave]
+    faltan_contactos = [c for c in CONTACTOS if c[0] not in contactos_en_base]
+
+    vendidos = sum(1 for l in LOTES if l["estado"] == "vendido")
+    vendidos_en_base = sum(
+        1 for l in LOTES if estado_por_clave.get((l["manzana"], l["lote"])) == "vendido"
+    )
+
+    print(f"  lotes de la demo en la base:     {len(LOTES) - len(faltan_lotes)}/{len(LOTES)}")
+    print(f"  contactos de la demo en la base: {len(CONTACTOS) - len(faltan_contactos)}/{len(CONTACTOS)}")
+    # Los vendidos se cuentan aparte porque son los que alimentan las
+    # métricas de ventas del Dashboard: si faltan, la demo se ve como una
+    # inmobiliaria que nunca vendió nada.
+    print(f"  de esos, vendidos:               {vendidos_en_base}/{vendidos}")
+
+    if faltan_lotes or faltan_contactos:
+        for l in faltan_lotes:
+            print(f"  FALTA lote: Mz {l['manzana']} lote {l['lote']} ({l['estado']})")
+        for c in faltan_contactos:
+            print(f"  FALTA contacto: {c[0]}")
+        sys.exit(
+            "\nLa demo quedó INCOMPLETA. Si dice que 'ya estaban', es que hay otro "
+            "documento con la misma manzana+lote (o el mismo nombre) que no es el de "
+            "la demo: borralo de la base y volvé a correr esto."
+        )
+
+    print("\nListo: la demo está completa.")
 
 
 if __name__ == "__main__":
