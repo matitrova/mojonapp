@@ -90,12 +90,6 @@ service cloud.firestore {
       allow write: if esRoot() || tienePermiso('administrar_catalogos_crm');
     }
 
-    // El catálogo de lotes sigue siendo público en lectura — ese es el
-    // propósito comercial de la app, no depende de perfiles. Lo que se
-    // restringe por perfil es quién puede cargar/editar/borrar, y si un
-    // corredor logueado ve todos los lotes o solo los propios (filtro que
-    // hace la propia app en la consulta, ver cargarLotesDesdeFirestore en
-    // js/app.js — esta regla solo cubre la escritura).
     // Calce de la foto satelital: cuántos metros hay que correr la
     // imagen de Esri, por zona, para que coincida con las parcelas del
     // catastro. La foto está corrida hasta 20-25 m en algunas zonas de
@@ -117,6 +111,12 @@ service cloud.firestore {
       allow write: if esRoot() || tienePermiso('administrar_sectores');
     }
 
+    // El catálogo de lotes sigue siendo público en lectura — ese es el
+    // propósito comercial de la app, no depende de perfiles. Lo que se
+    // restringe por perfil es quién puede cargar/editar/borrar, y si un
+    // corredor logueado ve todos los lotes o solo los propios (filtro que
+    // hace la propia app en la consulta, ver cargarLotesDesdeFirestore en
+    // js/app.js — esta regla solo cubre la escritura).
     match /lotes/{loteId} {
       allow read: if true;
 
