@@ -32,7 +32,9 @@ export const ETIQUETA_TIPO = Object.fromEntries(TIPOS_DE_TAREA.map((t) => [t.cla
 export const ICONO_TIPO = Object.fromEntries(TIPOS_DE_TAREA.map((t) => [t.clave, t.icono]));
 
 /**
- * Las fechas se comparan como texto "AAAA-MM-DD", no como Date.
+ * Una fecha como texto "AAAA-MM-DD" en hora local. Sin argumento, hoy.
+ *
+ * Las fechas se comparan como texto y no como Date.
  *
  * POR QUÉ. Una tarea vence un DÍA, no un instante. Con Date, "vence hoy"
  * depende de la hora y de la zona horaria del navegador: una tarea del
@@ -40,9 +42,9 @@ export const ICONO_TIPO = Object.fromEntries(TIPOS_DE_TAREA.map((t) => [t.clave,
  * texto, el 18 es el 18 en todos lados, que es lo que entiende quien la
  * cargó. Mismo criterio que ya usa el CRM para proximo_seguimiento.
  */
-export function hoyComoTexto(ahora = new Date()) {
-  const desfase = ahora.getTimezoneOffset() * 60000;
-  return new Date(ahora.getTime() - desfase).toISOString().slice(0, 10);
+export function diaComoTexto(fecha = new Date()) {
+  const desfase = fecha.getTimezoneOffset() * 60000;
+  return new Date(fecha.getTime() - desfase).toISOString().slice(0, 10);
 }
 
 /**
@@ -66,7 +68,7 @@ export function validarTarea(datos = {}) {
  * no es pendiente aunque su fecha ya haya pasado. Se devuelven aparte
  * para poder mostrarlas si alguien las pide.
  */
-export function clasificarPorVencimiento(tareas = [], hoy = hoyComoTexto()) {
+export function clasificarPorVencimiento(tareas = [], hoy = diaComoTexto()) {
   const grupos = { vencidas: [], hoy: [], proximas: [], hechas: [] };
   for (const tarea of tareas) {
     if (tarea.hecha) grupos.hechas.push(tarea);
@@ -96,7 +98,7 @@ export function ordenarTareas(tareas = []) {
 /**
  * Cuántos días de atraso lleva una tarea. 0 si vence hoy o más adelante.
  */
-export function diasDeAtraso(tarea = {}, hoy = hoyComoTexto()) {
+export function diasDeAtraso(tarea = {}, hoy = diaComoTexto()) {
   if (tarea.hecha || !tarea.vence || tarea.vence >= hoy) return 0;
   const ms = new Date(`${hoy}T00:00:00Z`) - new Date(`${tarea.vence}T00:00:00Z`);
   return Math.round(ms / 86400000);
@@ -110,7 +112,7 @@ export function diasDeAtraso(tarea = {}, hoy = hoyComoTexto()) {
  * Ordena por vencidas primero: quien tiene más atraso es a quien hay que
  * mirar.
  */
-export function resumenPorResponsable(tareas = [], hoy = hoyComoTexto()) {
+export function resumenPorResponsable(tareas = [], hoy = diaComoTexto()) {
   const porUid = new Map();
   for (const tarea of tareas) {
     const uid = tarea.asignado_a || "__sin_asignar__";
@@ -140,7 +142,7 @@ export function resumenPorResponsable(tareas = [], hoy = hoyComoTexto()) {
  * testeados: "vence en 1 días" delata un sistema descuidado en la
  * pantalla que más se mira.
  */
-export function textoDeVencimiento(tarea = {}, hoy = hoyComoTexto()) {
+export function textoDeVencimiento(tarea = {}, hoy = diaComoTexto()) {
   if (tarea.hecha) return "Hecha";
   if (!tarea.vence) return "Sin fecha";
   if (tarea.vence === hoy) return "Vence hoy";

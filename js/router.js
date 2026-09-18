@@ -56,6 +56,7 @@ const RUTAS = [
   // así que son dos rutas sobre el mismo panel.
   { path: "/usuarios", clave: "usuarios", panel: "panel-admin", boton: "menu-seguridad-usuarios", navTab: null, titulo: "Usuarios" },
   { path: "/perfiles", clave: "perfiles", panel: "panel-admin", boton: "menu-seguridad-perfiles", navTab: null, titulo: "Perfiles de seguridad" },
+  { path: "/actividades", clave: "actividades", panel: "panel-actividades", boton: "btn-abrir-actividades", navTab: null, titulo: "Actividades" },
   { path: "/auditoria", clave: "auditoria", panel: "panel-auditoria", boton: "btn-abrir-auditoria", navTab: null, titulo: "Auditoría" },
   { path: "/ia", clave: "ia", panel: "panel-ia", boton: "btn-abrir-ia", navTab: null, titulo: "Inteligencia Artificial" }
 ];

@@ -31,6 +31,7 @@ import { configurarDashboard, renderDashboard } from "./dashboard.js";
 import { configurarCrm } from "./crm.js";
 // Tareas: el módulo se registra solo al importarse (engancha su botón).
 import "./tareas-panel.js";
+import "./actividades-panel.js";
 import { configurarFavoritos } from "./favoritos.js";
 import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde, actualizarVistaLista } from "./vista-lista.js";
 import { configurarEditorForma } from "./editor-forma.js";
@@ -385,6 +386,9 @@ function actualizarUIPorPermisos() {
   // administrar_usuarios, que un corredor no-root puede tener), "quién
   // hizo qué" es exclusivamente de root — esRootActual() directo, no
   // tienePermiso().
+  // "Actividades" es información de conducción (cómo viene cada
+  // corredor), mismo criterio que la Auditoría: solo root.
+  document.getElementById("btn-abrir-actividades").classList.toggle("oculto", !esRootActual());
   document.getElementById("btn-abrir-auditoria").classList.toggle("oculto", !esRootActual());
   // "Inteligencia Artificial" es una vidriera de funciones futuras que
   // implican costo por uso (APIs pagas) — mismo criterio que Auditoría,

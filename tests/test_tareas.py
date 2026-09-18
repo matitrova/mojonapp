@@ -185,19 +185,19 @@ def test_una_tarea_valida_no_tiene_errores(page, base_url):
     assert _evaluar(page, base_url, "m.validarTarea(args[0])", {"titulo": "Llamar", "vence": HOY, "tipo": "llamar"}) == []
 
 
-def test_hoy_no_depende_de_la_hora_del_navegador(page, base_url):
+def test_el_dia_no_depende_de_la_hora_del_navegador(page, base_url):
     """Una tarea vence un DÍA, no un instante.
 
     Comparando con Date, la misma tarea se vería vencida o no según la
     hora y el huso del navegador. Acá se compara el texto AAAA-MM-DD, así
     que el 18 es el 18 en todos lados.
     """
-    formato = _evaluar(page, base_url, "m.hoyComoTexto()")
+    formato = _evaluar(page, base_url, "m.diaComoTexto()")
     assert len(formato) == 10 and formato[4] == "-" and formato[7] == "-"
     # Medianoche y un minuto antes de medianoche del MISMO día dan lo mismo.
     dos = _evaluar(
         page,
         base_url,
-        "[m.hoyComoTexto(new Date(2026, 8, 18, 0, 0)), m.hoyComoTexto(new Date(2026, 8, 18, 23, 59))]",
+        "[m.diaComoTexto(new Date(2026, 8, 18, 0, 0)), m.diaComoTexto(new Date(2026, 8, 18, 23, 59))]",
     )
     assert dos[0] == dos[1] == "2026-09-18"

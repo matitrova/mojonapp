@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-03" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-04" />
 </head>
 <body>
 
@@ -211,6 +211,7 @@
         <!-- A diferencia de "Usuarios"/"Perfiles" (permiso
              administrar_usuarios), esto se muestra con esRootActual()
              directo: quién hizo qué lo ve solo root. -->
+        <button type="button" class="drawer-item oculto" id="btn-abrir-actividades" data-testid="btn-abrir-actividades" data-ruta="/actividades">Actividades</button>
         <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria" data-ruta="/auditoria">Auditoría</button>
 
         <p class="menu-categoria">Avanzado</p>
@@ -824,6 +825,32 @@
   <!-- Panel "Auditoría" (solo root): quién hizo qué sobre lotes, reservas
        y catálogos — ver js/auditoria.js. Read-only, no tiene alta/edición
        propia como los otros paneles de esta sección. -->
+  <!-- Actividades: qué hizo cada uno del equipo, en el período elegido.
+       Lee los mismos eventos que la Auditoría (colección "auditoria") y
+       contesta otra pregunta: no "quién borró esto" sino "cómo viene
+       cada corredor". Ver js/actividad-equipo.js. Textos en español
+       neutro, igual que Tareas. -->
+  <div id="panel-actividades" class="oculto panel-pantalla-completa" data-testid="panel-actividades">
+    <div class="panel-header">
+      <h2>Actividades</h2>
+      <button id="cerrar-panel-actividades" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
+    </div>
+    <p class="dashboard-ayuda">Qué hizo cada persona del equipo. Se calcula con los eventos que la app ya venía registrando.</p>
+
+    <div id="actividades-periodo" data-testid="actividades-periodo">
+      <button type="button" class="activo" data-dias="1" data-testid="actividades-hoy">Hoy</button>
+      <button type="button" data-dias="7" data-testid="actividades-7">7 días</button>
+      <button type="button" data-dias="30" data-testid="actividades-30">30 días</button>
+    </div>
+
+    <div id="actividades-grafico" class="oculto" data-testid="actividades-grafico"></div>
+    <div id="actividades-personas" data-testid="actividades-personas"></div>
+    <p id="actividades-vacio" class="dashboard-vacio oculto" data-testid="actividades-vacio">
+      No hay actividad registrada en este período.
+    </p>
+    <p id="actividades-error" class="mensaje-error oculto" data-testid="actividades-error"></p>
+  </div>
+
   <div id="panel-auditoria" class="oculto panel-pantalla-completa" data-testid="panel-auditoria">
     <div class="panel-header">
       <h2>Auditoría</h2>
@@ -2043,6 +2070,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-03"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-04"></script>
 </body>
 </html>

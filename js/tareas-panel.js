@@ -29,7 +29,7 @@ import {
   resumenPorResponsable,
   textoDeVencimiento,
   validarTarea,
-  hoyComoTexto
+  diaComoTexto
 } from "./tareas.js";
 import { getContactosActuales } from "./estado.js";
 import { cargarContactos, obtenerUsuariosPorUid, obtenerUsuariosPorUidCache } from "./crm-datos.js";
@@ -264,7 +264,7 @@ function abrirFormulario(tarea = null) {
   poblarFormulario();
   elTitulo.value = tarea?.titulo || "";
   elTipo.value = tarea?.tipo || "llamar";
-  elVence.value = tarea?.vence || hoyComoTexto();
+  elVence.value = tarea?.vence || diaComoTexto();
   elContacto.value = tarea?.contacto_id || "";
   if (tarea?.asignado_a !== undefined) elResponsable.value = tarea.asignado_a || "";
   elFormError.classList.add("oculto");
