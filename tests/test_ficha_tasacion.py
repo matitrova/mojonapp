@@ -8,9 +8,50 @@ suficientes comparables o si el lote no tiene superficie cargada — una
 estimación con pocos datos sería más ruido que ayuda.
 """
 
+import pytest
+import requests
 from playwright.sync_api import expect
 
-from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import (
+    FIREBASE_PROJECT_ID,
+    _id_token_de_prueba,
+    borrar_lote_de_prueba,
+    crear_lote_de_prueba,
+    soltar_el_mouse,
+)
+
+# El mismo mínimo que usa la app (MIN_COMPARABLES_TASACION en js/ficha.js).
+MIN_COMPARABLES_TASACION = 3
+
+
+def _comparables_en_la_cartera():
+    """Cuántos lotes de la base tienen precio Y superficie cargados.
+
+    Son los que la app puede usar como comparables cuando cae al fallback
+    de toda la cartera (ver calcularTasacion en js/ficha.js).
+    """
+    url = (
+        f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}"
+        "/databases/(default)/documents/lotes"
+    )
+    cabeceras = {"Authorization": f"Bearer {_id_token_de_prueba()}"}
+    cuenta, pagina = 0, None
+    while True:
+        parametros = {"pageSize": 300}
+        if pagina:
+            parametros["pageToken"] = pagina
+        respuesta = requests.get(url, headers=cabeceras, params=parametros, timeout=30)
+        respuesta.raise_for_status()
+        datos = respuesta.json()
+        for doc in datos.get("documents", []):
+            campos = doc.get("fields", {})
+            tiene_precio = "nullValue" not in campos.get("precio_usd", {"nullValue": None})
+            tiene_superficie = "nullValue" not in campos.get("superficie_m2", {"nullValue": None})
+            if tiene_precio and tiene_superficie:
+                cuenta += 1
+        pagina = datos.get("nextPageToken")
+        if not pagina:
+            return cuenta
 
 GEOMETRY_BASE = {
     "type": "Polygon",
@@ -100,13 +141,32 @@ def test_tasacion_usa_toda_la_cartera_si_la_zona_no_alcanza(page, base_url):
 
 
 def test_tasacion_oculta_sin_comparables_suficientes(page, base_url):
-    # No creamos ningún comparable propio: la zona es única así que
-    # mismaZona queda vacía, y cae al fallback de toda la cartera — que
-    # hoy en producción tiene menos de 3 lotes con precio+superficie
-    # cargados (verificado en vivo). Si algún día la cartera real crece
-    # por encima del mínimo, este test empezaría a fallar y habría que
-    # revisarlo — es una limitación conocida de probar contra el
-    # inventario real en vez de uno aislado.
+    """La tasación se esconde cuando no hay con qué compararse.
+
+    OJO, ESTE TEST SE SALTEA SOLO cuando no se puede probar. No crea
+    comparables propios: usa una zona única (mismaZona queda vacía) y cae
+    al fallback de TODA la cartera, así que solo tiene sentido si la
+    cartera entera tiene menos de MIN_COMPARABLES_TASACION lotes con
+    precio y superficie.
+
+    El comentario original ya avisaba que si la cartera crecía, el test
+    iba a empezar a fallar. Pasó: el proyecto de pruebas se sembró con 12
+    lotes de demo (con precio y superficie), que es justo lo que hace
+    falta para que las vistas previas no se vean vacías. O sea que la
+    condición que este test necesita dejó de existir a propósito.
+
+    En vez de dejarlo en rojo para siempre —o borrarlo y perder la
+    cobertura— se saltea con el motivo a la vista. Sigue corriendo y
+    protegiendo en una base recién creada, que es cuando la condición se
+    cumple.
+    """
+    if _comparables_en_la_cartera() >= MIN_COMPARABLES_TASACION:
+        pytest.skip(
+            f"la cartera tiene {_comparables_en_la_cartera()} lotes con precio y "
+            f"superficie (mínimo {MIN_COMPARABLES_TASACION}), así que el fallback "
+            "de toda la cartera SÍ alcanza y esta condición no se puede reproducir"
+        )
+
     zona = "TASA-SOLA"
     objetivo = crear_lote_de_prueba(_lote("TAS-SIN-PRECIO-3", superficie_m2=1000, precio_usd=None, sector=zona))
     try:
