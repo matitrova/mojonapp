@@ -324,6 +324,30 @@ def borrar_lote_de_prueba(doc_id):
     _borrar_con_verificacion(f"{FIRESTORE_URL_BASE}/{doc_id}", f"el lote de prueba {doc_id}")
 
 
+class CuotaDeLecturasAgotada(Exception):
+    """La cuota de lecturas REST de Firestore se agotó por hoy.
+
+    Existe para que el fallo se lea de una: antes salía un HTTPError 429
+    crudo desde el fondo de un fixture, y para entender que era la cuota
+    —y no el código del test— había que ir a leer conftest.
+    """
+
+
+# Cuántas veces se reintenta un 429 antes de darlo por perdido.
+#
+# ERAN 8 Y AHORA SON 2, medido. La cuota de lecturas de Firestore es
+# DIARIA: cuando se agota, reintentar no la trae de vuelta. Se midió el
+# 2026-09-18 con scripts/medir_lecturas.py: con la cuota agotada, 11
+# tests de CRM hacían 65 llamadas de lectura (8 por test, todas 429) y
+# tardaban 160 segundos en fallar. Las 8 eran puro reintento contra una
+# pared.
+#
+# No se baja a 0 porque un 429 TAMBIÉN puede venir de un pico
+# instantáneo de pedidos, y ese sí es transitorio. Dos intentos cubren
+# ese caso y no convierten una pared en dos minutos de espera.
+INTENTOS_ANTE_429 = 2
+
+
 def _con_reintento(intentar, intentos=8, espera=0.5):
     """La UI ya confirmó que el dato se guardó (el guardado por el SDK del
     navegador ya resolvió antes de que la UI reaccione), pero cada
@@ -332,18 +356,31 @@ def _con_reintento(intentar, intentos=8, espera=0.5):
     falso negativo por una carrera de red entre ambas lecturas, sin
     esconder un fallo real (agota los intentos y devuelve None).
 
-    Un 429 (quota excedida — visto en vivo corriendo el suite completo
-    varias veces seguidas) también se reintenta, con una espera más
-    larga: es un fallo transitorio de la cuota de Firestore, no una
-    señal de que el dato no está — dejarlo propagar como excepción corta
-    los reintentos de golpe en el primer intento."""
+    Un 429 se reintenta pocas veces (ver INTENTOS_ANTE_429) y después se
+    corta con un mensaje claro, en vez de seguir golpeando una cuota
+    diaria que no va a ceder.
+    """
+    intentos_429 = 0
     for intento in range(intentos):
         try:
             resultado = intentar()
         except requests.exceptions.HTTPError as error:
-            if error.response is not None and error.response.status_code == 429 and intento < intentos - 1:
-                time.sleep(espera * 4)
-                continue
+            respuesta = error.response
+            if respuesta is not None and respuesta.status_code == 429:
+                intentos_429 += 1
+                if intentos_429 < INTENTOS_ANTE_429:
+                    time.sleep(espera * 4)
+                    continue
+                raise CuotaDeLecturasAgotada(
+                    f"Firestore devolvió 429 (cuota agotada) en el proyecto "
+                    f"{FIREBASE_PROJECT_ID} después de {intentos_429} intentos.\n"
+                    f"La cuota de LECTURAS por REST es diaria y se renueva a "
+                    f"medianoche del Pacífico (~4 de la mañana en Argentina); "
+                    f"reintentar no la trae de vuelta.\n"
+                    f"Las escrituras y el SDK del navegador tienen su propia "
+                    f"cuota y suelen seguir funcionando, así que esto NO "
+                    f"significa que el código del test esté mal."
+                ) from error
             raise
         if resultado:
             return resultado
