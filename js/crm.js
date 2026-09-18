@@ -61,6 +61,7 @@ import {
   formatoUsdCompacto,
   calcularMetricas,
   htmlResumenVentas,
+  variacionesDelMes,
   vigenciaContacto
 } from "./crm-metricas.js";
 // tests/test_crm_round_robin.py importa elegirMenosCargado de crm.js (no
@@ -694,7 +695,11 @@ function renderStats() {
   // dashboard.js) — htmlResumenVentas vive en crm-metricas.js para que
   // los dos lados muestren exactamente el mismo número, sin mantener
   // dos copias del mismo markup.
-  elStats.innerHTML = htmlResumenVentas(calcularMetricas(getContactosActuales()));
+  // Con las mismas variaciones que el Dashboard: si el CRM las mostrara
+  // y el Dashboard no (o al revés), el mismo número diría dos cosas
+  // distintas según de dónde se lo mire.
+  const contactos = getContactosActuales();
+  elStats.innerHTML = htmlResumenVentas(calcularMetricas(contactos), variacionesDelMes(contactos));
 }
 
 // "Automatización configurable" (idea propia — Tokko recién ofrece esto

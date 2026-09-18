@@ -218,6 +218,17 @@ formularioLote.addEventListener("submit", async (evento) => {
       superficie_m2: Number(elLoteSuperficie.value),
       estado: elLoteEstado.value,
       precio_usd: elLotePrecio.value.trim() === "" ? null : Number(elLotePrecio.value),
+      // El primer precio arranca el historial, que es lo que después
+      // permite comparar el valor del pipeline contra el mes anterior
+      // (ver js/historial-precios.js). Un lote que nace sin precio no
+      // lleva historial: cuando se le ponga uno, ese será el primero.
+      ...(elLotePrecio.value.trim() === ""
+        ? {}
+        : {
+            historial_precios: [
+              { precio_usd: Number(elLotePrecio.value), fecha: new Date().toISOString() }
+            ]
+          }),
       // null = sin porcentaje propio, usa el general (js/comisiones.js).
       comision_pct: elLoteComision.value.trim() === "" ? null : Number(elLoteComision.value),
       servicios: {

@@ -36,6 +36,7 @@ import {
   demandaPorZona,
   visitasDeHoy,
   htmlResumenVentas,
+  variacionesDelMes,
   ETIQUETA_ETAPA
 } from "./crm-metricas.js";
 
@@ -464,7 +465,10 @@ function renderPasosDelEmbudo(contactos) {
 // panel).
 function renderVentas() {
   const contactos = getContactosActuales();
-  document.getElementById("dashboard-ventas-stats").innerHTML = htmlResumenVentas(calcularMetricas(contactos));
+  document.getElementById("dashboard-ventas-stats").innerHTML = htmlResumenVentas(
+    calcularMetricas(contactos),
+    variacionesDelMes(contactos)
+  );
 
   const elEmbudo = document.getElementById("dashboard-embudo");
   elEmbudo.innerHTML = "";

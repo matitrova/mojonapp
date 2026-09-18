@@ -10,6 +10,17 @@
 
 import { getLotesActuales } from "./estado.js";
 import { resumenDeComisiones } from "./comisiones.js";
+// Las variaciones "vs. mes anterior" de las tarjetas. comparacion.js es
+// puro (no lee estado global) justamente para poder probarse solo; lo
+// que necesita el estado se arma acá, en variacionesDelMes.
+import {
+  cierreDelMesAnterior,
+  esBuenaNoticia,
+  metricasALaFecha,
+  nuevosEnLaVentana,
+  textoDeVariacion,
+  variacion
+} from "./comparacion.js";
 
 // Un color por etapa (variables CSS, ver estilos.css) — pintan el borde de
 // arriba de cada columna y el borde izquierdo de cada tarjeta, mismo
@@ -336,17 +347,84 @@ export function calcularMetricas(contactos) {
 // Dashboard (ver renderVentas en dashboard.js): mismo número, mismo
 // lugar de un solo lado, ya no dos templates iguales mantenidos a mano
 // por separado.
-export function htmlResumenVentas(m) {
+// La variación de una tarjeta, o nada.
+//
+// NADA Y NO "0%" NI UN GUION cuando no hay con qué comparar (la base
+// recién arranca, o el valor anterior era cero): un 0% se lee como "no
+// cambió nada", que es una afirmación, y acá no sabemos. Ver variacion()
+// en js/comparacion.js.
+//
+// El color NO sale del signo: en "Sin atender" y "Estancados" bajar es
+// la buena noticia (esBuenaNoticia decide).
+function htmlVariacion(clave, variaciones, leyenda) {
+  if (!variaciones) return "";
+  const pct = variaciones[clave];
+  const texto = textoDeVariacion(pct);
+  if (texto == null) return "";
+  const bueno = esBuenaNoticia(clave, pct);
+  const clase = bueno === null ? "neutra" : bueno ? "buena" : "mala";
+  return `<em class="crm-stat-variacion ${clase}">${texto} <span>${leyenda}</span></em>`;
+}
+
+/**
+ * Las 8 tarjetas de métricas.
+ *
+ * `variaciones` es opcional: sin él las tarjetas se dibujan como antes.
+ * Las tres de plata no llevan variación a propósito — dependen del
+ * precio de cada lote y el historial de precios recién empezó a
+ * guardarse (ver js/historial-precios.js), así que todavía no hay un
+ * mes con el que comparar. Calcularlas con los precios de hoy daría un
+ * número que nunca existió, justo en las tarjetas que se miran para
+ * decidir.
+ */
+export function htmlResumenVentas(m, variaciones = null) {
+  const vsMes = "vs. mes anterior";
   return `
-    <div class="crm-stat"><strong>${m.total}</strong><span>Contactos</span></div>
-    <div class="crm-stat"><strong>${m.nuevosEstaSemana}</strong><span>Nuevos (7 días)</span></div>
-    <div class="crm-stat"><strong>${m.tasaConversion == null ? "—" : `${m.tasaConversion}%`}</strong><span>Conversión a cerrado</span></div>
-    <div class="crm-stat crm-stat-urgente"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span></div>
-    <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span></div>
+    <div class="crm-stat"><strong>${m.total}</strong><span>Contactos</span>${htmlVariacion("total", variaciones, vsMes)}</div>
+    <div class="crm-stat"><strong>${m.nuevosEstaSemana}</strong><span>Nuevos (7 días)</span>${htmlVariacion("nuevosEstaSemana", variaciones, "vs. semana anterior")}</div>
+    <div class="crm-stat"><strong>${m.tasaConversion == null ? "—" : `${m.tasaConversion}%`}</strong><span>Conversión a cerrado</span>${htmlVariacion("tasaConversion", variaciones, vsMes)}</div>
+    <div class="crm-stat crm-stat-urgente"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span>${htmlVariacion("sinAtender", variaciones, vsMes)}</div>
+    <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span>${htmlVariacion("estancados", variaciones, vsMes)}</div>
     <div class="crm-stat crm-stat-valor"><strong>${formatoUsdCompacto(m.valorPipelineActivo) || "—"}</strong><span>Valor en pipeline</span></div>
     <div class="crm-stat crm-stat-comision"><strong>${formatoUsdCompacto(m.comisionEnPipeline) || "—"}</strong><span>Comisión proyectada</span></div>
     <div class="crm-stat crm-stat-comision-ganada"><strong>${formatoUsdCompacto(m.comisionCerrada) || "—"}</strong><span>Comisión ganada</span></div>
   `;
+}
+
+/**
+ * Las variaciones de las 5 tarjetas que se pueden comparar con
+ * honestidad, o null si todavía no hay pasado con qué comparar.
+ *
+ * Vive acá y no en comparacion.js porque necesita calcularMetricas (el
+ * valor de HOY); comparacion.js se queda puro, sin leer estado global,
+ * para poder probarse solo.
+ */
+export function variacionesDelMes(contactos, ahora = new Date()) {
+  const corte = cierreDelMesAnterior(ahora);
+  // Los umbrales van de acá, que es donde viven: si se duplicaran en
+  // comparacion.js, el pasado se calcularía con otro criterio que el
+  // presente y la comparación mediría dos cosas distintas. Ya pasó.
+  const antes = metricasALaFecha(contactos, corte, {
+    horasSinAtender: HORAS_SIN_ATENDER,
+    diasEstancado: DIAS_ESTANCADO
+  });
+  if (!antes) return null;
+
+  const hoy = calcularMetricas(contactos);
+  const ventanaAnterior = new Date(ahora.getTime() - 7 * 86400000);
+  return {
+    total: variacion(hoy.total, antes.total),
+    tasaConversion: variacion(hoy.tasaConversion, antes.tasaConversion),
+    sinAtender: variacion(hoy.sinAtender, antes.sinAtender),
+    estancados: variacion(hoy.estancados, antes.estancados),
+    // La única de ventana: contra los 7 días anteriores, no contra el
+    // mes. Comparar 7 días con 30 daría siempre un número catastrófico
+    // que no significa nada.
+    nuevosEstaSemana: variacion(
+      hoy.nuevosEstaSemana,
+      nuevosEnLaVentana(contactos, ventanaAnterior, 7)
+    )
+  };
 }
 
 // Embudo por etapa (idea propia — dónde se atascan los leads, no solo

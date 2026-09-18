@@ -3603,6 +3603,44 @@ body.con-nav-secciones #btn-flotante-catastro {
   flex-basis: 130px;
 }
 
+/* La variación contra el mes anterior, debajo del rótulo de la tarjeta
+   (pedido del rediseño: "+12.5% vs. mes anterior").
+
+   EL COLOR NO SALE DEL SIGNO: en "Sin atender" y "Estancados", bajar es
+   la buena noticia. Lo decide esBuenaNoticia en js/comparacion.js y
+   llega como clase buena/mala/neutra. */
+.crm-stat-variacion {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.crm-stat-variacion.buena {
+  color: var(--color-positivo);
+}
+
+.crm-stat-variacion.mala {
+  color: var(--color-vendido);
+}
+
+.crm-stat-variacion.neutra {
+  color: var(--color-texto-secundario);
+}
+
+/* El "vs. mes anterior" es contexto, no el dato: más chico, en el gris
+   secundario y sin negrita, para que el porcentaje siga siendo lo que
+   se lee primero. */
+.crm-stat-variacion span {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 500;
+  color: var(--color-texto-secundario);
+}
+
 .crm-stat-valor strong {
   font-size: 1rem;
 }

@@ -30,6 +30,10 @@ import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
 import { registrarAuditoria } from "./auditoria.js";
 import { leerNotasInternas, guardarNotasInternas } from "./notas-internas.js";
 import { cargarContactos } from "./crm.js";
+// Módulo puro, sin Firestore ni DOM: decide si hay que registrar un
+// cambio de precio y cómo queda el historial. Ver por qué en su propio
+// comentario de cabecera.
+import { historialTrasCambio } from "./historial-precios.js";
 
 const COLECCION_LOTES = "lotes";
 
@@ -535,8 +539,31 @@ elMasivaForm.addEventListener("submit", async (evento) => {
   // (escribe los mismos valores), así que una aplicación parcial se
   // arregla reintentando. A cambio se puede decir exactamente cuántos
   // fallaron en vez de perder todo por uno.
+  // El historial de precios se arma POR LOTE y no puede venir en
+  // `cambios`: `cambios` es el mismo para todos, y cada lote tenía un
+  // precio anterior distinto. Si el precio nuevo coincide con el que ya
+  // tenía, ese lote no suma entrada (ver historialTrasCambio).
+  // Se calcula UNA vez por lote y se guarda, porque lo que se escribe
+  // en Firestore tiene que ser exactamente lo que después se refleja en
+  // memoria. Con dos cálculos separados, el historial quedaría en la
+  // base y no en la pantalla, y una segunda edición masiva en la misma
+  // sesión lo calcularía sobre datos viejos y perdería una entrada.
+  const ahora = new Date().toISOString();
+  const cambiosPorLote = seleccionados.map((feature) => {
+    if (cambios.precio_usd === undefined) return cambios;
+    const historial = historialTrasCambio(
+      feature.properties.precio_usd,
+      cambios.precio_usd,
+      feature.properties.historial_precios,
+      ahora
+    );
+    return historial ? { ...cambios, historial_precios: historial } : cambios;
+  });
+
   const resultados = await Promise.allSettled(
-    seleccionados.map((feature) => updateDoc(doc(db, COLECCION_LOTES, feature.id), cambios))
+    seleccionados.map((feature, indice) =>
+      updateDoc(doc(db, COLECCION_LOTES, feature.id), cambiosPorLote[indice])
+    )
   );
 
   const fallados = [];
@@ -546,7 +573,7 @@ elMasivaForm.addEventListener("submit", async (evento) => {
       // esperar la recarga. Las rutas con punto ("servicios.luz") hay
       // que aplicarlas a mano: Object.assign no entiende de anidados.
       const p = seleccionados[indice].properties;
-      for (const [campo, valor] of Object.entries(cambios)) {
+      for (const [campo, valor] of Object.entries(cambiosPorLote[indice])) {
         if (campo.startsWith("servicios.")) {
           p.servicios = { ...(p.servicios || {}), [campo.slice("servicios.".length)]: valor };
         } else {
@@ -836,6 +863,20 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
     // edición común.
     const estadoAnterior = loteEditandoDesdeGrilla.properties.estado;
     let accionAuditoria = "editar_lote";
+    // Si cambió el precio, queda registrado con su fecha. Sirve para
+    // poder comparar el valor del pipeline y las comisiones contra el
+    // mes anterior: sin historial, ese cálculo usaría los precios de
+    // hoy y daría un número que nunca existió (ver
+    // js/historial-precios.js). Solo se agrega el campo cuando hubo
+    // cambio de verdad; si no, no se reescribe el array.
+    const historial = historialTrasCambio(
+      loteEditandoDesdeGrilla.properties.precio_usd,
+      datos.precio_usd,
+      loteEditandoDesdeGrilla.properties.historial_precios,
+      new Date().toISOString()
+    );
+    if (historial) datos.historial_precios = historial;
+
     if (estadoAnterior !== "reservado" && datos.estado === "reservado") accionAuditoria = "reservar_lote";
     else if (estadoAnterior === "reservado" && datos.estado !== "reservado") accionAuditoria = "quitar_reserva";
     else if (estadoAnterior !== "vendido" && datos.estado === "vendido") accionAuditoria = "vender_lote";

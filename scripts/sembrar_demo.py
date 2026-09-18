@@ -154,19 +154,33 @@ LOTES = [
 # se vean vacíos en la demo. Los seguimientos usan fechas relativas a hoy
 # (uno vencido y uno para hoy) así la pantalla de "Seguimientos" siempre
 # tiene algo que mostrar, sin importar cuándo se siembre.
+#
+# EL SÉPTIMO CAMPO ES LA ANTIGÜEDAD: cuántos días antes de hoy arrancó el
+# recorrido del contacto. Hace falta para que el Dashboard tenga un "mes
+# anterior" con el que comparar (ver variacionesDelMes en
+# js/crm-metricas.js): sin esto los caminos más largos eran de 14 días,
+# así que TODOS los contactos quedaban creados este mes, al cierre del
+# mes pasado no existía ninguno, y las variaciones no se podían calcular
+# ni mostrar.
+#
+# Los números cuentan una historia deliberada, no son azar: hay cartera
+# vieja que se cerró el mes pasado (Lucía), cosas que vienen empantanadas
+# desde hace rato (Rubén, que además aparece en "Estancados"), y
+# consultas frescas de esta semana (Carolina). Así las comparaciones dan
+# números variados y creíbles en vez de todo en cero.
 CONTACTOS = [
     ("Carolina Giménez", "266 4 55-8821", "caro.gimenez@example.com", "nuevo", None,
-     "Consultó por el lote de Altos del Potrero. Quiere saber si acepta financiación."),
+     "Consultó por el lote de Altos del Potrero. Quiere saber si acepta financiación.", 3),
     ("Rubén Ochoa", "266 4 41-2030", None, "contactado", (HOY - timedelta(days=2)).isoformat(),
-     "Llamar de nuevo, quedó en confirmar si viene el fin de semana."),
+     "Llamar de nuevo, quedó en confirmar si viene el fin de semana.", 75),
     ("Familia Sosa", "266 4 62-7714", "sosa.familia@example.com", "visita", HOY.isoformat(),
-     "Visitan hoy a la tarde los dos lotes de El Trapiche."),
+     "Visitan hoy a la tarde los dos lotes de El Trapiche.", 20),
     ("Marcelo Pérez", "266 4 30-9955", "mperez@example.com", "oferta", (HOY + timedelta(days=3)).isoformat(),
-     "Ofertó 20.000 por el lote 7. Esperando respuesta del dueño."),
+     "Ofertó 20.000 por el lote 7. Esperando respuesta del dueño.", 45),
     ("Lucía Ferreyra", "266 4 15-8842", "lu.ferreyra@example.com", "cerrado", None,
-     "Compró el lote 6 de Las Chacras."),
+     "Compró el lote 6 de Las Chacras.", 70),
     ("Diego Ibarra", "266 4 77-1190", None, "perdido", None,
-     "Buscaba algo bajo 10.000, no tenemos nada en ese rango."),
+     "Buscaba algo bajo 10.000, no tenemos nada en ese rango.", 90),
 ]
 
 
@@ -206,7 +220,7 @@ ETIQUETA_ETAPA = {
 }
 
 
-def actividades_del_camino(estado, creado):
+def actividades_del_camino(estado, creado, antiguedad_dias=0):
     """Las actividades de un contacto: su creación más cada cambio de etapa.
 
     Las fechas se calculan hacia atrás desde hoy para que el contacto
@@ -216,7 +230,11 @@ def actividades_del_camino(estado, creado):
     """
     pasos = CAMINO_POR_ETAPA.get(estado, [])
     dias_totales = sum(dias for _, _, dias in pasos)
-    fecha_creacion = HOY - timedelta(days=dias_totales)
+    # La antigüedad corre la creación MÁS hacia atrás, sin tocar los días
+    # que tardó cada paso: así un contacto viejo tiene su recorrido
+    # completo en el pasado (y sus cambios de etapa caen antes del cierre
+    # del mes anterior) en vez de parecer que todo le pasó esta semana.
+    fecha_creacion = HOY - timedelta(days=dias_totales + antiguedad_dias)
     actividades = [
         {
             "tipo": "contacto_creado",
@@ -306,12 +324,12 @@ def main():
     # que el mini-mapa del CRM y los "lotes de interés" tengan qué mostrar.
     interes = [par for par in (ids_por_clave.get(("14", "7")), ids_por_clave.get(("3", "22"))) if par]
     ahora = f"{HOY.isoformat()}T12:00:00.000Z"
-    for i, (nombre, telefono, email, estado, seguimiento, nota) in enumerate(contactos_nuevos):
+    for i, (nombre, telefono, email, estado, seguimiento, nota, antiguedad) in enumerate(contactos_nuevos):
         lotes_interes = []
         if interes:
             elegido = interes[i % len(interes)]
             lotes_interes = [{"id": elegido[0], "titulo": elegido[1]}]
-        actividades, fecha_creacion = actividades_del_camino(estado, ahora)
+        actividades, fecha_creacion = actividades_del_camino(estado, ahora, antiguedad)
         doc_id = conftest.crear_contacto_de_prueba({
             "nombre": nombre,
             "telefono": telefono,
