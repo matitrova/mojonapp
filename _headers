@@ -24,3 +24,16 @@
 
 /css/*
   Cache-Control: public, max-age=0, must-revalidate
+
+# vendor/ es al revés que js/ y css/: son librerías de terceros con la
+# versión clavada tanto en el contenido como en la URL (?v=1.9.4), así
+# que no cambian nunca sin cambiar de dirección. Conviene que el
+# navegador las guarde en vez de revalidarlas en cada carga — son 160 KB
+# y con conexión rural se nota.
+#
+# Un día y no un año, y sin "immutable", a propósito: si algún día se
+# actualiza Leaflet y alguien se olvida de bumpear el "?v=", el error se
+# cura solo en 24 horas en lugar de dejar a la gente con la versión
+# vieja hasta que limpie el caché a mano.
+/vendor/*
+  Cache-Control: public, max-age=86400
