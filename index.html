@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-04" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-05" />
 </head>
 <body>
 
@@ -93,6 +93,22 @@
     <div class="panel-header">
       <h2>Menú</h2>
       <button id="cerrar-drawer" class="btn-cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <!-- Marca: solo en escritorio, donde la barra lateral llega hasta
+         arriba. En teléfono el menú es un cajón y el nombre ya está en
+         la barra superior. -->
+    <div id="lateral-marca" data-testid="lateral-marca">
+      <span class="marca-icono" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z" />
+          <circle cx="12" cy="10" r="2.6" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      <span>
+        <span class="marca-nombre">MojonApp</span>
+        <span class="marca-bajada">CRM inmobiliario</span>
+      </span>
     </div>
 
     <!-- MÓDULO: Inicio -->
@@ -220,6 +236,17 @@
              visibilidad que Auditoría. -->
         <button type="button" class="drawer-item oculto" id="btn-abrir-ia" data-testid="btn-abrir-ia" data-ruta="/ia">Inteligencia Artificial</button>
       </div>
+    </div>
+  
+    <!-- Quién sos y con qué perfil, abajo de todo. Lo llena
+         js/app.js en onAuthStateChanged, junto al resto de la UI de
+         sesión. -->
+    <div id="lateral-usuario" data-testid="lateral-usuario">
+      <span class="usuario-avatar" id="usuario-avatar" aria-hidden="true"></span>
+      <span class="usuario-datos">
+        <span class="usuario-nombre" id="usuario-nombre" data-testid="usuario-nombre"></span>
+        <span class="usuario-rol" id="usuario-rol" data-testid="usuario-rol"></span>
+      </span>
     </div>
   </nav>
 
@@ -2070,6 +2097,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-04"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-05"></script>
 </body>
 </html>

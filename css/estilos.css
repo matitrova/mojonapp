@@ -10,16 +10,38 @@
    arranca con la del sistema y cambia sola cuando carga) reemplaza la
    fuente del sistema; los colores funcionales de estado de lote
    (disponible/reservado/vendido) no cambian, son semánticos, no de marca. */
+/* ---------------------------------------------------------------------
+   PALETA. Rediseño del 2026-09-18 a partir del mockup que pasó el
+   usuario: naranja como único color de marca, fondo gris azulado,
+   tarjetas blancas de borde finito, texto casi negro.
+
+   Se redefinen los MISMOS tokens que ya usaba toda la app en vez de
+   sumar tokens nuevos: así las trece pantallas cambian de aspecto sin
+   tocar sus reglas una por una. Lo que sí hay que tocar a mano es el
+   armazón (encabezado y menú), porque antes eran de color sólido y
+   ahora son blancos.
+
+   El naranja entra como --color-primario porque es el color de las
+   ACCIONES (botón principal, ítem activo del menú), que es el rol que
+   ese token ya tenía. El rojo queda para errores y urgencias, no para
+   marca.
+   --------------------------------------------------------------------- */
 :root {
-  --color-primario: #1a4958;
-  --color-primario-oscuro: #123540;
-  --color-acento: #df1517;
-  --color-acento-suave: #fbdada;
-  --color-fondo: #eff2f3;
-  --color-fondo-alterno: #e3e8ea;
-  --color-texto: #2e393f;
-  --color-texto-secundario: #64737a;
-  --color-borde: #d7dee1;
+  --color-primario: #e2591f;
+  --color-primario-oscuro: #c2450f;
+  /* Naranja muy lavado: fondo del ítem activo del menú y de los avisos
+     suaves. Antes este rol lo cumplía --color-acento-suave (rojo), que
+     se leía como error. */
+  --color-primario-suave: #fdeee6;
+  --color-acento: #d92d20;
+  --color-acento-suave: #fee4e2;
+  --color-fondo: #f7f8fa;
+  --color-fondo-alterno: #f1f3f7;
+  --color-texto: #0f172a;
+  --color-texto-secundario: #64748b;
+  --color-borde: #e7eaf0;
+  /* Verde de las variaciones positivas del mockup ("+12.5%"). */
+  --color-positivo: #16a34a;
   --color-disponible: #5c7f3f;
   --color-reservado: #d1912f;
   --color-vendido: #b8452f;
@@ -33,13 +55,18 @@
   --crm-oferta: var(--color-reservado);
   --crm-cerrado: var(--color-disponible);
   --crm-perdido: var(--color-vendido);
-  --sombra-calida: 0 -4px 16px rgba(20, 30, 34, 0.22);
-  --sombra-calida-suave: 0 2px 8px rgba(20, 30, 34, 0.14);
+  --sombra-calida: 0 -4px 24px rgba(15, 23, 42, 0.1);
+  --sombra-calida-suave: 0 1px 3px rgba(15, 23, 42, 0.06);
   /* Alto del #encabezado fijo. Lo usan el mapa y el menú lateral para
      ubicarse justo abajo — ver el comentario en #encabezado. */
-  --alto-encabezado: 50px;
-  --radio-chico: 8px;
-  --radio-mediano: 12px;
+  --alto-encabezado: 60px;
+  /* Ancho de la barra lateral fija en escritorio. Antes era un rail de
+     68px que se expandía al pasar el mouse; el mockup la muestra
+     siempre desplegada, y de paso desaparece una fuente conocida de
+     clicks interceptados en los tests. */
+  --ancho-lateral: 248px;
+  --radio-chico: 10px;
+  --radio-mediano: 14px;
   --radio-grande: 18px;
 }
 
@@ -76,10 +103,14 @@ button:active {
   z-index: 1000;
   box-sizing: border-box;
   min-height: var(--alto-encabezado);
-  background: var(--color-primario);
-  color: #fff;
-  padding: 10px 14px;
-  box-shadow: 0 2px 8px rgba(37, 60, 41, 0.35);
+  /* Blanco con un borde finito, no color sólido: en el mockup el color
+     lo pone el contenido (el botón naranja, el ítem activo), no el
+     armazón. Una barra de color arriba compite con eso. */
+  background: #fff;
+  color: var(--color-texto);
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--color-borde);
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -121,10 +152,17 @@ button:active {
   white-space: nowrap;
 }
 
+/* OJO CON ESTOS COLORES. Hasta el rediseño del 2026-09-18 el encabezado
+   era de color sólido oscuro, así que estos botones eran blancos sobre
+   un blanco translúcido. Al volverse blanco el encabezado quedaron
+   invisibles — y el ☰ invisible en teléfono significa que no había
+   forma de abrir el menú. Se detectó en la captura de revisión del
+   teléfono, no en los tests: un botón invisible pero presente se sigue
+   pudiendo clickear, así que ningún test falla. */
 #barra-sesion button {
-  background: rgba(255,255,255,.16);
-  color: #fff;
-  border: none;
+  background: var(--color-fondo-alterno);
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-chico);
   padding: 6px 10px;
   font-size: 0.78rem;
@@ -132,12 +170,25 @@ button:active {
 }
 
 #barra-sesion button:hover {
-  background: rgba(255,255,255,.26);
+  background: var(--color-borde);
+}
+
+/* "Ingresar" es la acción principal para quien todavía no entró, así
+   que va en el color de acción, como el botón principal del mockup. */
+#btn-abrir-login {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+  color: #fff;
+  font-weight: 600;
+}
+
+#btn-abrir-login:hover {
+  background: var(--color-primario-oscuro);
 }
 
 #btn-menu {
-  background: rgba(255,255,255,.16);
-  color: #fff;
+  background: transparent;
+  color: var(--color-texto);
   border: none;
   border-radius: var(--radio-chico);
   padding: 6px 10px;
@@ -147,7 +198,7 @@ button:active {
 }
 
 #btn-menu:hover {
-  background: rgba(255,255,255,.26);
+  background: var(--color-fondo-alterno);
 }
 
 /* Menú lateral (drawer): todas las secciones/subsecciones de la app,
@@ -280,13 +331,16 @@ button:active {
    que un lector de pantalla también sepa dónde está. */
 .drawer-item.ruta-activa {
   position: relative;
-  background: var(--color-primario);
-  color: #fff;
+  /* Naranja lavado con el texto en naranja, no fondo sólido con texto
+     blanco: en el mockup el ítem activo se distingue sin gritar, y el
+     color pleno queda reservado para el botón de acción principal. */
+  background: var(--color-primario-suave);
+  color: var(--color-primario-oscuro);
   font-weight: 700;
 }
 
 .drawer-item.ruta-activa:hover {
-  background: var(--color-primario-oscuro);
+  background: var(--color-primario-suave);
 }
 
 /* Barrita de acento a la izquierda: refuerza "estás acá" sin depender
@@ -299,7 +353,7 @@ button:active {
   left: 0;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--color-acento);
+  background: var(--color-primario);
 }
 
 /* El módulo que contiene a la sección activa. Importa sobre todo con el
@@ -312,76 +366,36 @@ button:active {
 
 .menu-modulo.ruta-activa > .menu-modulo-boton .menu-modulo-icono {
   border-radius: var(--radio-chico);
-  background: var(--color-acento-suave);
-  box-shadow: 0 0 0 3px var(--color-acento-suave);
-  color: var(--color-acento);
+  background: var(--color-primario-suave);
+  box-shadow: 0 0 0 3px var(--color-primario-suave);
+  color: var(--color-primario);
 }
 
 @media (min-width: 860px) {
-  /* Rail contraído: solo con sesión. Sin sesión el menú sigue siendo
-     "oculto hasta que se toca el ☰", igual que siempre. */
+  /* BARRA LATERAL FIJA (rediseño 2026-09-18, a partir del mockup).
+     Reemplaza al rail de 68px que se expandía al pasar el mouse. Ese
+     comportamiento lo había pedido el usuario en su momento; el mockup
+     muestra la barra siempre desplegada, y además el rail que se
+     expandía solo interceptaba clicks —costó un gotcha propio en los
+     tests— así que al fijarla desaparece ese problema entero.
+
+     Solo con sesión: sin sesión el menú sigue siendo "oculto hasta que
+     se toca el ☰", igual que siempre. */
   body.con-nav-secciones #drawer-menu:not(.expandido) {
     display: flex;
     top: var(--alto-encabezado);
-    width: 68px;
-    max-width: 68px;
-    padding: 14px 8px;
+    width: var(--ancho-lateral);
+    max-width: var(--ancho-lateral);
+    padding: 14px 12px 24px;
     border-right: 1px solid var(--color-borde);
-    box-shadow: 1px 0 8px rgba(20, 30, 34, 0.07);
+    box-shadow: none;
   }
 
-  body.con-nav-secciones #drawer-menu:not(.expandido) .panel-header,
-  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-nombre,
-  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-items {
+  /* El encabezado propio del menú ("Menú" + la ×) no va en escritorio:
+     la barra no se cierra, está siempre. */
+  body.con-nav-secciones #drawer-menu:not(.expandido) .panel-header {
     display: none;
   }
-
-  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-boton {
-    justify-content: center;
-    padding: 11px 0;
-    gap: 0;
-  }
-
-  /* Se expande al pasar el mouse por encima (además del ☰) — pedido
-     explícito del usuario. Estas reglas van DESPUÉS de las de contraído a
-     propósito: misma especificidad, gana la última. */
-  body.con-nav-secciones #drawer-menu:hover {
-    width: 288px;
-    max-width: 288px;
-    padding: 14px 14px calc(34px + 16px);
-    box-shadow: 4px 0 16px rgba(20, 30, 34, 0.22);
-  }
-
-  /* El encabezado "Menú" + la × entran también al expandir por hover.
-     Antes solo volvían con .expandido, así que el menú abierto con el
-     mouse aparecía cortado arriba y sin forma de cerrarlo — la otra
-     mitad del "arriba no abre bien" que reportó el usuario. */
-  body.con-nav-secciones #drawer-menu:hover .menu-modulo-nombre,
-  body.con-nav-secciones #drawer-menu:hover .menu-modulo-items {
-    display: block;
-  }
-
-  /* flex y no block: .panel-header alinea el título con la × (ver su
-     regla base más arriba). */
-  body.con-nav-secciones #drawer-menu:hover .panel-header {
-    display: flex;
-  }
-
-  body.con-nav-secciones #drawer-menu:hover .menu-modulo-boton {
-    justify-content: flex-start;
-    padding: 9px 8px;
-    gap: 10px;
-  }
-}
-
-/* "Ver catastro cercano" es un interruptor de verdad (se prende y se
-   apaga sobre el mapa), así que conserva su marca propia. "Ver como
-   lista" salió de acá: dejó de ser un toggle para ser la sección
-   /lotes, y su marca de "estás acá" es .ruta-activa (ver más arriba). */
-#btn-ver-catastro-cercano.activo {
-  background: var(--color-acento);
-  color: #fff;
-  font-weight: 700;
 }
 
 /* "Cargar a mano" (antes "+ Lote"): sigue existiendo para loteos que
@@ -527,7 +541,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 }
 
 #editor-poligono-medidas strong {
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
   font-size: 0.95rem;
 }
 
@@ -686,7 +700,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 .tooltip-lote-titulo {
   font-weight: 700;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
   margin-bottom: 2px;
 }
 
@@ -740,7 +754,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   right: 0;
   z-index: 1000;
   background: var(--color-acento-suave);
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
   font-size: 0.72rem;
   text-align: center;
   padding: 6px 8px;
@@ -852,7 +866,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin: 0 84px 10px 0;
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 /* Mismo círculo que .btn-cerrar, un poco más chico y a su izquierda —
@@ -1590,7 +1604,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   border-radius: var(--radio-chico);
   margin: 0 4px 4px 0;
   background: var(--color-acento-suave);
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
   opacity: 1;
 }
 
@@ -1941,7 +1955,18 @@ body.con-nav-secciones #btn-flotante-catastro {
   body.con-nav-secciones .panel-pantalla-completa,
   body.con-nav-secciones .hoja-inferior,
   body.con-nav-secciones #seccion-mapa #mapa {
-    left: 68px;
+    left: var(--ancho-lateral);
+  }
+
+  /* El encabezado también: en el mockup la barra lateral llega hasta
+     arriba de todo, con el logo, y la barra superior empieza a su
+     derecha. */
+  body.con-nav-secciones #encabezado {
+    left: var(--ancho-lateral);
+  }
+
+  body.con-nav-secciones #drawer-menu {
+    top: 0;
   }
 }
 
@@ -1969,7 +1994,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 .panel-header h2 {
   margin: 0;
   font-size: 1.1rem;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 .panel-header .btn-cerrar {
@@ -2337,7 +2362,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 .dashboard-seccion h3 {
   margin: 0 0 8px;
   font-size: 0.95rem;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 /* Cuántos hay en la lista, a simple vista sin tener que contar filas
@@ -2376,7 +2401,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
   list-style: none;
   display: flex;
   align-items: center;
@@ -2436,7 +2461,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 .dashboard-tarjeta strong {
   display: block;
   font-size: 1.4rem;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 .dashboard-tarjeta span {
@@ -2680,7 +2705,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   flex: 0 0 24px;
   text-align: right;
   font-weight: 700;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 /* Panel "Auditoría" — ver js/auditoria.js. Mismo lenguaje visual que las
@@ -2707,7 +2732,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 .ia-tarjeta-titulo {
   margin: 0 0 4px;
   font-weight: 700;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
   padding-right: 90px;
 }
 
@@ -2952,7 +2977,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin: 0;
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -3117,7 +3142,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 .crm-tarjeta-etiqueta {
   background: color-mix(in srgb, var(--color-primario) 12%, var(--color-fondo-alterno));
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
   font-size: 0.68rem;
   font-weight: 600;
   padding: 1px 7px;
@@ -3411,18 +3436,26 @@ body.con-nav-secciones #btn-flotante-catastro {
    crm-metricas.js. */
 #crm-stats,
 #dashboard-ventas-stats {
-  display: flex;
-  flex-wrap: wrap;
+  /* Grilla y no flex: con flex, la última tarjeta de una fila
+     incompleta se estiraba a lo ancho de toda la pantalla ("Comisión
+     ganada" ocupando una fila entera ella sola). Con auto-fit todas
+     miden lo mismo y la fila incompleta queda alineada a la izquierda. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
   margin-bottom: 14px;
 }
 
 .crm-stat {
-  flex: 1 1 110px;
-  background: var(--color-fondo-alterno);
+  /* Blancas y con borde parejo (rediseño 2026-09-18). Antes cada una
+     llevaba una barra de color arriba y, con ocho tarjetas juntas,
+     quedaba un arcoíris que competía con los propios números. El color
+     acá pasa a estar en el número cuando significa algo (comisión), no
+     en el marco. */
+  background: #fff;
   border: 1px solid var(--color-borde);
-  border-top: 3px solid var(--color-primario);
   border-radius: var(--radio-mediano);
+  box-shadow: var(--sombra-calida-suave);
   padding: 10px 12px;
   text-align: center;
   box-shadow: var(--sombra-calida-suave);
@@ -3431,16 +3464,13 @@ body.con-nav-secciones #btn-flotante-catastro {
 /* Un color distinto por métrica (mismo orden en que renderStats() las
    arma) — igual que las tarjetas de estado del Dashboard, para que no
    se vean como una fila repetida del mismo bloque. */
-.crm-stat:nth-child(2) { border-top-color: var(--crm-contactado); }
-.crm-stat:nth-child(3) { border-top-color: var(--crm-cerrado); }
-.crm-stat:nth-child(5) { border-top-color: var(--crm-visita); }
+
 
 /* "Valor en pipeline" (idea propia, mismo lenguaje que Pipedrive/HubSpot
    — el pipeline se mide en plata, no solo en cantidad de tarjetas). El
    número es más ancho que el resto ("USD 90.000" vs "8"), así que va
    más chico para no desbordar la tarjeta de 110px. */
 .crm-stat-valor {
-  border-top-color: var(--crm-oferta);
   flex-basis: 130px;
 }
 
@@ -3452,7 +3482,7 @@ body.con-nav-secciones #btn-flotante-catastro {
    métrica más urgente de las 5 — mismo rojo que .crm-badge-sin-atender,
    para que se note antes de leer el número. */
 .crm-stat-urgente {
-  border-top-color: var(--color-vendido) !important;
+  border-color: var(--color-acento);
 }
 
 .crm-stat-urgente strong {
@@ -3462,7 +3492,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 .crm-stat strong {
   display: block;
   font-size: 1.3rem;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 /* Banner de "Automatización configurable" (marcar estancados como
@@ -3667,7 +3697,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 .crm-btn-fantasma:hover {
   background: var(--color-fondo-alterno);
   border-color: var(--color-primario);
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 .crm-btn-chico {
@@ -3810,7 +3840,7 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 .crm-actividad-tipo {
   font-weight: 700;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 .crm-actividad-texto {
@@ -3946,7 +3976,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin: 0 0 8px;
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 #ficha-similares-lista {
@@ -4070,7 +4100,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin: 0;
   font-weight: 600;
   font-size: 0.85rem;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 .seleccion-acciones {
@@ -4137,7 +4167,7 @@ body.con-nav-secciones #btn-flotante-catastro {
   background: #fff;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--color-primario-oscuro);
+  color: var(--color-texto);
 }
 
 .masiva-error {
@@ -4641,4 +4671,186 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 .actividad-barra-mantenimiento {
   background: var(--color-borde);
+}
+
+/* ---------------------------------------------------------------------------
+   Barra lateral: logo, grupos y tarjeta de usuario (rediseño 2026-09-18).
+
+   La estructura de módulos que ya existía calza con el mockup sin
+   inventar nada: el nombre del módulo pasa a ser el rótulo del grupo
+   (WORKSPACE, ADMINISTRAR en el mockup) y sus ítems, la lista de
+   secciones debajo.
+   --------------------------------------------------------------------------- */
+
+/* Las dos piezas nuevas de la barra existen solo en escritorio: en
+   teléfono el menú es un cajón que se abre y se cierra, y ahí el logo y
+   la tarjeta de usuario serían ruido. Van antes del media query a
+   propósito: si fueran después lo pisarían (misma especificidad, gana
+   la última). */
+#lateral-marca,
+#lateral-usuario {
+  display: none;
+}
+
+@media (min-width: 860px) {
+  body.con-nav-secciones #lateral-marca {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 6px 16px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--color-borde);
+  }
+
+  /* El cuadrado naranja con el mojón adentro: es la única mancha de
+     color de toda la barra, igual que en el mockup. */
+  .marca-icono {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radio-mediano);
+    background: var(--color-primario);
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .marca-icono svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .marca-nombre {
+    display: block;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  .marca-bajada {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-texto-secundario);
+  }
+
+  /* El nombre del módulo pasa a ser rótulo de grupo: chico, en
+     mayúsculas y sin ícono, como en el mockup. El ícono se esconde
+     porque ahí los íconos van en los ítems, no en el rótulo. */
+  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-boton {
+    padding: 14px 8px 4px;
+    cursor: default;
+  }
+
+  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-icono {
+    display: none;
+  }
+
+  body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-nombre {
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-texto-secundario);
+  }
+
+  body.con-nav-secciones #drawer-menu:not(.expandido) .drawer-item {
+    padding: 9px 10px;
+    border-radius: var(--radio-chico);
+    font-size: 0.86rem;
+  }
+
+  /* La tarjeta de usuario va abajo de todo, separada del resto. */
+  #lateral-usuario {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+    padding: 10px;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-mediano);
+    background: var(--color-fondo-alterno);
+  }
+
+  .usuario-avatar {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-texto);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .usuario-datos {
+    min-width: 0;
+  }
+
+  .usuario-nombre {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .usuario-rol {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--color-texto-secundario);
+  }
+}
+
+
+/* EL ☰ SE QUEDA EN ESCRITORIO, aunque el mockup no lo tenga.
+   Con la barra lateral fija no hace falta, pero 30 archivos de test lo
+   clickean para abrir el menú antes de entrar a una sección, y la cuota
+   de lecturas de Firestore estaba agotada cuando se hizo este rediseño:
+   no se podía correr la suite entera para verificar el cambio. Esconderlo
+   a ciegas era romper 30 archivos sin red.
+   Queda como pendiente para cuando la suite pueda correr completa. */
+@media (min-width: 860px) {
+  /* El título deja de competir con el logo de la barra lateral. */
+  body.con-nav-secciones #encabezado h1 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-texto-secundario);
+  }
+}
+
+/* La barra superior queda SIEMPRE visible en escritorio.
+   Antes cualquier panel se abría a pantalla completa (inset: 0) y la
+   tapaba, así que el encabezado solo se veía en el mapa. En el mockup la
+   barra de arriba está en todas las pantallas, y es lo que hace que la
+   app se sienta una sola cosa y no una sucesión de pantallas sueltas.
+   En teléfono se sigue usando toda la altura: ahí el espacio es el
+   recurso escaso. */
+@media (min-width: 860px) {
+  body.con-nav-secciones .panel-pantalla-completa {
+    top: var(--alto-encabezado);
+  }
+}
+
+/* Las tarjetas de métricas, con el lenguaje del mockup: blancas, borde
+   finito, número grande. Antes cada una llevaba una barra de color
+   arriba; con siete juntas era un arcoíris que competía con los propios
+   números. El color queda para lo semántico (inventario) y para las
+   acciones. */
+.crm-stat strong {
+  color: var(--color-texto);
+}
+
+.crm-stat-comision strong {
+  color: var(--color-primario);
+}
+
+.crm-stat-comision-ganada strong {
+  color: var(--color-positivo);
 }

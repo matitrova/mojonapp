@@ -9,6 +9,7 @@ import {
   getLoteSeleccionado,
   setCorredorLogueado,
   setMiPerfil,
+  getMiPerfil,
   setSectoresActuales,
   setBarriosActuales,
   setLoteEditadoDesdeFicha,
@@ -364,6 +365,24 @@ async function resolverMiPerfil(usuario) {
 // Muestra/oculta los botones que dependen de un permiso puntual (no de
 // "estar logueado" nomás). Se llama después de resolver miPerfilActual,
 // y de nuevo si root reasigna el perfil de alguien desde "Administrar".
+// Tarjeta de usuario del pie de la barra lateral (rediseño 2026-09-18).
+// El nombre sale de la parte del mail anterior a la arroba: es lo más
+// parecido a un nombre que la app tiene hoy, porque no se guarda uno.
+// El perfil llega después (es una lectura aparte), así que esto se llama
+// de nuevo desde actualizarUIPorPermisos cuando ya se resolvió.
+function pintarTarjetaDeUsuario(usuario) {
+  const elNombre = document.getElementById("usuario-nombre");
+  const elRol = document.getElementById("usuario-rol");
+  const elAvatar = document.getElementById("usuario-avatar");
+  if (!usuario) return;
+  const nombre = (usuario.email || "").split("@")[0];
+  elNombre.textContent = nombre;
+  elNombre.title = usuario.email || "";
+  elAvatar.textContent = nombre.slice(0, 2).toUpperCase();
+  const perfil = getMiPerfil();
+  elRol.textContent = perfil?.nombre || (perfil ? "Corredor" : "Cargando perfil…");
+}
+
 function actualizarUIPorPermisos() {
   // La lista se vuelve a dibujar, y no es un detalle: sus tildes de
   // selección, su botón "Editar" y su botón "Borrar" se dibujan según
@@ -378,6 +397,7 @@ function actualizarUIPorPermisos() {
   // cientos de lecturas hechas, el perfil llega más tarde. El test
   // intermitente era real, no ruido.
   actualizarVistaLista();
+  pintarTarjetaDeUsuario(auth.currentUser);
   document.getElementById("btn-abrir-manzana").classList.toggle("oculto", !tienePermiso("cargar_lote"));
   document.getElementById("btn-abrir-parcela").classList.toggle("oculto", !tienePermiso("cargar_lote"));
   elBtnCargarLote.classList.toggle("oculto", !tienePermiso("cargar_lote"));
@@ -448,6 +468,7 @@ onAuthStateChanged(auth, async (usuario) => {
     // Clasificación). Por eso el gate es una clase y no un solo wrapper.
     document.querySelectorAll(".solo-con-sesion").forEach((el) => el.classList.remove("oculto"));
     elSesionEmail.textContent = usuario.email;
+    pintarTarjetaDeUsuario(usuario);
     actualizarUIPorPermisos();
     // El rail de íconos del menú (menú contraído, ver estilos.css) es
     // solo para quien tiene sesión, nunca para un visitante anónimo ni en
