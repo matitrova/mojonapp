@@ -72,8 +72,20 @@ def main():
     if not carpeta.is_dir():
         sys.exit(f"No existe la carpeta {carpeta}")
 
-    hallazgos = []
     archivos = sorted(carpeta.glob("*.py"))
+    # Sin archivos NO es un resultado limpio: es que no se revisó nada.
+    # Esto usa symtable, que entiende Python y nada más, así que apuntarlo
+    # a js/ o functions/ no matchea ningún archivo — y decir "0 nombres
+    # sin definir" ahí sería un verde falso, justo el tipo de salida que
+    # da tranquilidad donde no hay ninguna cobertura.
+    if not archivos:
+        sys.exit(
+            f"No hay archivos .py en {carpeta}: no se revisó nada.\n"
+            "Este chequeo solo entiende Python (usa symtable). Para el código de la\n"
+            "app, que es JavaScript, no sirve."
+        )
+
+    hallazgos = []
     for archivo in archivos:
         hallazgos.extend(revisar_archivo(archivo))
 
