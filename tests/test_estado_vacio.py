@@ -23,12 +23,12 @@ from playwright.sync_api import expect
 PANTALLAS = ["mapa", "lista", "dashboard"]
 
 
-def _contenido(page, base_url, pantalla, con_sesion):
+def _contenido(page, base_url, pantalla, con_sesion, puede_cargar=False):
     page.goto(base_url)
     return page.evaluate(
-        """([pantalla, conSesion]) => import('/js/estado-vacio.js')
-             .then((m) => m.contenidoVacio({ pantalla, conSesion }))""",
-        [pantalla, con_sesion],
+        """([pantalla, conSesion, puedeCargar]) => import('/js/estado-vacio.js')
+             .then((m) => m.contenidoVacio({ pantalla, conSesion, puedeCargar }))""",
+        [pantalla, con_sesion, puede_cargar],
     )
 
 
@@ -47,15 +47,49 @@ def test_sin_sesion_nunca_se_ofrece_cargar(page, base_url, pantalla):
 
 @pytest.mark.parametrize("pantalla", ["mapa", "lista"])
 def test_con_sesion_hay_dos_formas_de_cargar(page, base_url, pantalla):
-    contenido = _contenido(page, base_url, pantalla, True)
+    contenido = _contenido(page, base_url, pantalla, True, puede_cargar=True)
     ids = [accion["botonId"] for accion in contenido["acciones"]]
     assert ids == ["btn-abrir-manzana", "btn-cargar-lote"], f"{pantalla} ofrece {ids}"
+
+
+@pytest.mark.parametrize("pantalla", PANTALLAS)
+def test_con_sesion_pero_sin_permiso_tampoco_se_ofrece_cargar(page, base_url, pantalla):
+    """El caso que se encontró verificando en producción.
+
+    Tener sesión y poder cargar lotes no es lo mismo. Una cuenta puede
+    existir en Auth y no tener perfil asignado todavía: ahí getMiPerfil()
+    devuelve null y tienePermiso() da false para todo. La primera versión
+    de esto miraba solo la sesión, así que esa cuenta veía "Traer del
+    catastro" y al tocarlo Firestore la rechazaba.
+
+    El texto SÍ es el del corredor (tiene sesión, es de la casa); lo que
+    no aparece son los botones.
+    """
+    contenido = _contenido(page, base_url, pantalla, True, puede_cargar=False)
+    assert contenido["acciones"] == [], f"{pantalla} ofrece cargar a alguien sin permiso de carga"
+
+
+def test_el_texto_lo_decide_la_sesion_y_los_botones_el_permiso(page, base_url):
+    """Las dos preguntas son independientes, y este test lo fija.
+
+    Mismo permiso (puede cargar) y distinta sesión: cambia el texto.
+    Misma sesión y distinto permiso: cambian los botones. Si alguien
+    vuelve a colapsar las dos condiciones en una, acá se ve.
+    """
+    corredor = _contenido(page, base_url, "mapa", True, puede_cargar=True)
+    visitante = _contenido(page, base_url, "mapa", False, puede_cargar=False)
+    sin_perfil = _contenido(page, base_url, "mapa", True, puede_cargar=False)
+
+    assert corredor["titulo"] != visitante["titulo"], "el texto no distingue corredor de visitante"
+    assert corredor["titulo"] == sin_perfil["titulo"], "el texto no tendría que depender del permiso"
+    assert len(corredor["acciones"]) == 2
+    assert sin_perfil["acciones"] == []
 
 
 def test_el_dashboard_no_ofrece_cargar_ni_con_sesion(page, base_url):
     """No es la pantalla donde se carga: mandar al mapa desde acá agrega
     un salto en vez de sacarlo."""
-    assert _contenido(page, base_url, "dashboard", True)["acciones"] == []
+    assert _contenido(page, base_url, "dashboard", True, puede_cargar=True)["acciones"] == []
 
 
 def test_los_botones_que_se_ofrecen_existen_en_la_pantalla(page, base_url):
@@ -69,7 +103,7 @@ def test_los_botones_que_se_ofrecen_existen_en_la_pantalla(page, base_url):
         """() => import('/js/estado-vacio.js').then((m) => {
              const ids = new Set();
              for (const pantalla of ['mapa', 'lista', 'dashboard']) {
-               for (const accion of m.contenidoVacio({ pantalla, conSesion: true }).acciones) {
+               for (const accion of m.contenidoVacio({ pantalla, conSesion: true, puedeCargar: true }).acciones) {
                  ids.add(accion.botonId);
                }
              }
@@ -88,7 +122,7 @@ def test_una_pantalla_sin_texto_falla_fuerte(page, base_url):
     page.goto(base_url)
     error = page.evaluate(
         """() => import('/js/estado-vacio.js')
-             .then((m) => { try { m.contenidoVacio({ pantalla: 'inventada', conSesion: true }); return null; }
+             .then((m) => { try { m.contenidoVacio({ pantalla: 'inventada', conSesion: true, puedeCargar: true }); return null; }
                             catch (e) { return e.message; } })"""
     )
     assert error is not None and "inventada" in error
@@ -112,7 +146,7 @@ def test_el_boton_del_cartel_dispara_el_del_menu(page, base_url):
         """async () => {
              const m = await import('/js/estado-vacio.js');
              const contenedor = document.getElementById('mapa-vacio');
-             m.pintarEstadoVacio(contenedor, { pantalla: 'mapa', conSesion: true });
+             m.pintarEstadoVacio(contenedor, { pantalla: 'mapa', conSesion: true, puedeCargar: true });
              const real = document.getElementById('btn-abrir-manzana');
              let llamado = false;
              const espia = (evento) => { llamado = true; evento.stopPropagation(); evento.preventDefault(); };

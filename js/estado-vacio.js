@@ -8,16 +8,20 @@
 // deja al corredor sin saber qué hacer, y a un visitante sin saber si la
 // app está rota.
 //
-// LA DISTINCIÓN QUE IMPORTA: con sesión o sin sesión.
+// LAS DOS PREGUNTAS QUE DECIDEN QUÉ SE MUESTRA, que no son la misma
+// (ver el comentario de contenidoVacio, que cuenta cómo se confundieron):
 //
-//   - Sin sesión es un visitante mirando el catálogo: no puede cargar
-//     nada, así que ofrecerle un botón de carga sería mentirle. Solo se
-//     le dice que todavía no hay nada publicado.
-//   - Con sesión es el corredor: ahí sí van las dos formas reales de
-//     cargar lotes, y los botones son los MISMOS del menú (se les
-//     delega el click), no una copia de su lógica.
+//   - ¿Hay sesión? Decide el TEXTO. A un visitante se le habla del
+//     catálogo ("cuando la inmobiliaria cargue su cartera"), al corredor
+//     de su trabajo ("todavía no cargaste ningún lote").
+//   - ¿Puede cargar lotes? Decide los BOTONES. Ofrecer cargar a quien no
+//     tiene el permiso es prometerle algo que las reglas de Firestore van
+//     a rechazar.
 //
-// El texto vive acá y no en el HTML porque cambia según la sesión y se
+// Los botones son los MISMOS del menú: se les delega el click en vez de
+// copiar su lógica.
+//
+// El texto vive acá y no en el HTML porque cambia según quién mira y se
 // usa en tres lugares. Separado y sin efectos, se puede afirmar en un
 // test que a un visitante nunca se le ofrece cargar.
 // ---------------------------------------------------------------------------
@@ -68,21 +72,36 @@ const TEXTOS = {
 };
 
 /**
+ * SON DOS PREGUNTAS DISTINTAS, Y CONFUNDIRLAS SE VIO EN PRODUCCIÓN.
+ *
+ * "¿Hay sesión?" decide el TEXTO: a un visitante se le habla del
+ * catálogo, a un corredor de su cartera.
+ *
+ * "¿Puede cargar lotes?" decide los BOTONES, y no es lo mismo: una
+ * cuenta puede tener sesión y no tener permiso de carga. Pasa de verdad
+ * con un corredor recién creado al que todavía no le asignaron perfil —
+ * getMiPerfil() devuelve null y tienePermiso() da false para todo. Con
+ * la condición puesta en la sesión, esa cuenta veía "Traer del catastro"
+ * y al tocarlo Firestore la rechazaba.
+ *
  * @param pantalla "mapa" | "lista" | "dashboard"
- * @param conSesion si hay un corredor logueado
+ * @param conSesion si hay alguien logueado (decide el texto)
+ * @param puedeCargar si ese alguien tiene permiso de cargar lotes
+ *        (decide los botones; ver tienePermiso en js/permisos.js)
  * @returns {titulo, texto, acciones}
  */
-export function contenidoVacio({ pantalla, conSesion }) {
+export function contenidoVacio({ pantalla, conSesion, puedeCargar = false }) {
   const textos = TEXTOS[pantalla];
   if (!textos) throw new Error(`No hay texto de vacío para la pantalla "${pantalla}"`);
   const elegido = conSesion ? textos.conSesion : textos.sinSesion;
   return {
     titulo: elegido.titulo,
     texto: elegido.texto,
-    // El dashboard no ofrece cargar: no es la pantalla donde se carga, y
-    // mandar a alguien al mapa desde acá agrega un salto en vez de
-    // sacarlo. Mapa y lista sí, que es donde se trabaja la cartera.
-    acciones: conSesion && pantalla !== "dashboard" ? [ACCION_CATASTRO, ACCION_A_MANO] : []
+    // El dashboard no ofrece cargar ni a quien puede: no es la pantalla
+    // donde se carga, y mandar a alguien al mapa desde acá agrega un
+    // salto en vez de sacarlo. Mapa y lista sí, que es donde se trabaja
+    // la cartera.
+    acciones: puedeCargar && pantalla !== "dashboard" ? [ACCION_CATASTRO, ACCION_A_MANO] : []
   };
 }
 
@@ -94,8 +113,8 @@ export function contenidoVacio({ pantalla, conSesion }) {
  * o porque cambió de nombre), no se dibuja — antes que ofrecer algo que
  * al tocarlo no hace nada.
  */
-export function pintarEstadoVacio(contenedor, { pantalla, conSesion }) {
-  const { titulo, texto, acciones } = contenidoVacio({ pantalla, conSesion });
+export function pintarEstadoVacio(contenedor, { pantalla, conSesion, puedeCargar = false }) {
+  const { titulo, texto, acciones } = contenidoVacio({ pantalla, conSesion, puedeCargar });
   contenedor.innerHTML = "";
 
   const elTitulo = document.createElement("p");

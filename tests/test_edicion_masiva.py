@@ -161,13 +161,30 @@ def test_el_resumen_dice_cuantos_lotes(page, base_url):
 # ---------------------------------------------------------------------------
 
 
-def _abrir_lista_filtrada_por(page, base_url, termino):
+def _abrir_lista_filtrada_por(page, base_url, termino, filas):
+    """Abre la lista filtrada y ESPERA a que la tabla ya esté redibujada.
+
+    La espera no es de adorno. Escribir en el filtro dispara el
+    redibujado, y si se tilda "seleccionar la página" antes de que
+    termine, se seleccionan los lotes que estaban antes (los de demo) en
+    vez de los filtrados; después el redibujado deja el tilde en falso y
+    Playwright avisa que "el click no cambió el estado". Pasó de verdad:
+    el test fallaba solo al correr la suite completa, donde la base tiene
+    los lotes de demo, y pasaba al correrlo suelto.
+    """
     page.goto(base_url)
     page.locator("#btn-menu").click()
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
     page.locator("#filtro-cantidad").select_option("0")
     page.locator("#filtro-buscar").fill(termino)
+    expect(page.locator("#tabla-lotes-cuerpo tr")).to_have_count(filas)
+    # Y esperar los TILDES, no solo las filas. Los tildes dependen de
+    # puedeEditarLote, que depende del perfil, que llega de una lectura a
+    # Firestore: la tabla puede estar dibujada y todavía no tener tildes.
+    # Sin esta espera el test falla una de cada tres corridas de la suite
+    # completa —donde el perfil tarda más— y pasa siempre corriendo solo.
+    expect(page.locator("#tabla-lotes-cuerpo .tilde-lote")).to_have_count(filas)
 
 
 @pytest.mark.con_sesion
@@ -177,8 +194,7 @@ def test_aplicar_a_varios_escribe_en_todos_los_seleccionados(page, base_url):
     manzana = f"MASIVA-{marcador}"
     ids = [crear_lote_de_prueba(_lote(manzana, str(n))) for n in (1, 2, 3)]
     try:
-        _abrir_lista_filtrada_por(page, base_url, manzana)
-        expect(page.locator("#tabla-lotes-cuerpo tr")).to_have_count(3)
+        _abrir_lista_filtrada_por(page, base_url, manzana, filas=3)
 
         page.locator("#seleccionar-pagina").check()
         expect(page.locator("#seleccion-cuenta")).to_have_text("3 lotes seleccionados")
@@ -220,7 +236,7 @@ def test_no_se_toca_lo_que_no_se_eligio(page, base_url):
         )
     )
     try:
-        _abrir_lista_filtrada_por(page, base_url, manzana)
+        _abrir_lista_filtrada_por(page, base_url, manzana, filas=1)
         page.locator("#seleccionar-pagina").check()
         page.locator("#btn-aplicar-a-varios").click()
         page.locator("#masiva-luz").select_option("si")
@@ -244,7 +260,7 @@ def test_cambiar_el_filtro_limpia_la_seleccion(page, base_url):
     manzana = f"FILTRO-{marcador}"
     ids = [crear_lote_de_prueba(_lote(manzana, str(n))) for n in (1, 2)]
     try:
-        _abrir_lista_filtrada_por(page, base_url, manzana)
+        _abrir_lista_filtrada_por(page, base_url, manzana, filas=2)
         page.locator("#seleccionar-pagina").check()
         expect(page.locator("#seleccion-barra")).to_be_visible()
 
@@ -262,7 +278,7 @@ def test_sin_elegir_nada_no_se_puede_aplicar(page, base_url):
     manzana = f"NADA-{marcador}"
     doc_id = crear_lote_de_prueba(_lote(manzana, "1"))
     try:
-        _abrir_lista_filtrada_por(page, base_url, manzana)
+        _abrir_lista_filtrada_por(page, base_url, manzana, filas=1)
         page.locator("#seleccionar-pagina").check()
         page.locator("#btn-aplicar-a-varios").click()
         expect(page.locator("#masiva-aplicar")).to_be_disabled()

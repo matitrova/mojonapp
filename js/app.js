@@ -30,7 +30,7 @@ import {
 import { configurarDashboard, renderDashboard } from "./dashboard.js";
 import { configurarCrm } from "./crm.js";
 import { configurarFavoritos } from "./favoritos.js";
-import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde } from "./vista-lista.js";
+import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde, actualizarVistaLista } from "./vista-lista.js";
 import { configurarEditorForma } from "./editor-forma.js";
 import { configurarCargarLote } from "./cargar-lote.js";
 import {
@@ -362,6 +362,19 @@ async function resolverMiPerfil(usuario) {
 // "estar logueado" nomás). Se llama después de resolver miPerfilActual,
 // y de nuevo si root reasigna el perfil de alguien desde "Administrar".
 function actualizarUIPorPermisos() {
+  // La lista se vuelve a dibujar, y no es un detalle: sus tildes de
+  // selección, su botón "Editar" y su botón "Borrar" se dibujan según
+  // puedeEditarLote/puedeBorrarLote, que dependen del perfil. Ese perfil
+  // llega de una lectura a Firestore (resolverMiPerfil), así que puede
+  // resolverse DESPUÉS de que la lista ya se dibujó — y antes de esto,
+  // nada la volvía a dibujar: quedaba una lista sin forma de editar
+  // hasta que el corredor tocara un filtro.
+  //
+  // Apareció como un test que fallaba una de cada tres corridas de la
+  // suite completa y pasaba siempre corriendo solo: en la suite, con
+  // cientos de lecturas hechas, el perfil llega más tarde. El test
+  // intermitente era real, no ruido.
+  actualizarVistaLista();
   document.getElementById("btn-abrir-manzana").classList.toggle("oculto", !tienePermiso("cargar_lote"));
   document.getElementById("btn-abrir-parcela").classList.toggle("oculto", !tienePermiso("cargar_lote"));
   elBtnCargarLote.classList.toggle("oculto", !tienePermiso("cargar_lote"));

@@ -359,7 +359,11 @@ export async function cargarLotesDesdeFirestore() {
   const elMapaVacio = document.getElementById("mapa-vacio");
   elMapaVacio.classList.toggle("oculto", features.length > 0);
   if (features.length === 0) {
-    pintarEstadoVacio(elMapaVacio, { pantalla: "mapa", conSesion: getCorredorLogueado() });
+    pintarEstadoVacio(elMapaVacio, {
+      pantalla: "mapa",
+      conSesion: getCorredorLogueado(),
+      puedeCargar: tienePermiso("cargar_lote")
+    });
   }
 
   elMensajeCargaInicial.classList.add("oculto");

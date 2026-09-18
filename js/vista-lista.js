@@ -21,6 +21,7 @@ import {
   getCorredorLogueado
 } from "./estado.js";
 import { pintarEstadoVacio } from "./estado-vacio.js";
+import { tienePermiso } from "./permisos.js";
 import { SIN_CAMBIO, VACIAR, armarCambios, textoDeConfirmacion, detalleParaAuditoria } from "./edicion-masiva.js";
 import { centroideDePoligono } from "./geometria.js";
 // Navegación por URL (ver js/router.js) — capa de abajo, sin ciclos.
@@ -661,7 +662,11 @@ export function actualizarVistaLista() {
   const sinLotesCargados = getLotesActuales().length === 0;
   elVistaListaVacio.classList.toggle("oculto", !sinLotesCargados);
   if (sinLotesCargados) {
-    pintarEstadoVacio(elVistaListaVacio, { pantalla: "lista", conSesion: getCorredorLogueado() });
+    pintarEstadoVacio(elVistaListaVacio, {
+      pantalla: "lista",
+      conSesion: getCorredorLogueado(),
+      puedeCargar: tienePermiso("cargar_lote")
+    });
   }
   // Distinto de "no hay lotes cargados": acá SÍ hay lotes, pero ninguno
   // coincide con el sector/estado elegido — un mensaje genérico de
