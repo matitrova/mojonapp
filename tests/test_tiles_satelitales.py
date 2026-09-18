@@ -99,9 +99,18 @@ def test_el_mapa_chico_de_la_pagina_publica_usa_el_mismo_nivel():
     Si alguien toca uno y se olvida del otro, la página que ve el
     comprador queda mostrando el cartel gris — que es justo donde peor
     se ve.
+
+    Se saltea si no existe la página pública: este archivo también vive
+    en la rama de arreglos para producción (arreglos-mapa-produccion),
+    donde esa pantalla todavía no está. Con un solo mapa no hay nada que
+    comparar.
     """
+    pagina_publica = RAIZ / "js" / "lote-publico.js"
+    if not pagina_publica.exists():
+        pytest.skip("esta rama no tiene la página pública del lote (js/lote-publico.js)")
+
     principal = _max_native_zoom_del_codigo()
-    fuente = (RAIZ / "js" / "lote-publico.js").read_text()
+    fuente = pagina_publica.read_text()
     valores = [int(v) for v in re.findall(r"maxNativeZoom:\s*(\d+)", fuente)]
     assert valores, "no se encontró maxNativeZoom en js/lote-publico.js"
     assert valores[0] == principal, (
