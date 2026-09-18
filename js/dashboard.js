@@ -443,9 +443,14 @@ function renderPasosDelEmbudo(contactos) {
     const detalle = document.createElement("span");
     detalle.className = "embudo-paso-detalle";
     const promedio = dias[paso.desde];
+    // Los días con coma decimal, como el resto de los números de la app
+    // ("5,3 días", no "5.3"): toLocaleString("es-AR"), mismo criterio que
+    // formatoUsdCompacto y que los precios de la lista.
     detalle.textContent =
       `${paso.avanzaron} de ${paso.base}` +
-      (promedio ? ` · ${promedio.dias} días en ${ETIQUETA_ETAPA[paso.desde]}` : "");
+      (promedio
+        ? ` · ${promedio.dias.toLocaleString("es-AR")} días en ${ETIQUETA_ETAPA[paso.desde]}`
+        : "");
     fila.appendChild(detalle);
 
     elPasos.appendChild(fila);
