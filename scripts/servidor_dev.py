@@ -73,12 +73,16 @@ def sirve_el_indice(camino):
 #
 # POR QUÉ ACÁ Y NO EN EL CÓDIGO DE LA APP. Los 12 módulos que hablan con
 # Firebase importan todos de js/firebase-config.js, así que reemplazar
-# ESE módulo mueve la app entera. Y hacerlo en este script es lo seguro:
-# solo corre en local, Cloudflare Pages nunca lo ejecuta (sirve los
-# archivos estáticos con sus propios headers). O sea que
-# js/firebase-config.js queda intacto en el repo y en producción, y no
-# hay ningún artefacto del proyecto de pruebas versionado que pueda
-# terminar deployado por accidente.
+# ESE módulo mueve la app entera, sin tocar los 12. js/firebase-config.js
+# queda intacto en el repo y en producción, y no hay ningún artefacto del
+# proyecto de pruebas versionado que pueda terminar deployado por
+# accidente.
+#
+# El mismo truco existe ahora del lado de Cloudflare, en
+# functions/_middleware.js, para el ambiente de demo — antes acá decía que
+# Pages nunca hacía esta sustitución, y dejó de ser cierto. Los dos
+# caminos generan el mismo módulo y comparten el guard de no reemplazar
+# nada cuando el proyecto es "mojonapp"; si se toca uno, tocar el otro.
 #
 # Los valores vienen del entorno, que se los pasa tests/conftest.py (que
 # a su vez los lee de tests/.env, no versionado).

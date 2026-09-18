@@ -44,8 +44,75 @@ async function datosDelLote(loteId) {
 
 const ETIQUETA_ESTADO = { disponible: "Disponible", reservado: "Reservado", vendido: "Vendido" };
 
+// ---------------------------------------------------------------------------
+// Apuntar el despliegue a otro proyecto Firebase (ambiente de demo)
+//
+// js/firebase-config.js tiene el proyecto fijo en el código, y los 12
+// módulos que hablan con Firebase importan de ahí — así que reemplazar ESE
+// módulo mueve la app entera. Es el mismo truco que scripts/servidor_dev.py
+// usa en local, ahora del lado de Cloudflare: este middleware ya corre en
+// todos los pedidos, así que puede interceptar el archivo antes de que se
+// sirva el estático.
+//
+// Para qué: tener una URL de demo con datos inventados (rama "demo" →
+// demo.mojonapp.pages.dev, con las variables cargadas en el ambiente
+// Preview de Pages) sin tocar la app real que usa la inmobiliaria.
+//
+// PRODUCCIÓN NO CAMBIA, por dos motivos acumulados: en el ambiente de
+// producción estas variables no están definidas, y aunque alguien las
+// definiera apuntando a "mojonapp" el guard de abajo igual sirve el
+// archivo real del repo. Sin variables, esto no hace absolutamente nada.
+// ---------------------------------------------------------------------------
+const RUTA_CONFIG_FIREBASE = "/js/firebase-config.js";
+
+// Mismo módulo que js/firebase-config.js pero con otro proyecto. Mantiene
+// la MISMA interfaz (db, auth y firebaseConfig): si faltara alguno, los
+// módulos que lo importan romperían de formas poco obvias.
+// authDomain/storageBucket siguen el formato que arma Firebase para
+// cualquier proyecto nuevo — igual que config_firebase_generado() en
+// scripts/servidor_dev.py, que es el equivalente local de esto.
+function configFirebaseGenerado(apiKey, projectId) {
+  return `// GENERADO AL VUELO por functions/_middleware.js — NO es un archivo del
+// repo. Apunta la app a un proyecto Firebase distinto del de producción
+// (ambiente de demo). El archivo de verdad es js/firebase-config.js.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "${apiKey}",
+  authDomain: "${projectId}.firebaseapp.com",
+  projectId: "${projectId}",
+  storageBucket: "${projectId}.firebasestorage.app"
+};
+
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+export { firebaseConfig };
+`;
+}
+
 export async function onRequest(context) {
   const url = new URL(context.request.url);
+
+  if (url.pathname === RUTA_CONFIG_FIREBASE) {
+    const apiKey = context.env.MOJONAPP_FIREBASE_API_KEY;
+    const projectId = context.env.MOJONAPP_FIREBASE_PROJECT_ID;
+    // "mojonapp" es producción: ahí no hay nada que reemplazar.
+    if (apiKey && projectId && projectId !== "mojonapp") {
+      return new Response(configFirebaseGenerado(apiKey, projectId), {
+        headers: {
+          "Content-Type": "text/javascript; charset=utf-8",
+          // Igual que /js/* en _headers: el navegador puede cachearlo,
+          // pero revalida antes de usarlo. Sin esto, cambiar de proyecto
+          // dejaría a alguien con el config viejo en la mano.
+          "Cache-Control": "public, max-age=0, must-revalidate"
+        }
+      });
+    }
+  }
+
   const loteId = url.searchParams.get("lote");
 
   // Nada que enriquecer: pedidos a /js, /css, /catastro-proxy, la home
