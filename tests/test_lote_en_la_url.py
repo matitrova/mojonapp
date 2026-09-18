@@ -125,17 +125,27 @@ def test_al_abrir_un_lote_queda_a_la_vista_y_no_detras_de_la_ficha(page, base_ur
     """
     _abrir_desde_la_lista(page, base_url, lote_de_prueba)
 
+    # Se mide DÓNDE CAE EL LOTE EN LA PANTALLA, proyectando sus
+    # coordenadas con el propio mapa. La primera versión de este test
+    # medía "el primer polígono del SVG", y con los lotes de demo
+    # dibujados ese no es el que se abrió: pasaba sola y fallaba junto a
+    # los demás.
     medidas = page.evaluate(
-        """() => {
+        """(id) => import('/js/mapa.js').then(async (m) => {
+             const estado = await import('/js/estado.js');
+             const feature = estado.getLotesActuales().find((f) => f.id === id);
+             const anillo = feature.geometry.coordinates[0];
+             const lat = anillo.reduce((s, c) => s + c[1], 0) / anillo.length;
+             const lon = anillo.reduce((s, c) => s + c[0], 0) / anillo.length;
+             const punto = m.mapa.latLngToContainerPoint([lat, lon]);
              const hoja = document.getElementById('ficha-lote').getBoundingClientRect();
-             const mapa = document.getElementById('mapa').getBoundingClientRect();
-             // Dónde quedó dibujado el lote: el centro de su polígono.
-             const caja = document.querySelector('#mapa svg path').getBoundingClientRect();
-             return { centroDelLote: caja.top + caja.height / 2, arribaDeLaHoja: hoja.top, altoMapa: mapa.height };
-           }"""
+             const caja = document.getElementById('mapa').getBoundingClientRect();
+             return { yDelLote: caja.top + punto.y, arribaDeLaHoja: hoja.top };
+           })""",
+        lote_de_prueba["id"],
     )
-    assert medidas["centroDelLote"] < medidas["arribaDeLaHoja"], (
-        f"el lote quedó en y={medidas['centroDelLote']:.0f}, detrás de la ficha "
+    assert medidas["yDelLote"] < medidas["arribaDeLaHoja"], (
+        f"el lote quedó en y={medidas['yDelLote']:.0f}, detrás de la ficha "
         f"que empieza en y={medidas['arribaDeLaHoja']:.0f}"
     )
 

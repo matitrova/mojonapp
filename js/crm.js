@@ -200,8 +200,11 @@ function irALoteDesdeCrm(loteId, contactoOrigen = null) {
   // vuelve al pipeline de contactos.
   navegarA("/");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
-  centrarDejandoVer(lat, lon, 19);
   mostrarFicha(feature, contactoOrigen);
+  // El centrado va DESPUÉS de abrir la ficha: mide la hoja para
+  // sacar el lote de atrás de ella, y antes de abrirla esa hoja
+  // todavía no existe (ver centrarDejandoVer en js/mapa.js).
+  centrarDejandoVer(lat, lon, 19);
 }
 
 async function moverContacto(contacto, nuevoEstado) {

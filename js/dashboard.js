@@ -128,8 +128,11 @@ function irAFichaDesdeDashboard(feature, contactoOrigen = null) {
   // "/", así el "atrás" del navegador vuelve al Dashboard.
   navegarA("/");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
-  centrarDejandoVer(lat, lon, 19);
   mostrarFicha(feature, contactoOrigen);
+  // El centrado va DESPUÉS de abrir la ficha: mide la hoja para
+  // sacar el lote de atrás de ella, y antes de abrirla esa hoja
+  // todavía no existe (ver centrarDejandoVer en js/mapa.js).
+  centrarDejandoVer(lat, lon, 19);
 }
 
 // "y N más" al pie de una lista recortada por MAX_FILAS_LISTA — lleva a
