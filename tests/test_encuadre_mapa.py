@@ -186,3 +186,26 @@ def test_el_mapa_nunca_arranca_mas_lejos_que_el_minimo(page, base_url):
         )
     finally:
         borrar_lotes_de_prueba(lejanos)
+
+
+def test_el_mapa_se_corre_cuando_una_hoja_lo_tapa(page, base_url):
+    """La ficha y los formularios tapan hasta el 70% de la pantalla.
+
+    Centrar en el medio del contenedor deja el lote DETRÁS de la hoja, y
+    lo poco de mapa que queda a la vista se ve todo corrido hacia arriba.
+    Reportado por el usuario: "eso hace perderte mucho".
+    """
+    # 800 de alto, 560 tapados (70%): la franja visible mide 240 y su
+    # centro está en 120; el punto está en 400, así que sube 280.
+    assert _evaluar(page, base_url, "m.desplazamientoPorHojaAbierta(560, 800)") == 280
+
+
+def test_sin_hoja_abierta_no_se_corre_nada(page, base_url):
+    assert _evaluar(page, base_url, "m.desplazamientoPorHojaAbierta(0, 800)") == 0
+
+
+def test_si_la_hoja_tapa_todo_no_se_mueve(page, base_url):
+    """Sin franja visible, mover el mapa no arregla nada y encima dejaría
+    el punto fuera de la pantalla."""
+    assert _evaluar(page, base_url, "m.desplazamientoPorHojaAbierta(800, 800)") == 0
+    assert _evaluar(page, base_url, "m.desplazamientoPorHojaAbierta(900, 800)") == 0

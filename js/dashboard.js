@@ -53,12 +53,13 @@ const COLECCION_LOTES = "lotes";
 // "Ver como lista" en vez de intentar mostrar todo acá.
 const MAX_FILAS_LISTA = 5;
 
-let db, doc, updateDoc, increment, mapa, mostrarFicha, tituloLote;
+let db, doc, updateDoc, increment, mapa,
+  centrarDejandoVer, mostrarFicha, tituloLote;
 
 // app.js llama esto una sola vez, antes de usar cualquier otra función de
 // este módulo.
 export function configurarDashboard(deps) {
-  ({ db, doc, updateDoc, increment, mapa, mostrarFicha, tituloLote } = deps);
+  ({ db, doc, updateDoc, increment, mapa, centrarDejandoVer, mostrarFicha, tituloLote } = deps);
 }
 
 // Contador de "más consultados" para el dashboard — sube en Firestore
@@ -127,7 +128,7 @@ function irAFichaDesdeDashboard(feature, contactoOrigen = null) {
   // "/", así el "atrás" del navegador vuelve al Dashboard.
   navegarA("/");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
-  mapa.setView([lat, lon], 19);
+  centrarDejandoVer(lat, lon, 19);
   mostrarFicha(feature, contactoOrigen);
 }
 

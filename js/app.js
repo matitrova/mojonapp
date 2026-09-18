@@ -42,6 +42,7 @@ import { configurarEditorForma } from "./editor-forma.js";
 import { configurarCargarLote } from "./cargar-lote.js";
 import {
   mapa,
+  centrarDejandoVer,
   cargarLotesDesdeFirestore,
   anilloAGeometryFirestore,
   configurarMapa,
@@ -92,7 +93,7 @@ iniciarCatalogos();
 configurarBuscador({
   irAlLote: (feature) => {
     const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
-    mapa.setView([lat, lon], 19);
+    centrarDejandoVer(lat, lon, 19);
     mostrarFicha(feature);
   },
   irAlLead: (contacto) => abrirContactoEnCrm(contacto.id)
@@ -277,6 +278,7 @@ configurarVistaLista({
   collection,
   where,
   mapa,
+  centrarDejandoVer,
   mostrarFicha,
   tituloLote,
   puedeEditarLote,
@@ -286,9 +288,9 @@ configurarVistaLista({
   textoEstadoConVencimiento,
   renderServiciosHTML
 });
-configurarDashboard({ db, doc, updateDoc, increment, mapa, mostrarFicha, tituloLote });
-configurarCrm({ mapa, mostrarFicha, tituloLote });
-configurarFavoritos({ mapa, mostrarFicha, tituloLote });
+configurarDashboard({ db, doc, updateDoc, increment, mapa, centrarDejandoVer, mostrarFicha, tituloLote });
+configurarCrm({ mapa, centrarDejandoVer, mostrarFicha, tituloLote });
+configurarFavoritos({ mapa, centrarDejandoVer, mostrarFicha, tituloLote });
 configurarCargarLote({ mapa, cargarLotesDesdeFirestore, anilloAGeometryFirestore });
 
 iniciarEstoyYendo();

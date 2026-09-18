@@ -109,3 +109,42 @@ def test_irse_a_otra_seccion_tambien_lo_saca(page, base_url, lote_de_prueba):
     soltar_el_mouse(page)
     expect(page.locator("#panel-crm")).to_be_visible()
     assert "lote=" not in page.url, f"la URL quedó en {page.url}"
+
+
+def test_al_abrir_un_lote_queda_a_la_vista_y_no_detras_de_la_ficha(page, base_url, lote_de_prueba):
+    """El centrado tiene que dejar el lote en la franja que se VE.
+
+    La ficha tapa desde abajo hasta el 70% de la pantalla. Centrar en el
+    medio del contenedor dejaba el lote detrás de ella, y lo poco de
+    mapa visible se veía todo corrido. Reportado por el usuario: "eso
+    hace perderte mucho".
+
+    Además este test es el que prueba que centrarDejandoVer esté bien
+    cableada: se pasa por inyección a cuatro módulos, y si faltara en
+    alguno el click explotaría con un ReferenceError en vez de moverse.
+    """
+    _abrir_desde_la_lista(page, base_url, lote_de_prueba)
+
+    medidas = page.evaluate(
+        """() => {
+             const hoja = document.getElementById('ficha-lote').getBoundingClientRect();
+             const mapa = document.getElementById('mapa').getBoundingClientRect();
+             // Dónde quedó dibujado el lote: el centro de su polígono.
+             const caja = document.querySelector('#mapa svg path').getBoundingClientRect();
+             return { centroDelLote: caja.top + caja.height / 2, arribaDeLaHoja: hoja.top, altoMapa: mapa.height };
+           }"""
+    )
+    assert medidas["centroDelLote"] < medidas["arribaDeLaHoja"], (
+        f"el lote quedó en y={medidas['centroDelLote']:.0f}, detrás de la ficha "
+        f"que empieza en y={medidas['arribaDeLaHoja']:.0f}"
+    )
+
+
+def test_no_quedan_errores_en_la_consola_al_abrir_un_lote(page, base_url, lote_de_prueba):
+    """Red contra el cableado: centrarDejandoVer viaja por inyección a
+    cuatro módulos y un olvido sale como ReferenceError, no como un test
+    en rojo."""
+    errores = []
+    page.on("pageerror", lambda e: errores.append(str(e)))
+    _abrir_desde_la_lista(page, base_url, lote_de_prueba)
+    assert errores == [], f"la app tiró errores: {errores}"

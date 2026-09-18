@@ -51,10 +51,11 @@ export function alternarFavorito(loteId) {
   return !yaEstaba;
 }
 
-let mapa, mostrarFicha, tituloLote;
+let mapa,
+  centrarDejandoVer, mostrarFicha, tituloLote;
 
 export function configurarFavoritos(deps) {
-  ({ mapa, mostrarFicha, tituloLote } = deps);
+  ({ mapa, centrarDejandoVer, mostrarFicha, tituloLote } = deps);
 }
 
 const elPanel = document.getElementById("panel-favoritos");
@@ -162,7 +163,7 @@ function irALoteDesdeFavoritos(feature) {
   elPanel.classList.add("oculto");
   elPanelComparar.classList.add("oculto");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
-  mapa.setView([lat, lon], 19);
+  centrarDejandoVer(lat, lon, 19);
   mostrarFicha(feature);
 }
 

@@ -92,12 +92,13 @@ import { configurarFormulario, mostrarForm } from "./crm-formulario.js";
 // que ya usa el Dashboard para reservas por vencer.
 const DIAS_SEGUIMIENTO_PROXIMO = 3;
 
-let mapa, mostrarFicha, tituloLote;
+let mapa,
+  centrarDejandoVer, mostrarFicha, tituloLote;
 
 // app.js llama esto una sola vez, antes de usar cualquier otra función de
 // este módulo.
 export function configurarCrm(deps) {
-  ({ mapa, mostrarFicha, tituloLote } = deps);
+  ({ mapa, centrarDejandoVer, mostrarFicha, tituloLote } = deps);
   configurarDatosCrm({ tituloLote });
   configurarFormulario({ renderTodo, mostrarKanban, irALoteDesdeCrm, tituloLote });
 }
@@ -199,7 +200,7 @@ function irALoteDesdeCrm(loteId, contactoOrigen = null) {
   // vuelve al pipeline de contactos.
   navegarA("/");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
-  mapa.setView([lat, lon], 19);
+  centrarDejandoVer(lat, lon, 19);
   mostrarFicha(feature, contactoOrigen);
 }
 

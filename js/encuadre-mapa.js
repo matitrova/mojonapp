@@ -75,3 +75,32 @@ export function centroDelGrupoMasNumeroso(centros) {
 export function convieneEnfocarUnGrupo(zoomQueEntraTodo) {
   return zoomQueEntraTodo < ZOOM_MINIMO_ENCUADRE;
 }
+
+/**
+ * Cuánto hay que correr la vista cuando una hoja inferior tapa el mapa.
+ *
+ * EL PROBLEMA, EN PALABRAS DEL USUARIO: "que el mapa no se vaya tan
+ * arriba sino que esté en el centro... eso hace perderte mucho".
+ *
+ * Centrar un lote con setView lo pone en el medio del CONTENEDOR, pero
+ * la ficha y los formularios de carga son hojas que tapan desde abajo
+ * hasta el 70% de la pantalla. O sea que el punto "centrado" queda
+ * detrás de la hoja, y lo poco de mapa que se ve muestra todo corrido
+ * hacia arriba. El corredor pierde la referencia justo cuando más la
+ * necesita: mientras carga o mira un lote.
+ *
+ * La cuenta: si abajo hay C píxeles tapados, la franja visible va de 0 a
+ * (H - C) y su centro está en (H - C) / 2. El punto está en H / 2, así
+ * que hay que subirlo C / 2.
+ *
+ * @param altoCubierto píxeles tapados por la hoja abierta (0 si no hay)
+ * @param altoContenedor alto total del mapa, para no pasarse
+ * @returns píxeles a desplazar (0 si no hace falta mover nada)
+ */
+export function desplazamientoPorHojaAbierta(altoCubierto, altoContenedor) {
+  if (!(altoCubierto > 0) || !(altoContenedor > 0)) return 0;
+  // Si la hoja tapa todo, no hay franja visible que centrar: mover el
+  // mapa no arreglaría nada y dejaría el punto fuera de pantalla.
+  if (altoCubierto >= altoContenedor) return 0;
+  return Math.round(altoCubierto / 2);
+}

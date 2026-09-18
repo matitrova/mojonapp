@@ -18,7 +18,8 @@ import { db, auth } from "./firebase-config.js";
 import {
   ZOOM_MINIMO_ENCUADRE,
   centroDelGrupoMasNumeroso,
-  convieneEnfocarUnGrupo
+  convieneEnfocarUnGrupo,
+  desplazamientoPorHojaAbierta
 } from "./encuadre-mapa.js";
 import {
   collection,
@@ -729,3 +730,35 @@ const observadorHojas = new MutationObserver(sincronizarVisibilidadCatastroCerca
 document.querySelectorAll(".hoja-inferior, #ficha-lote").forEach((el) => {
   observadorHojas.observe(el, { attributes: true, attributeFilter: ["class"] });
 });
+
+
+/**
+ * Centra el mapa en un punto DEJÁNDOLO A LA VISTA.
+ *
+ * Reemplaza a mapa.setView([lat, lon], zoom) en todos los lugares que
+ * abren una ficha o un formulario: esas hojas tapan desde abajo hasta el
+ * 70% de la pantalla, así que un punto "centrado" queda detrás de la
+ * hoja y el mapa parece haberse ido para arriba (ver
+ * desplazamientoPorHojaAbierta en js/encuadre-mapa.js).
+ *
+ * Se mide la hoja que está abierta EN ESTE MOMENTO, no un valor fijo:
+ * la ficha, el formulario de carga y el editor de forma tienen alturas
+ * distintas, y además cambian con el contenido.
+ */
+export function centrarDejandoVer(lat, lon, zoom) {
+  mapa.setView([lat, lon], zoom, { animate: false });
+
+  const hoja = [...document.querySelectorAll(".hoja-inferior")].find(
+    (el) => !el.classList.contains("oculto")
+  );
+  if (!hoja) return;
+
+  const desplazamiento = desplazamientoPorHojaAbierta(
+    hoja.getBoundingClientRect().height,
+    mapa.getSize().y
+  );
+  // panBy positivo en Y corre la vista hacia abajo, o sea que el
+  // contenido (y el lote) sube: justo lo que hace falta para sacarlo de
+  // atrás de la hoja.
+  if (desplazamiento > 0) mapa.panBy([0, desplazamiento], { animate: false });
+}

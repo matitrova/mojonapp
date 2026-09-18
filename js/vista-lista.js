@@ -54,6 +54,7 @@ let db,
   collection,
   where,
   mapa,
+  centrarDejandoVer,
   mostrarFicha,
   tituloLote,
   puedeEditarLote,
@@ -75,6 +76,7 @@ export function configurarVistaLista(deps) {
     collection,
     where,
     mapa,
+    centrarDejandoVer,
     mostrarFicha,
     tituloLote,
     puedeEditarLote,
@@ -278,7 +280,7 @@ function irAFichaDesdeVistaLista(feature) {
   // vuelve a la lista.
   navegarA("/");
   const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
-  mapa.setView([lat, lon], 19);
+  centrarDejandoVer(lat, lon, 19);
   mostrarFicha(feature);
 }
 
