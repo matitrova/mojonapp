@@ -12,11 +12,10 @@ todas las paradas juntas; tocar un pin lleva a la ficha real con
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from playwright.sync_api import expect
 
 from conftest import (
-    TEST_USER_EMAIL,
-    TEST_USER_PASSWORD,
     _uid_de_prueba,
     borrar_contacto_de_prueba,
     borrar_lote_de_prueba,
@@ -24,17 +23,20 @@ from conftest import (
     crear_lote_de_prueba,
 )
 
+# Todos los tests de este archivo arrancan logueados: el login se hace
+# una sola vez por corrida (ver estado_de_sesion en conftest.py).
+pytestmark = pytest.mark.con_sesion
+
 
 def _hoy():
     return datetime.now(timezone.utc).date().isoformat()
 
 
 def _loguearse(page, base_url):
+    """Ya NO se loguea: el contexto viene con la sesión puesta (ver
+    estado_de_sesion en conftest.py y el marcador con_sesion de arriba).
+    Se conserva el nombre para no tocar los llamados."""
     page.goto(base_url)
-    page.locator("#btn-abrir-login").click()
-    page.locator("#login-email").fill(TEST_USER_EMAIL)
-    page.locator("#login-password").fill(TEST_USER_PASSWORD)
-    page.locator("[data-testid='login-submit']").click()
     expect(page.locator("#sesion-activa")).to_be_visible()
 
 

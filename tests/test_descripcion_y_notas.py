@@ -14,6 +14,7 @@ tiene que ver las notas por ningún lado. Ese es el criterio de éxito del
 cambio entero.
 """
 
+import pytest
 import uuid
 
 import requests
@@ -21,8 +22,6 @@ from playwright.sync_api import expect
 
 from conftest import (
     FIREBASE_PROJECT_ID,
-    TEST_USER_EMAIL,
-    TEST_USER_PASSWORD,
     _id_token_de_prueba,
     borrar_lote_de_prueba,
     crear_lote_de_prueba,
@@ -74,15 +73,16 @@ def _sembrar_nota(doc_id, texto):
 
 
 def _loguearse(page, base_url):
+    """Ya NO se loguea: el contexto viene con la sesión puesta (ver
+    estado_de_sesion en conftest.py y el marcador con_sesion de cada
+    test). Se conserva el nombre para no tocar los llamados."""
     page.goto(base_url)
-    page.locator("#btn-abrir-login").click()
-    page.locator("#login-email").fill(TEST_USER_EMAIL)
-    page.locator("#login-password").fill(TEST_USER_PASSWORD)
-    page.locator("[data-testid='login-submit']").click()
     expect(page.locator("#sesion-activa")).to_be_visible()
     page.locator("#cerrar-panel-dashboard").click()
 
 
+# SIN marcador a propósito: este test verifica qué se ve sin
+# sesión, así que necesita el contexto limpio.
 def test_un_visitante_sin_sesion_ve_la_descripcion_pero_nunca_las_notas(page, base_url):
     marcador = uuid.uuid4().hex[:8]
     doc_id = crear_lote_de_prueba(_lote(marcador))
@@ -116,6 +116,7 @@ def test_un_visitante_sin_sesion_ve_la_descripcion_pero_nunca_las_notas(page, ba
         borrar_lote_de_prueba(doc_id)
 
 
+@pytest.mark.con_sesion
 def test_con_sesion_las_notas_se_ven_en_la_ficha(page, base_url):
     marcador = uuid.uuid4().hex[:8]
     doc_id = crear_lote_de_prueba(_lote(marcador))
@@ -130,6 +131,7 @@ def test_con_sesion_las_notas_se_ven_en_la_ficha(page, base_url):
         borrar_lote_de_prueba(doc_id)
 
 
+@pytest.mark.con_sesion
 def test_editar_un_lote_guarda_cada_texto_en_su_lugar(page, base_url):
     marcador = uuid.uuid4().hex[:8]
     doc_id = crear_lote_de_prueba(_lote(marcador))
@@ -141,6 +143,13 @@ def test_editar_un_lote_guarda_cada_texto_en_su_lugar(page, base_url):
 
         page.locator("#editar-lote-notas").fill(nota_nueva)
         page.locator("[data-testid='editar-lote-guardar']").click()
+        # Esperar a que el formulario se cierre NO es decorativo: guardar
+        # son dos escrituras await (el lote y la subcolección de notas), y
+        # el form recién se oculta cuando las dos terminaron. Sin esto, el
+        # GET de abajo sale antes que la escritura y devuelve 404 — una
+        # carrera que no se notaba mientras cada test perdía ~3s
+        # logueándose, y que apareció al pasar al login único por corrida.
+        expect(page.locator("#lote-vista-editar")).to_be_hidden()
 
         # La nota tiene que haber ido a la subcolección, no al lote.
         guardada = requests.get(

@@ -15,12 +15,17 @@ solo se habían verificado a mano en vivo durante el desarrollo, sin
 ningún test que las cubriera para el futuro.
 """
 
+import pytest
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, FIRESTORE_URL_BASE
+from conftest import FIRESTORE_URL_BASE
 import requests
 
 from test_lotes import abrir_ficha_desde_lista
+
+# Todos los tests de este archivo arrancan logueados: el login se hace
+# una sola vez por corrida (ver estado_de_sesion en conftest.py).
+pytestmark = pytest.mark.con_sesion
 
 # Frente/Largo esperados del rectángulo de LOTE_PRUEBA_DATOS (calculado
 # con la misma fórmula que usa la app: proyección local equirectangular,
@@ -31,15 +36,17 @@ LARGO_ESPERADO = "22.3 m"
 
 
 def _loguearse(page):
-    page.locator("#btn-abrir-login").click()
-    page.locator("#login-email").fill(TEST_USER_EMAIL)
-    page.locator("#login-password").fill(TEST_USER_PASSWORD)
-    page.locator("[data-testid='login-submit']").click()
+    """Ya NO se loguea: el contexto viene con la sesión puesta (ver
+    estado_de_sesion en conftest.py y el marcador con_sesion de arriba).
+    Se conserva el nombre para no tocar los llamados.
+
+    A diferencia de los otros helpers, este NO navega: los tests de este
+    archivo ya hicieron su goto antes de llamarlo.
+    """
     expect(page.locator("#sesion-activa")).to_be_visible()
-    # El login abre el dashboard automático (ver formularioLogin en
-    # app.js) — como cualquier panel de pantalla completa de esta app,
-    # tapa hasta el botón de menú, así que hay que cerrarlo antes de
-    # poder seguir navegando.
+    # Con sesión, la app aterriza en el Dashboard — y como cualquier
+    # panel de pantalla completa tapa hasta el botón de menú, hay que
+    # cerrarlo antes de poder seguir navegando.
     page.locator("#cerrar-panel-dashboard").click()
     expect(page.locator("#panel-dashboard")).to_be_hidden()
 

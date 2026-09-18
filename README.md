@@ -189,3 +189,29 @@ borrar:
 ```bash
 python3 scripts/limpiar_datos_de_prueba.py
 ```
+
+### Un solo login por corrida
+
+Los tests no se loguean uno por uno: se hace **un** login y el resto
+arranca con la sesión ya puesta (ver `estado_de_sesion` en
+`tests/conftest.py`). Firebase Authentication limita las verificaciones
+de contraseña por día, y con ~140 por corrida esa cuota se agotaba en
+tres o cuatro corridas — y fallaba disfrazado de "Email o contraseña
+incorrectos", que se parece muchísimo a un bug real.
+
+Un test que necesita sesión lleva el marcador `con_sesion` (a nivel de
+archivo con `pytestmark`, o por test en los archivos que además prueban
+el comportamiento **sin** sesión). El que no lo lleva arranca anónimo.
+
+### Antes de commitear un cambio grande en los tests
+
+```bash
+python3 scripts/chequear_nombres.py && pytest tests/
+```
+
+`chequear_nombres.py` busca nombres usados y no definidos sin ejecutar
+nada. Cubre un agujero real: en Python los nombres se resuelven al
+ejecutar, así que un `page.goto(base_url)` dentro de una función que no
+recibe `base_url` compila bien y `pytest --collect-only` lo importa sin
+quejarse — el error recién aparece cuando ese test corre. Pasó dos veces
+el mismo día, las dos con cambios automatizados sobre ~40 archivos.

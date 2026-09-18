@@ -17,12 +17,11 @@ corredor se identifique como tal (y solo aparezca) en la vista "Todos".
 import uuid
 from datetime import date
 
+import pytest
 from playwright.sync_api import expect
 
 from conftest import (
     LOTE_PRUEBA_DATOS,
-    TEST_USER_EMAIL,
-    TEST_USER_PASSWORD,
     borrar_contacto_de_prueba,
     borrar_usuario_de_prueba,
     buscar_contacto_doc_id_por_nombre,
@@ -31,17 +30,20 @@ from conftest import (
     soltar_el_mouse,
 )
 
+# Todos los tests de este archivo arrancan logueados: el login se hace
+# una sola vez por corrida (ver estado_de_sesion en conftest.py).
+pytestmark = pytest.mark.con_sesion
+
 
 def _loguearse(page, base_url):
+    """Ya NO se loguea: el contexto viene con la sesión puesta (ver
+    estado_de_sesion en conftest.py y el marcador con_sesion de arriba).
+    Se conserva el nombre para no tocar los llamados."""
     page.goto(base_url)
-    page.locator("#btn-abrir-login").click()
-    page.locator("#login-email").fill(TEST_USER_EMAIL)
-    page.locator("#login-password").fill(TEST_USER_PASSWORD)
-    page.locator("[data-testid='login-submit']").click()
     expect(page.locator("#sesion-activa")).to_be_visible()
+    page.locator("#cerrar-panel-dashboard").click()
     # Mismo motivo que en test_lotes.py: el login abre el dashboard
     # automático y tapa el resto de la UI.
-    page.locator("#cerrar-panel-dashboard").click()
 
 
 def _abrir_crm(page):

@@ -113,6 +113,12 @@ def test_corredor_logueado_puede_cargar_un_lote(page, base_url):
     try:
         page.goto(base_url)
 
+        # Este login por el formulario se conserva A PROPÓSITO, y es el
+        # único de toda la suite: el resto de los tests arrancan con la
+        # sesión ya puesta (ver estado_de_sesion en conftest.py, que hace
+        # UN login por corrida para no agotar la cuota de verificación de
+        # contraseñas de Firebase). Si este también se convirtiera, nada
+        # quedaría probando que un corredor puede entrar de verdad.
         page.locator("#btn-abrir-login").click()
         page.locator("#login-email").fill(TEST_USER_EMAIL)
         page.locator("#login-password").fill(TEST_USER_PASSWORD)

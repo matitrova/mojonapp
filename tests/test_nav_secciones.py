@@ -16,20 +16,20 @@ sincronizarSeccionMapa en app.js) — por eso acá se sigue chequeando esa
 clase, aunque el usuario ya no la vea.
 """
 
+import pytest
 from playwright.sync_api import expect
 
-from conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD, soltar_el_mouse
+from conftest import soltar_el_mouse
 
 ANCHO_ESCRITORIO = {"width": 1200, "height": 900}
 
 
 def _loguearse(page, base_url):
+    """Ya NO se loguea: el contexto viene con la sesión puesta (ver
+    estado_de_sesion en conftest.py y el marcador con_sesion de cada
+    test). Se conserva el nombre para no tocar los llamados."""
     page.set_viewport_size(ANCHO_ESCRITORIO)
     page.goto(base_url)
-    page.locator("#btn-abrir-login").click()
-    page.locator("#login-email").fill(TEST_USER_EMAIL)
-    page.locator("#login-password").fill(TEST_USER_PASSWORD)
-    page.locator("[data-testid='login-submit']").click()
     expect(page.locator("#sesion-activa")).to_be_visible()
     page.locator("#cerrar-panel-dashboard").click()
     _soltar_el_mouse(page)
@@ -43,6 +43,8 @@ def _soltar_el_mouse(page):
     page.mouse.move(600, 400)
 
 
+# SIN marcador a propósito: este test verifica qué se ve sin
+# sesión, así que necesita el contexto limpio.
 def test_sin_sesion_no_hay_rail_y_el_menu_solo_muestra_lo_publico(page, base_url):
     page.set_viewport_size(ANCHO_ESCRITORIO)
     page.goto(base_url)
@@ -60,6 +62,7 @@ def test_sin_sesion_no_hay_rail_y_el_menu_solo_muestra_lo_publico(page, base_url
     expect(page.locator("#menu-seguridad-usuarios")).to_be_hidden()
 
 
+@pytest.mark.con_sesion
 def test_el_rail_muestra_los_4_modulos_y_cada_uno_lleva_a_su_pantalla(page, base_url):
     _loguearse(page, base_url)
 
@@ -93,6 +96,7 @@ def test_el_rail_muestra_los_4_modulos_y_cada_uno_lleva_a_su_pantalla(page, base
     expect(page.locator("#nav-tab-mapa")).to_have_class("nav-tab activo")
 
 
+@pytest.mark.con_sesion
 def test_abrir_el_menu_muestra_las_pantallas_agrupadas_por_categoria(page, base_url):
     _loguearse(page, base_url)
     page.locator("#btn-menu").click()
@@ -113,6 +117,7 @@ def test_abrir_el_menu_muestra_las_pantallas_agrupadas_por_categoria(page, base_
     expect(page.locator("#btn-cargar-lote")).to_be_hidden()
 
 
+@pytest.mark.con_sesion
 def test_en_celular_no_hay_rail_y_el_menu_se_abre_con_el_boton(page, base_url):
     _loguearse(page, base_url)
     page.set_viewport_size({"width": 375, "height": 812})

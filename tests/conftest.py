@@ -124,6 +124,88 @@ def base_url():
 
 
 # ---------------------------------------------------------------------------
+# Un solo login por corrida
+#
+# POR QUÉ. Cada test se logueaba por la UI, o sea ~140 verificaciones de
+# contraseña por corrida. Firebase Authentication tiene una cuota propia
+# para eso, aparte de la de Firestore, y se agota con tres o cuatro
+# corridas seguidas.
+#
+# Lo caro no es el límite sino cómo se disfraza: Firebase devuelve
+# "QUOTA_EXCEEDED: Exceeded quota for verifying passwords", la app
+# muestra "Email o contraseña incorrectos", y en los tests aparece como
+# un timeout esperando #sesion-activa — o, todavía más confuso, como un
+# fill("#login-email") que dice "element is not visible". Se parece
+# muchísimo a un bug real; ya costó horas de diagnóstico y 13 fallos de
+# una corrida completa que no eran fallos de nada.
+#
+# CÓMO. Se hace UN login por corrida y se guarda el estado del navegador;
+# cada test que lo pide arranca con ese estado ya puesto. Firebase guarda
+# la sesión en IndexedDB, que storage_state() históricamente no capturaba
+# — de ahí el indexed_db=True, que existe desde Playwright 1.51.
+#
+# Es OPT-IN, con el marcador "con_sesion", y no al revés: hay 19 archivos
+# que nunca loguean (favoritos anónimo, compartir lote, el catálogo
+# público) a los que una sesión les cambiaría la pantalla debajo de los
+# pies, y 4 tests que verifican justamente qué se ve SIN sesión.
+# ---------------------------------------------------------------------------
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "con_sesion: el test arranca ya logueado (ver estado_de_sesion en conftest.py)",
+    )
+
+
+@pytest.fixture(scope="session")
+def estado_de_sesion(browser, base_url, tmp_path_factory):
+    """Hace EL login de la corrida y devuelve la ruta al estado guardado."""
+    ruta = tmp_path_factory.mktemp("sesion") / "estado.json"
+    contexto = browser.new_context()
+    pagina = contexto.new_page()
+    try:
+        pagina.goto(base_url)
+        pagina.locator("#btn-abrir-login").click()
+        pagina.locator("#login-email").fill(TEST_USER_EMAIL)
+        pagina.locator("#login-password").fill(TEST_USER_PASSWORD)
+        pagina.locator("[data-testid='login-submit']").click()
+        pagina.wait_for_selector("#sesion-activa:not(.oculto)", timeout=20000)
+    except Exception as error:  # noqa: BLE001
+        # Mensaje propio: si esto falla, falla TODA la suite, y sin
+        # aclararlo parece que el roto fuera el primer test que corra.
+        raise RuntimeError(
+            "No se pudo hacer el login inicial de la corrida (el único que se hace). "
+            f"Usuario {TEST_USER_EMAIL} en el proyecto {FIREBASE_PROJECT_ID}. "
+            "Si Firebase devolvió QUOTA_EXCEEDED, es la cuota de verificación de "
+            "contraseñas: se repone sola en ~1 hora."
+        ) from error
+    finally:
+        # indexed_db=True es lo que hace que la sesión de Firebase viaje:
+        # el SDK la guarda ahí, no en localStorage.
+        if not pagina.is_closed():
+            contexto.storage_state(path=str(ruta), indexed_db=True)
+        contexto.close()
+    return str(ruta)
+
+
+@pytest.fixture
+def context(browser, browser_context_args, request, estado_de_sesion):
+    """Reemplaza al `context` de pytest-playwright para inyectar la sesión.
+
+    Se sobrescribe ESTE y no `page` a propósito: pytest-playwright arma
+    `page` a partir de acá, así que los tests siguen recibiendo `page` y
+    no hubo que tocar ninguna firma ni ningún cuerpo de test.
+    """
+    args = dict(browser_context_args)
+    if request.node.get_closest_marker("con_sesion"):
+        args["storage_state"] = estado_de_sesion
+    contexto = browser.new_context(**args)
+    yield contexto
+    contexto.close()
+
+
+# ---------------------------------------------------------------------------
 # Helpers de Firestore/Auth por API REST: los tests siembran y borran sus
 # propios datos de prueba en el proyecto real de Firebase (no hay emulador
 # instalado en esta máquina), así cada corrida es independiente y no deja
@@ -488,8 +570,30 @@ def soltar_el_mouse(page):
 # Lo cubre tests/test_limpieza_datos_de_prueba.py.
 PATRON_DATO_DE_PRUEBA = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+)*-(?=[0-9a-f]*[a-f])[0-9a-f]{8}$")
 
-# De qué campo sale el nombre visible de cada colección.
-CAMPO_NOMBRE_POR_COLECCION = {"contactos": "nombre", "lotes": "manzana"}
+# En qué campos puede estar el marcador, por colección. Son VARIOS a
+# propósito: los tests lo ponen donde después lo van a buscar, y eso
+# cambia según el test.
+#
+# En "lotes" el caso que se escapó: test_corredor_logueado_puede_cargar_un_lote
+# escribe el marcador en la descripción (antes "observaciones") porque es
+# el único campo que la UI de alta expone y que el test puede leer
+# después por REST para encontrar el documento — la manzana la elige el
+# usuario. Mirando solo "manzana", el limpiador reportaba "0 sobrantes"
+# mientras había 41 lotes de prueba en producción, más de un cuarto del
+# inventario del cliente, visibles en el mapa y en el Dashboard.
+#
+# "observaciones" y "descripcion" son el mismo campo antes y después del
+# renombre del 2026-09-16 (ver la separación descripción / notas
+# internas): se miran los dos, porque en producción conviven documentos
+# viejos y nuevos.
+#
+# El patrón exige que el campo COMPLETO sea el marcador, así que un texto
+# largo del importador de catastro —que es lo que tienen casi todos los
+# lotes reales en ese campo— no matchea.
+CAMPOS_CON_MARCADOR = {
+    "contactos": ("nombre",),
+    "lotes": ("manzana", "descripcion", "observaciones"),
+}
 
 # Solo se borra lo creado hace más de esto. Es la protección contra
 # borrarle los datos a una corrida que está pasando AHORA (dos sesiones
@@ -524,7 +628,7 @@ def datos_de_prueba_sobrantes():
     """Los documentos de prueba viejos, por colección. Solo lee."""
     id_token = _id_token_de_prueba()
     sobrantes = {}
-    for coleccion, campo in CAMPO_NOMBRE_POR_COLECCION.items():
+    for coleccion, campos in CAMPOS_CON_MARCADOR.items():
         encontrados, pagina = [], None
         while True:
             parametros = {"pageSize": 300}
@@ -539,12 +643,23 @@ def datos_de_prueba_sobrantes():
             respuesta.raise_for_status()
             datos = respuesta.json()
             for doc in datos.get("documents", []):
-                nombre = doc.get("fields", {}).get(campo, {}).get("stringValue", "")
-                if not PATRON_DATO_DE_PRUEBA.match(nombre):
+                valores = doc.get("fields", {})
+                # El marcador puede estar en cualquiera de los campos de
+                # la colección; alcanza con que UNO sea exactamente el
+                # marcador para que el documento sea de prueba.
+                marcador = next(
+                    (
+                        valores.get(c, {}).get("stringValue", "")
+                        for c in campos
+                        if PATRON_DATO_DE_PRUEBA.match(valores.get(c, {}).get("stringValue", "") or "")
+                    ),
+                    None,
+                )
+                if marcador is None:
                     continue
                 if _antiguedad_en_minutos(doc) < MINUTOS_PARA_CONSIDERAR_SOBRANTE:
                     continue
-                encontrados.append((doc["name"].rsplit("/", 1)[-1], nombre))
+                encontrados.append((doc["name"].rsplit("/", 1)[-1], marcador))
             pagina = datos.get("nextPageToken")
             if not pagina:
                 break
