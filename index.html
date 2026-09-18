@@ -48,7 +48,21 @@
      este número cada vez que se edite alguno de los dos archivos, o un
      navegador que ya tenía la app abierta puede quedarse sirviendo la
      versión vieja cacheada después de un deploy. -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- LEAFLET SE SIRVE DESDE ACÁ, NO DESDE UN CDN, y vale contar por qué.
+     Antes venía de unpkg.com. El <script> de Leaflet es un script normal
+     y bloqueante, y js/mapa.js hace L.map(...) al evaluarse: si unpkg no
+     contesta, `L` no existe, mapa.js explota, y como app.js lo importa
+     NO ARRANCA NADA MÁS — ni el login, ni el CRM, ni el dashboard.
+     Queda el encabezado (que es HTML estático) y el resto en blanco,
+     sin ningún aviso.
+     Verificado bloqueando el dominio a propósito, y visto en vivo 3
+     veces sobre 6 recargas con un ERR_CONNECTION_RESET de unpkg — era
+     también la causa de tests que fallaban "sin motivo".
+     Ahora los archivos están en vendor/leaflet (bajados de unpkg, misma
+     versión 1.9.4, verificados por sha256 contra el original): si la app
+     carga, Leaflet cargó. Para actualizarlo, bajar de nuevo los dos
+     archivos y la carpeta images/ de la versión nueva. -->
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css?v=1.9.4" />
 <!-- Nunito Sans (pedido explícito del usuario: que la app se vea/sienta
      como Tokko Broker) — con font-display:swap el texto arranca con la
      fuente del sistema y cambia sola cuando termina de cargar, nunca
@@ -61,7 +75,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-01" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-02" />
 </head>
 <body>
 
@@ -1960,10 +1974,14 @@
     </button>
   </nav>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Desde vendor/ y no desde unpkg: ver el comentario largo junto a
+       leaflet.css, arriba. En una palabra: si este script no carga, no
+       arranca NINGUNA parte de la app, así que no puede depender de un
+       servidor ajeno. -->
+  <script src="/vendor/leaflet/leaflet.js?v=1.9.4"></script>
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-01"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-02"></script>
 </body>
 </html>
