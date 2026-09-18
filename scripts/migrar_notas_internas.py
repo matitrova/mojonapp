@@ -38,6 +38,11 @@ ES SEGURO CORRERLO DOS VECES. Por cada lote: primero ESCRIBE la nota,
 después vacía "observaciones". En ese orden a propósito — si se corta en
 el medio, el dato queda duplicado, nunca perdido. Y si el lote ya tiene su
 nota, lo saltea.
+
+NO MIGRA EL TEXTO DEL IMPORTADOR. A los lotes cuya observación es
+exactamente una de las frases que escribe el importador de catastro se
+les vacía el campo sin crearles nota — ver TEXTOS_DEL_IMPORTADOR más
+abajo, que explica por qué (en producción eran 107 de 108).
 """
 
 import argparse
@@ -87,6 +92,32 @@ def iniciar_sesion():
         }
         sys.exit(f"No se pudo iniciar sesión — {explicaciones.get(codigo, codigo)}")
     return respuesta.json()["idToken"]
+
+
+# Textos que escribe el importador de catastro, no una persona.
+#
+# POR QUÉ SE DISTINGUEN. El dry-run contra producción mostró 108 lotes
+# con "observaciones", y 107 de ellos decían exactamente una de estas dos
+# frases: son metadatos del importador, no la libreta del corredor. La
+# única nota escrita por una persona era "Parcela Tito".
+#
+# Migrarlas a notas internas habría creado 107 notas privadas diciendo
+# "Importado automáticamente del catastro", visibles en la ficha de cada
+# lote — ruido en todas las pantallas, y sacarlas después habría sido
+# otra migración. Así que a estas se les vacía el campo y nada más: que
+# el lote vino del catastro ya lo dice su nomenclatura.
+#
+# La comparación es por texto EXACTO a propósito. Si alguien escribió una
+# nota de verdad que además menciona el catastro, no matchea y se migra
+# como corresponde — ante la duda, se conserva.
+TEXTOS_DEL_IMPORTADOR = (
+    "Importado automáticamente del catastro de San Luis.",
+    "Importado del catastro de San Luis (parcela individual).",
+)
+
+
+def es_del_importador(texto):
+    return texto.strip() in TEXTOS_DEL_IMPORTADOR
 
 
 def traer_lotes(token):
@@ -148,29 +179,34 @@ def main():
     lotes = traer_lotes(token)
     print(f"\n{len(lotes)} lotes en total.")
 
-    pendientes = []
+    con_nota, solo_vaciar = [], []
     for documento in lotes:
         observaciones = documento.get("fields", {}).get("observaciones", {}).get("stringValue", "").strip()
-        if observaciones:
-            pendientes.append((documento["name"].rsplit("/", 1)[-1], observaciones))
+        if not observaciones:
+            continue
+        lote_id = documento["name"].rsplit("/", 1)[-1]
+        (solo_vaciar if es_del_importador(observaciones) else con_nota).append((lote_id, observaciones))
 
-    if not pendientes:
+    if not con_nota and not solo_vaciar:
         print("Ninguno tiene observaciones cargadas. No hay nada que migrar.")
         return
 
-    print(f"{len(pendientes)} con observaciones para pasar a notas internas.\n")
-    for lote_id, texto in pendientes:
+    print(f"{len(con_nota)} con una nota escrita por una persona, que pasa a notas internas:\n")
+    for lote_id, texto in con_nota:
         recorte = texto if len(texto) <= 70 else texto[:67] + "..."
         print(f"  {lote_id}  {recorte}")
+
+    print(f"\n{len(solo_vaciar)} con texto del importador, a los que solo se les vacía el campo")
+    print("(no se les crea nota: ver el comentario de TEXTOS_DEL_IMPORTADOR).")
 
     if not args.aplicar:
         print("\nDry-run: no se escribió nada. Volvé a correrlo con --aplicar para hacerlo de verdad.")
         return
 
     print()
-    migrados = salteados = 0
+    migrados = salteados = vaciados = 0
     fecha = datetime.now(timezone.utc).isoformat()
-    for lote_id, texto in pendientes:
+    for lote_id, texto in con_nota:
         if ya_tiene_nota(token, lote_id):
             print(f"  {lote_id}: ya tenía nota, se saltea")
             salteados += 1
@@ -180,7 +216,13 @@ def main():
         print(f"  {lote_id}: migrado")
         migrados += 1
 
-    print(f"\nListo: {migrados} migrados, {salteados} salteados.")
+    for lote_id, _ in solo_vaciar:
+        vaciar_observaciones(token, lote_id)
+        vaciados += 1
+    if vaciados:
+        print(f"  {vaciados} con texto del importador: campo vaciado, sin nota")
+
+    print(f"\nListo: {migrados} migrados, {salteados} salteados, {vaciados} vaciados sin nota.")
 
 
 if __name__ == "__main__":
