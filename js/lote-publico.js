@@ -21,6 +21,8 @@ import { subirFotoACloudinary } from "./ficha.js";
 import { db, auth } from "./firebase-config.js";
 import { doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { crearContactoDesdeInteresado } from "./crm-datos.js";
+// Las mismas reglas que aplica functions/consulta-lote.js del otro lado.
+import { validarConsulta } from "./consulta-lote.js";
 
 const elPanel = document.getElementById("panel-lote-publico");
 const elTitulo = document.getElementById("lp-titulo");
@@ -40,6 +42,7 @@ const elSubirEstado = document.getElementById("lp-subir-estado");
 const elForm = document.getElementById("lp-form");
 const elFormMensaje = document.getElementById("lp-form-mensaje");
 const elWhatsapp = document.getElementById("lp-whatsapp");
+const elTrampa = document.getElementById("lp-apellido");
 
 const SERVICIOS = [
   { clave: "luz", etiqueta: "Luz" },
@@ -256,10 +259,24 @@ elSubirInput.addEventListener("change", async () => {
 // Consulta del comprador
 // ---------------------------------------------------------------------------
 
+// El botón de WhatsApp se lleva lo que ya haya escrito en el
+// formulario. Si alguien llenó sus datos y el envío falló, o si
+// directamente prefiere WhatsApp, no tiene que escribirlos de nuevo —
+// escribirlos dos veces es donde se abandona una consulta.
 function abrirWhatsapp() {
   if (!loteActual) return;
-  const texto = encodeURIComponent(mensajeDeWhatsapp(loteActual.properties));
-  window.open(`https://wa.me/?text=${texto}`, "_blank", "noopener");
+  const nombre = document.getElementById("lp-nombre").value.trim();
+  const telefono = document.getElementById("lp-telefono").value.trim();
+  const email = document.getElementById("lp-email").value.trim();
+  const mensaje = document.getElementById("lp-mensaje").value.trim();
+
+  const partes = [mensajeDeWhatsapp(loteActual.properties)];
+  if (nombre) partes.push(`\nNombre: ${nombre}`);
+  if (telefono) partes.push(`Teléfono: ${telefono}`);
+  if (email) partes.push(`Email: ${email}`);
+  if (mensaje) partes.push(`\n${mensaje}`);
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(partes.join("\n"))}`, "_blank", "noopener");
 }
 
 elWhatsapp.addEventListener("click", abrirWhatsapp);
@@ -274,38 +291,68 @@ elForm.addEventListener("submit", async (evento) => {
   const mensaje = document.getElementById("lp-mensaje").value.trim();
   if (!nombre || !telefono) return;
 
+  // Se valida acá también, con las MISMAS reglas que usa el servidor
+  // (js/consulta-lote.js), nada más que para no hacer viajar un pedido
+  // que va a rebotar y para poder decir qué falta al instante. La que
+  // vale es la del servidor: este endpoint es público y cualquiera puede
+  // postearle sin pasar por este formulario.
+  const validacion = validarConsulta({ loteId: loteActual.id, nombre, telefono, email, mensaje });
   elFormMensaje.classList.remove("oculto");
+  if (!validacion.ok) {
+    elFormMensaje.textContent = validacion.error;
+    return;
+  }
+
   elFormMensaje.textContent = "Enviando...";
 
-  // GUARDAR LA CONSULTA REQUIERE SESIÓN. Las reglas de Firestore exigen
-  // estar autenticado para crear un contacto (ver firestore.rules), así
-  // que un comprador anónimo no puede dejar su consulta en el CRM tal
-  // como está hoy. Se resuelve habilitando el acceso anónimo en Firebase
-  // más una regla acotada; mientras tanto, en vez de fallar, la consulta
-  // se manda por WhatsApp con los datos ya escritos. Pierde el registro
-  // automático, pero el comprador no pierde el contacto — que es lo que
-  // no se puede perder.
-  if (!auth.currentUser) {
-    const texto = encodeURIComponent(
-      `${mensajeDeWhatsapp(loteActual.properties)}\n\nNombre: ${nombre}\nTeléfono: ${telefono}` +
-        (email ? `\nEmail: ${email}` : "") +
-        (mensaje ? `\n\n${mensaje}` : "")
-    );
-    window.open(`https://wa.me/?text=${texto}`, "_blank", "noopener");
-    elFormMensaje.textContent = "Te abrimos WhatsApp con la consulta lista para enviar.";
+  // GUARDAR LA CONSULTA NECESITA SESIÓN, Y EL COMPRADOR NO TIENE.
+  //
+  // Las reglas de Firestore exigen estar autenticado para crear un
+  // contacto, así que este formulario no puede escribir en la base desde
+  // el navegador. Escribe functions/consulta-lote.js, del lado del
+  // servidor, con una cuenta propia de la app hecha para esto. Acá solo
+  // se postea.
+  //
+  // Con sesión abierta (el corredor mirando su propia publicación) se
+  // sigue usando el camino de siempre, que además junta la consulta con
+  // un contacto que ya exista con ese teléfono en vez de duplicarlo.
+  if (auth.currentUser) {
+    try {
+      await crearContactoDesdeInteresado({
+        nombre,
+        telefono,
+        nota: [mensaje, email ? `Email: ${email}` : null].filter(Boolean).join(" · ") || null,
+        feature: loteActual
+      });
+      elForm.reset();
+      elFormMensaje.textContent = "¡Listo! Tu consulta quedó registrada, te vamos a contactar.";
+    } catch {
+      elFormMensaje.textContent = "No se pudo enviar la consulta. Probá por WhatsApp.";
+    }
     return;
   }
 
   try {
-    await crearContactoDesdeInteresado({
-      nombre,
-      telefono,
-      nota: [mensaje, email ? `Email: ${email}` : null].filter(Boolean).join(" · ") || null,
-      feature: loteActual
+    const respuesta = await fetch("/consulta-lote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...validacion.consulta,
+        // El campo trampa viaja tal cual lo dejó quien llenó el
+        // formulario: vacío si fue una persona.
+        apellido: elTrampa.value
+      })
     });
+    const datos = await respuesta.json().catch(() => ({}));
+    if (!respuesta.ok) throw new Error(datos.error || "falló");
     elForm.reset();
     elFormMensaje.textContent = "¡Listo! Tu consulta quedó registrada, te vamos a contactar.";
-  } catch {
-    elFormMensaje.textContent = "No se pudo enviar la consulta. Probá por WhatsApp.";
+  } catch (error) {
+    // SI FALLA NO SE PIERDE LA CONSULTA. El botón de WhatsApp de acá
+    // abajo ya se lleva lo que la persona escribió (ver abrirWhatsapp),
+    // así que alcanza con mandarla ahí: se pierde el registro
+    // automático, no el contacto — que es lo que no se puede perder.
+    const detalle = error.message && error.message !== "falló" ? `${error.message} ` : "";
+    elFormMensaje.textContent = `${detalle}Mandanos la consulta por WhatsApp: el botón de abajo ya la lleva escrita.`;
   }
 });

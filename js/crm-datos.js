@@ -141,11 +141,33 @@ export async function cargarContactos() {
   try {
     const verTodas = getModoVista() === "todas" && puedeVerTodosLosContactos();
     const base = collection(db, COLECCION_CONTACTOS);
-    const consulta = verTodas
-      ? query(base, limit(LIMITE_CONTACTOS))
-      : query(base, where("asignado_a", "==", auth.currentUser?.uid || "__sin_sesion__"), limit(LIMITE_CONTACTOS));
-    const snapshot = await getDocs(consulta);
-    const contactos = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    let docs;
+    if (verTodas) {
+      docs = (await getDocs(query(base, limit(LIMITE_CONTACTOS)))).docs;
+    } else {
+      // DOS CONSULTAS, no una: las propias Y las que no son de nadie.
+      //
+      // Las consultas que entran por la página pública se guardan sin
+      // asignar (ver contactoDesdeConsulta en js/consulta-lote.js): las
+      // escribe una cuenta de servicio, no una persona. Con la consulta
+      // de antes —solo asignado_a == mi uid— un corredor sin permiso de
+      // "ver todos" no las veía NUNCA: el lead entraba bien al CRM y no
+      // aparecía en la pantalla de nadie.
+      //
+      // Firestore no tiene OR entre dos igualdades sin índice compuesto
+      // (y este proyecto no tiene CLI para crear índices, ver el
+      // comentario de arriba), así que son dos consultas y se juntan
+      // acá. Son dos lecturas en vez de una, en una pantalla que se abre
+      // de a ratos: barato al lado de perder un lead.
+      const [mias, sinAsignar] = await Promise.all([
+        getDocs(query(base, where("asignado_a", "==", auth.currentUser?.uid || "__sin_sesion__"), limit(LIMITE_CONTACTOS))),
+        getDocs(query(base, where("asignado_a", "==", null), limit(LIMITE_CONTACTOS)))
+      ]);
+      docs = [...mias.docs, ...sinAsignar.docs];
+    }
+
+    const contactos = docs.map((d) => ({ id: d.id, ...d.data() }));
     contactos.sort((a, b) => (b.fecha_actualizacion || "").localeCompare(a.fecha_actualizacion || ""));
     setContactosActuales(contactos);
   } catch {

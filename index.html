@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-12" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-13" />
 </head>
 <body>
 
@@ -1376,6 +1376,18 @@
               <label for="lp-mensaje">Mensaje
                 <textarea id="lp-mensaje" rows="3" maxlength="500" data-testid="lp-mensaje"></textarea>
               </label>
+              <!-- Campo trampa para bots. No lo ve ni lo puede llenar una
+                   persona (está escondido por CSS y fuera del orden de
+                   tabulación); los robots que rellenan formularios leen el
+                   HTML y completan todo lo que encuentran, así que un valor
+                   acá es la firma de uno. aria-hidden y tabindex="-1" para
+                   que tampoco lo anuncie un lector de pantalla: una persona
+                   ciega no tiene por qué toparse con una trampa.
+                   Ver pareceRobot en js/consulta-lote.js. -->
+              <div class="lp-trampa" aria-hidden="true">
+                <label for="lp-apellido">No completes este campo</label>
+                <input type="text" id="lp-apellido" name="apellido" tabindex="-1" autocomplete="off" data-testid="lp-apellido" />
+              </div>
               <p id="lp-form-mensaje" class="oculto" data-testid="lp-form-mensaje"></p>
               <button type="submit" id="lp-enviar" data-testid="lp-enviar">Enviar consulta</button>
             </form>
@@ -2217,6 +2229,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-12"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-13"></script>
 </body>
 </html>

@@ -5403,6 +5403,17 @@ body:not(.en-el-mapa) #btn-flotante-interes-crm {
   cursor: pointer;
 }
 
+/* El campo trampa: fuera de la pantalla en vez de display:none, porque
+   algunos bots saltean lo que está explícitamente oculto. Para una
+   persona es invisible igual. */
+.lp-trampa {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 #lp-form-mensaje {
   margin: 8px 0;
   padding: 8px 10px;
