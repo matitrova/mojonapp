@@ -5172,8 +5172,11 @@ body:not(.en-el-mapa) #btn-flotante-interes-crm {
    información una hoja encima.
    --------------------------------------------------------------------------- */
 
+/* Centrado, no pegado a la izquierda: en una pantalla ancha el
+   max-width solo dejaba un hueco muerto de 300px a la derecha. */
 #lp-contenido {
   max-width: 1100px;
+  margin-inline: auto;
 }
 
 /* --- Galería --- */
