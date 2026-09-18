@@ -200,10 +200,23 @@ def main():
 
     print(f"Proyecto: {conftest.FIREBASE_PROJECT_ID}\n")
 
-    lotes_ya = {(texto(d, "manzana"), texto(d, "lote")) for d in existentes("lotes")}
+    # La clave incluye el SECTOR y no solo manzana+lote. Con (manzana,
+    # lote) sola pasó esto: en el proyecto de pruebas —que se comparte con
+    # la suite— había un documento con manzana "8" y lote "6" que no era de
+    # la demo, así que el lote 12 se salteó por "ya existe" y la demo quedó
+    # sin su único lote VENDIDO. Con las métricas de venta del Dashboard en
+    # cero, que es exactamente lo que la demo existe para evitar.
+    #
+    # Los lotes de la demo siempre tienen sector cargado; los que dejan los
+    # tests y el importador de catastro, no. Eso hace la clave lo bastante
+    # específica sin inventar un campo marcador.
+    def clave(manzana, numero, sector):
+        return (manzana, numero, sector)
+
+    lotes_ya = {clave(texto(d, "manzana"), texto(d, "lote"), texto(d, "sector")) for d in existentes("lotes")}
     contactos_ya = {texto(d, "nombre") for d in existentes("contactos")}
 
-    lotes_nuevos = [l for l in LOTES if (l["manzana"], l["lote"]) not in lotes_ya]
+    lotes_nuevos = [l for l in LOTES if clave(l["manzana"], l["lote"], l["sector"]) not in lotes_ya]
     contactos_nuevos = [c for c in CONTACTOS if c[0] not in contactos_ya]
 
     print(f"Lotes:     {len(lotes_nuevos)} a crear, {len(LOTES) - len(lotes_nuevos)} ya estaban")
@@ -253,6 +266,20 @@ def main():
         print(f"  contacto creado: {nombre} ({doc_id})")
 
     print(f"\nListo: {len(lotes_nuevos)} lotes y {len(contactos_nuevos)} contactos.")
+
+    # Verificar contra la base, no confiar en que no saltó ninguna
+    # excepción. Es la lección de la corrida anterior: el script terminó
+    # sin error y sin embargo faltaba un lote, porque el salteo por
+    # idempotencia es silencioso por diseño. Un "listo" que no comprueba
+    # nada es exactamente el tipo de verde falso que ya nos costó horas.
+    quedaron = {clave(texto(d, "manzana"), texto(d, "lote"), texto(d, "sector")) for d in existentes("lotes")}
+    faltan = [l for l in LOTES if clave(l["manzana"], l["lote"], l["sector"]) not in quedaron]
+    if faltan:
+        print("\nPERO FALTAN en la base, revisar:")
+        for l in faltan:
+            print(f"  Mz {l['manzana']} lote {l['lote']} — {l['sector']} ({l['estado']})")
+        sys.exit(1)
+    print(f"Verificado: los {len(LOTES)} lotes de la demo están en la base.")
 
 
 if __name__ == "__main__":
