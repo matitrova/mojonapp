@@ -453,7 +453,14 @@ export function mostrarEditarLoteDesdeGrilla(feature) {
   elEditarLoteNotas.value = "";
   leerNotasInternas(feature.id).then((texto) => {
     // Pudo haberse abierto la edición de otro lote mientras respondía.
-    if (loteEditandoDesdeGrilla === feature) elEditarLoteNotas.value = texto || "";
+    if (loteEditandoDesdeGrilla !== feature) return;
+    // Y tampoco se pisa lo que el corredor YA empezó a escribir: esta
+    // respuesta llega DESPUÉS de que el formulario está en pantalla, así
+    // que sin este chequeo el texto tipeado en el medio se perdía sin
+    // aviso — y si el lote no tenía notas, se perdía reemplazado por
+    // vacío. La ventana es una lectura a Firestore: en la conexión rural
+    // que este proyecto tiene como caso normal, más de un segundo.
+    if (elEditarLoteNotas.value === "") elEditarLoteNotas.value = texto || "";
   });
   elEditarLoteError.classList.add("oculto");
 
