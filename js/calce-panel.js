@@ -43,7 +43,33 @@ export function configurarCalce(seguimiento) {
   calce = seguimiento;
 }
 
+// EL INTERRUPTOR. En false el botón no existe para NADIE, ni para root,
+// y no hay forma de llegar al panel desde la app.
+//
+// Decisión del usuario el 2026-09-18: no quiere esta función suelta en
+// producción mientras no la haya probado él en una zona que conoce.
+// Calzar es a ojo y un calce mal hecho desalinea el mapa para todo el
+// equipo.
+//
+// POR QUÉ UNA CONSTANTE Y NO UN PERMISO NUEVO, que fue lo primero que
+// intenté: un permiso que root no se saltee no se puede prender, porque
+// el perfil root no se edita desde el panel de Usuarios a propósito
+// (ver el comentario en js/admin.js, "siempre tiene todos los permisos,
+// por definición"). Habría quedado un interruptor imposible de mover.
+//
+// PARA PRENDERLO: poner true acá. Desde ese momento vuelve a regir el
+// permiso de siempre (administrar_sectores), que es exactamente lo que
+// pide la regla de Firestore para escribir en calces_imagen — así la
+// app y la regla no se pueden desacoplar.
+//
+// El resto del calce NO está apagado, y es a propósito: si alguna zona
+// ya tiene una corrección guardada, se sigue aplicando en el mapa y en
+// la página pública (ver seguirElCalce en js/calce-aplicar.js). Lo que
+// se apaga es la posibilidad de CREAR o cambiar una.
+export const CALZAR_HABILITADO = false;
+
 export function puedeCalzar() {
+  if (!CALZAR_HABILITADO) return false;
   return !!auth.currentUser && (esRootActual() || tienePermiso("administrar_sectores"));
 }
 

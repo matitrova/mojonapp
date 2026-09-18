@@ -16,12 +16,44 @@ El panel de calibración pide permiso para guardar, así que esa parte va
 con sesión; que la foto se mueva no lo pide.
 """
 
+import re
 import uuid
+from pathlib import Path
 
 import pytest
 from playwright.sync_api import expect
 
 from conftest import borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+
+RAIZ = Path(__file__).resolve().parents[1]
+
+# ¿Está prendido el interruptor? Se lee del código y no de la app para
+# poder saltear los tests del panel al RECOLECTARLOS, sin levantar un
+# navegador para descubrir que el botón no existe.
+#
+# Los tests del panel se quedan (no se borran) porque la función está
+# entera y probada: el día que se prenda CALZAR_HABILITADO vuelven a
+# correr solos, y si se borraran nadie se acordaría de reescribirlos.
+CALZE_HABILITADO = bool(
+    re.search(
+        r"CALZAR_HABILITADO\s*=\s*true",
+        (RAIZ / "js" / "calce-panel.js").read_text(),
+    )
+)
+
+solo_si_esta_prendido = pytest.mark.skipif(
+    not CALZE_HABILITADO,
+    reason="CALZAR_HABILITADO está en false en js/calce-panel.js: el botón no existe para nadie",
+)
+
+# El espejo del anterior. El test que comprueba "apagado quiere decir
+# apagado" describe UN estado, no una verdad permanente: con el
+# interruptor prendido tiene que saltearse, no fallar. Sin esto, prender
+# la función rompía un test y parecía un bug.
+solo_si_esta_apagado = pytest.mark.skipif(
+    CALZE_HABILITADO,
+    reason="CALZAR_HABILITADO está en true: la función está prendida a propósito",
+)
 
 GEOMETRIA = {
     "type": "Polygon",
@@ -158,6 +190,11 @@ def _fijar_la_vista(page):
     )
 
 
+def _calce_habilitado(page):
+    """¿Está prendido el interruptor de js/calce-panel.js?"""
+    return page.evaluate("() => import('/js/calce-panel.js').then((m) => m.CALZAR_HABILITADO)")
+
+
 def _abrir_el_panel(page, base_url):
     _ir_al_lote(page, base_url, con_sesion=True)
     # De nuevo acá, no solo en _ir_al_lote: entre medio hubo un
@@ -265,6 +302,46 @@ def test_un_visitante_sin_sesion_no_ve_el_boton_de_calzar(page, base_url):
     expect(page.locator("#btn-calzar-foto")).to_be_hidden()
 
 
+@solo_si_esta_apagado
+@pytest.mark.con_sesion
+def test_con_el_interruptor_apagado_nadie_ve_el_boton_ni_siendo_root(page, base_url):
+    """EL INTERRUPTOR, que es el estado en el que sale a producción.
+
+    Decisión del usuario: la función no va suelta hasta que él la pruebe
+    en una zona que conoce. La cuenta de los tests es root, así que este
+    test prueba justo el caso que un permiso común no podía cubrir —
+    root se saltea todos los permisos, y por eso el interruptor es una
+    constante y no un permiso (ver CALZAR_HABILITADO en
+    js/calce-panel.js).
+    """
+    _ir_al_lote(page, base_url, con_sesion=True)
+    assert _calce_habilitado(page) is False, (
+        "el interruptor quedó prendido: revisá CALZAR_HABILITADO en js/calce-panel.js"
+    )
+    soltar_el_mouse(page)
+    page.locator("#fab-carga-boton").click()
+    # El flotante se abre y ofrece todo lo demás, pero no esto.
+    expect(page.locator("#btn-cargar-lote")).to_be_visible()
+    expect(page.locator("#btn-calzar-foto")).to_be_hidden()
+    expect(page.locator("#panel-calce")).to_be_hidden()
+
+
+def test_un_calce_ya_guardado_se_sigue_aplicando_con_el_interruptor_apagado(page, base_url, lote_para_calzar):
+    """Apagar el botón NO apaga las correcciones que ya existen.
+
+    Son dos cosas distintas y conviene que sigan separadas: si una zona
+    ya está calzada, la foto tiene que seguir saliendo en su lugar — para
+    el corredor y para el comprador que abre el link. Lo que se apagó es
+    poder crear o cambiar una.
+    """
+    _ir_al_lote(page, base_url)
+    page.evaluate(MOVER, [10, -20])
+    assert page.evaluate(DONDE_ESTA_TODO)["transformDeLaFoto"] != "", (
+        "con el interruptor apagado dejó de aplicarse un calce existente"
+    )
+
+
+@solo_si_esta_prendido
 @pytest.mark.con_sesion
 def test_con_permiso_el_panel_abre_y_muestra_cuanto_se_movio(page, base_url, lote_para_calzar):
     """El número tiene que estar a la vista: sin él no se sabe si se
@@ -280,6 +357,7 @@ def test_con_permiso_el_panel_abre_y_muestra_cuanto_se_movio(page, base_url, lot
     expect(estado).to_contain_text("1 m al este")
 
 
+@solo_si_esta_prendido
 @pytest.mark.con_sesion
 def test_cerrar_sin_guardar_descarta_lo_probado(page, base_url, lote_para_calzar):
     """Si quedara aplicado, alguien podría seguir trabajando sobre una
