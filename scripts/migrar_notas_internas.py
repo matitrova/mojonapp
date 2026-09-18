@@ -216,11 +216,20 @@ def main():
         print(f"  {lote_id}: migrado")
         migrados += 1
 
+    # Se imprime CADA id, no solo el total. Salió de un problema real: una
+    # corrida reportó "107 vaciados" y minutos después otra encontró 48 con
+    # texto del importador todavía. Con un contador agregado, "la primera
+    # corrida no aplicó todo lo que dijo" y "algo reescribió el campo en el
+    # medio" producen exactamente la misma salida, y no hay forma de saber
+    # cuál de las dos fue. Con los ids a la vista, dos corridas se comparan
+    # línea a línea y la pregunta se contesta sola.
+    #
+    # En una migración de una sola vez, saber QUÉ se tocó vale más que
+    # saber cuántos.
     for lote_id, _ in solo_vaciar:
         vaciar_observaciones(token, lote_id)
         vaciados += 1
-    if vaciados:
-        print(f"  {vaciados} con texto del importador: campo vaciado, sin nota")
+        print(f"  {lote_id}: vaciado (texto del importador, sin nota)")
 
     print(f"\nListo: {migrados} migrados, {salteados} salteados, {vaciados} vaciados sin nota.")
 
