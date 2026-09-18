@@ -9,6 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { getLotesActuales } from "./estado.js";
+import { resumenDeComisiones } from "./comisiones.js";
 
 // Un color por etapa (variables CSS, ver estilos.css) — pintan el borde de
 // arriba de cada columna y el borde izquierdo de cada tarjeta, mismo
@@ -51,7 +52,21 @@ export function actividadesAutomaticas(contactoPrevio, datosNuevos, autorEmail) 
   if (contactoPrevio.estado !== datosNuevos.estado) {
     const etapaAnterior = ETIQUETA_ETAPA[contactoPrevio.estado] || contactoPrevio.estado;
     const etapaNueva = ETIQUETA_ETAPA[datosNuevos.estado] || datosNuevos.estado;
-    actividades.push({ tipo: "cambio_etapa", texto: `${etapaAnterior} → ${etapaNueva}`, fecha, autor_email: autorEmail });
+    actividades.push({
+      tipo: "cambio_etapa",
+      texto: `${etapaAnterior} → ${etapaNueva}`,
+      // Las CLAVES, además del texto. El texto es para que una persona
+      // lea el historial; estas dos son para poder calcular el embudo
+      // (ver js/embudo.js) sin volver a parsear castellano. Antes solo
+      // quedaba el texto, así que medir la conversión entre etapas
+      // dependía de partir "Nuevo → Contactado" por la flecha y buscar
+      // cada mitad en la tabla de etiquetas: andaba, pero se rompía
+      // solo con renombrar una etapa.
+      etapa_desde: contactoPrevio.estado,
+      etapa_hasta: datosNuevos.estado,
+      fecha,
+      autor_email: autorEmail
+    });
   }
 
   const lotesPrevios = contactoPrevio.lotes_interes || [];
@@ -297,7 +312,23 @@ export function calcularMetricas(contactos) {
   const valorPipelineActivo = contactos
     .filter((c) => c.estado !== "cerrado" && c.estado !== "perdido")
     .reduce((total, c) => total + valorPotencialContacto(c), 0);
-  return { total, nuevosEstaSemana, tasaConversion, estancados, sinAtender, valorPipelineActivo };
+  // Lo mismo que el valor del pipeline, pero en plata de la
+  // inmobiliaria: de USD 90.000 en lotes, lo que se cobra es el
+  // porcentaje. Va aparte de "valorPipelineActivo" y no lo reemplaza —
+  // el valor sirve para dimensionar la operación y la comisión para
+  // dimensionar el negocio propio (ver js/comisiones.js).
+  const propiedadesPorId = new Map(getLotesActuales().map((f) => [f.id, f.properties]));
+  const { enPipeline, cerrada } = resumenDeComisiones(contactos, propiedadesPorId);
+  return {
+    total,
+    nuevosEstaSemana,
+    tasaConversion,
+    estancados,
+    sinAtender,
+    valorPipelineActivo,
+    comisionEnPipeline: enPipeline,
+    comisionCerrada: cerrada
+  };
 }
 
 // Template de las 6 tarjetas de métricas — usado tanto por "#crm-stats"
@@ -313,6 +344,8 @@ export function htmlResumenVentas(m) {
     <div class="crm-stat crm-stat-urgente"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span></div>
     <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span></div>
     <div class="crm-stat crm-stat-valor"><strong>${formatoUsdCompacto(m.valorPipelineActivo) || "—"}</strong><span>Valor en pipeline</span></div>
+    <div class="crm-stat crm-stat-comision"><strong>${formatoUsdCompacto(m.comisionEnPipeline) || "—"}</strong><span>Comisión proyectada</span></div>
+    <div class="crm-stat crm-stat-comision-ganada"><strong>${formatoUsdCompacto(m.comisionCerrada) || "—"}</strong><span>Comisión ganada</span></div>
   `;
 }
 

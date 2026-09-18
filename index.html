@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-01" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-02" />
 </head>
 <body>
 
@@ -599,6 +599,9 @@
       </label>
       <label>Precio (USD)
         <input type="number" id="lote-precio" data-testid="lote-precio" min="0" step="1" />
+      </label>
+      <label>Comisión (%)
+        <input type="number" id="lote-comision" data-testid="lote-comision" min="0" max="100" step="0.1" placeholder="General" />
       </label>
       <fieldset class="fieldset-servicios">
         <legend>Servicios</legend>
@@ -1143,6 +1146,15 @@
         <section id="dashboard-embudo-seccion" class="dashboard-seccion oculto">
           <h3>Embudo por etapa</h3>
           <div id="dashboard-embudo" class="dashboard-embudo" data-testid="dashboard-embudo"></div>
+          <!-- Las barras de arriba son la foto de hoy (cuántos hay en
+               cada etapa). Esto es el movimiento: cuántos de los que
+               llegaron a una etapa pasaron a la siguiente, y cuánto
+               tardaron. Se calcula con los cambios de etapa que el CRM
+               ya venía grabando en cada contacto — ver js/embudo.js. -->
+          <div id="dashboard-embudo-pasos" class="embudo-pasos" data-testid="dashboard-embudo-pasos"></div>
+          <p id="dashboard-embudo-sin-datos" class="dashboard-vacio oculto" data-testid="dashboard-embudo-sin-datos">
+            Todavía no hay movimientos de etapa registrados: la conversión aparece cuando empieces a mover contactos por el pipeline.
+          </p>
         </section>
 
         <section id="dashboard-motivos-perdida-seccion" class="dashboard-seccion oculto">
@@ -1778,6 +1790,9 @@
           <label for="masiva-precio">Precio USD
             <input type="number" id="masiva-precio" min="1" step="1" placeholder="No cambiar" data-testid="masiva-precio" />
           </label>
+          <label for="masiva-comision">Comisión %
+            <input type="number" id="masiva-comision" min="0" max="100" step="0.1" placeholder="No cambiar" data-testid="masiva-comision" />
+          </label>
           <label for="masiva-luz">Luz
             <select id="masiva-luz" data-testid="masiva-luz">
               <option value="">No cambiar</option>
@@ -1889,6 +1904,12 @@
         <label>Precio (USD)
           <input type="number" id="editar-lote-precio" data-testid="editar-lote-precio" min="0" step="1" />
         </label>
+        <label>Comisión (%)
+          <!-- Vacío = usa el porcentaje general de la app (ver
+               COMISION_PCT_POR_DEFECTO en js/comisiones.js). Se carga
+               por lote porque hay loteos que pagan distinto. -->
+          <input type="number" id="editar-lote-comision" data-testid="editar-lote-comision" min="0" max="100" step="0.1" placeholder="General" />
+        </label>
         <label>Zona
           <select id="editar-lote-sector" data-testid="editar-lote-sector">
             <option value="">Sin zona</option>
@@ -1964,6 +1985,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-01"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-02"></script>
 </body>
 </html>

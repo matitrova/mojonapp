@@ -4262,3 +4262,69 @@ body.con-nav-secciones #btn-flotante-catastro {
 .oculto-por-vacio {
   display: none !important;
 }
+
+/* ---------------------------------------------------------------------------
+   Embudo: pasos de conversión (js/embudo.js, render en dashboard.js).
+
+   Van debajo de las barras del embudo. Las barras dicen dónde está la
+   gente hoy; esto dice cómo se mueve entre etapas y cuánto tarda.
+   --------------------------------------------------------------------------- */
+
+.embudo-pasos {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.embudo-paso {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: var(--color-fondo-alterno);
+}
+
+.embudo-paso-nombre {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.embudo-paso-tasa {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* El detalle ocupa toda la fila de abajo: "2 de 6 · 5,1 días en
+   Contactado" no entra al lado del porcentaje en un teléfono. */
+.embudo-paso-detalle {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  color: var(--color-texto-secundario);
+}
+
+/* El paso donde más gente se cae. Es la única línea del dashboard que
+   señala qué mirar, así que se distingue — pero con el color de alerta
+   suave, no con rojo pleno: es una señal, no un error. */
+.embudo-paso-flojo {
+  border-left-color: var(--color-acento);
+  background: var(--color-acento-suave);
+}
+
+.embudo-paso-flojo .embudo-paso-tasa {
+  color: var(--color-acento);
+}
+
+/* Las dos tarjetas de comisión, para distinguirlas del valor del
+   pipeline que está al lado: una cosa es la operación y otra lo que
+   gana la inmobiliaria. */
+.crm-stat-comision strong,
+.crm-stat-comision-ganada strong {
+  color: var(--color-primario);
+}
+
+.crm-stat-comision-ganada strong {
+  color: var(--color-disponible);
+}

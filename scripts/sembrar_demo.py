@@ -170,6 +170,75 @@ CONTACTOS = [
 ]
 
 
+# Camino que recorrió cada contacto hasta su etapa actual, con los días
+# que tardó en cada paso.
+#
+# POR QUÉ LA DEMO NECESITA ESTO. El embudo de conversión y el "días en
+# cada etapa" del Dashboard se calculan con estas actividades (ver
+# js/embudo.js). Sin historial, la demo muestra un embudo sin tiempos y
+# con conversiones deducidas de la etapa actual — se ve pobre justo en la
+# pantalla que más se mira al mostrar el sistema. Con historial, muestra
+# lo que mostraría una inmobiliaria que viene trabajando.
+#
+# Los días son distintos por contacto a propósito: un embudo donde todos
+# tardan lo mismo se nota falso.
+CAMINO_POR_ETAPA = {
+    "nuevo": [],
+    "contactado": [("nuevo", "contactado", 2)],
+    "visita": [("nuevo", "contactado", 1), ("contactado", "visita", 4)],
+    "oferta": [("nuevo", "contactado", 3), ("contactado", "visita", 5), ("visita", "oferta", 2)],
+    "cerrado": [
+        ("nuevo", "contactado", 1),
+        ("contactado", "visita", 3),
+        ("visita", "oferta", 6),
+        ("oferta", "cerrado", 4),
+    ],
+    "perdido": [("nuevo", "contactado", 2), ("contactado", "perdido", 9)],
+}
+
+ETIQUETA_ETAPA = {
+    "nuevo": "Nuevo",
+    "contactado": "Contactado",
+    "visita": "Visita",
+    "oferta": "Oferta",
+    "cerrado": "Cerrado",
+    "perdido": "Perdido",
+}
+
+
+def actividades_del_camino(estado, creado):
+    """Las actividades de un contacto: su creación más cada cambio de etapa.
+
+    Las fechas se calculan hacia atrás desde hoy para que el contacto
+    tenga una antigüedad coherente con su recorrido — si no, un contacto
+    "cerrado" creado hoy mismo tendría cuatro cambios de etapa en el
+    mismo instante y los días por etapa darían cero.
+    """
+    pasos = CAMINO_POR_ETAPA.get(estado, [])
+    dias_totales = sum(dias for _, _, dias in pasos)
+    fecha_creacion = HOY - timedelta(days=dias_totales)
+    actividades = [
+        {
+            "tipo": "contacto_creado",
+            "texto": "Contacto creado",
+            "fecha": f"{fecha_creacion.isoformat()}T10:00:00.000Z",
+            "autor_email": None,
+        }
+    ]
+    acumulado = 0
+    for desde, hasta, dias in pasos:
+        acumulado += dias
+        actividades.append({
+            "tipo": "cambio_etapa",
+            "texto": f"{ETIQUETA_ETAPA[desde]} \u2192 {ETIQUETA_ETAPA[hasta]}",
+            "etapa_desde": desde,
+            "etapa_hasta": hasta,
+            "fecha": f"{(fecha_creacion + timedelta(days=acumulado)).isoformat()}T10:00:00.000Z",
+            "autor_email": None,
+        })
+    return actividades, f"{fecha_creacion.isoformat()}T10:00:00.000Z"
+
+
 def existentes(coleccion):
     """Lo que ya hay cargado, para no duplicar al correr dos veces."""
     base = (
@@ -242,6 +311,7 @@ def main():
         if interes:
             elegido = interes[i % len(interes)]
             lotes_interes = [{"id": elegido[0], "titulo": elegido[1]}]
+        actividades, fecha_creacion = actividades_del_camino(estado, ahora)
         doc_id = conftest.crear_contacto_de_prueba({
             "nombre": nombre,
             "telefono": telefono,
@@ -252,11 +322,9 @@ def main():
             "nota_fijada": nota,
             "lotes_interes": lotes_interes,
             "etiquetas": [],
-            "actividades": [
-                {"tipo": "contacto_creado", "texto": "Contacto creado", "fecha": ahora, "autor_email": None}
-            ],
+            "actividades": actividades,
             "origen": "ficha" if lotes_interes else "manual",
-            "fecha_creacion": ahora,
+            "fecha_creacion": fecha_creacion,
             "fecha_actualizacion": ahora,
         })
         print(f"  contacto creado: {nombre} ({doc_id})")

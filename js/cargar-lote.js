@@ -87,6 +87,7 @@ const elLoteBarrio = document.getElementById("lote-barrio");
 const elLoteSuperficie = document.getElementById("lote-superficie");
 const elLoteEstado = document.getElementById("lote-estado");
 const elLotePrecio = document.getElementById("lote-precio");
+const elLoteComision = document.getElementById("lote-comision");
 const elLoteServicioLuz = document.getElementById("lote-servicio-luz");
 const elLoteServicioAgua = document.getElementById("lote-servicio-agua");
 const elLoteServicioGas = document.getElementById("lote-servicio-gas");
@@ -217,6 +218,8 @@ formularioLote.addEventListener("submit", async (evento) => {
       superficie_m2: Number(elLoteSuperficie.value),
       estado: elLoteEstado.value,
       precio_usd: elLotePrecio.value.trim() === "" ? null : Number(elLotePrecio.value),
+      // null = sin porcentaje propio, usa el general (js/comisiones.js).
+      comision_pct: elLoteComision.value.trim() === "" ? null : Number(elLoteComision.value),
       servicios: {
         luz: elLoteServicioLuz.checked,
         agua: elLoteServicioAgua.checked,

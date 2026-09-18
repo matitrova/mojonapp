@@ -76,6 +76,20 @@ export function armarCambios(valores = {}) {
     resumen.push(`Precio: USD ${precio.toLocaleString("es-AR")}`);
   }
 
+  // La comisión es el campo que más se repite dentro de un mismo loteo,
+  // así que acá es donde más rinde. Se acepta 0 (un loteo por el que no
+  // se cobra comisión) y por eso la comparación es contra "" y no un
+  // chequeo de valor falsy.
+  const comisionCruda = (valores.comision ?? "").toString().trim();
+  if (comisionCruda !== "") {
+    const comision = Number(comisionCruda);
+    if (!Number.isFinite(comision) || comision < 0 || comision > 100) {
+      return { cambios: {}, resumen: [], error: "La comisión tiene que ser un número entre 0 y 100." };
+    }
+    cambios.comision_pct = comision;
+    resumen.push(`Comisión: ${comision}%`);
+  }
+
   // Los servicios se escriben con ruta con punto ("servicios.luz") y no
   // reemplazando el objeto entero. Si se mandara { servicios: { luz: true } }
   // se borrarían agua, gas y cloaca de todos los lotes seleccionados —

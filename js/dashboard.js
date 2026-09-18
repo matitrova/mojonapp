@@ -13,6 +13,7 @@
 
 import { getLotesActuales, getContactosActuales, getCorredorLogueado } from "./estado.js";
 import { pintarEstadoVacio } from "./estado-vacio.js";
+import { pasosDelEmbudo, diasPromedioPorEtapa, pasoMasFlojo } from "./embudo.js";
 import { centroideDePoligono } from "./geometria.js";
 // Navegación por URL (ver js/router.js). Sin dependencia circular:
 // router.js no importa nada de la app, es la capa de abajo.
@@ -34,7 +35,8 @@ import {
   motivosPerdidaFrecuentes,
   demandaPorZona,
   visitasDeHoy,
-  htmlResumenVentas
+  htmlResumenVentas,
+  ETIQUETA_ETAPA
 } from "./crm-metricas.js";
 
 const COLECCION_LOTES = "lotes";
@@ -397,6 +399,59 @@ function renderVisitasDeHoy() {
 // colapsado junto con "Más consultados"/"Con más interesados"/"Resumen
 // por zona" — mismo criterio ya usado ahí: es para repasar de vez en
 // cuando, no una alerta urgente que tenga que verse apenas se abre el
+// Conversión de una etapa a la siguiente, y cuánto se tarda en cada una.
+//
+// Va DEBAJO de las barras del embudo y no en su lugar: las barras dicen
+// dónde está la gente hoy, esto dice cómo se mueve. Son dos preguntas
+// distintas y las dos se usan.
+//
+// El paso más flojo se marca aparte, que es la única línea de todo el
+// dashboard que dice qué hacer en vez de solo informar. No se marca nada
+// si hay pocos casos (ver MINIMO_PARA_OPINAR en js/embudo.js): señalar
+// "acá se te cae todo" por dos contactos sería peor que callarse.
+function renderPasosDelEmbudo(contactos) {
+  const elPasos = document.getElementById("dashboard-embudo-pasos");
+  const elSinDatos = document.getElementById("dashboard-embudo-sin-datos");
+  elPasos.innerHTML = "";
+
+  const pasos = pasosDelEmbudo(contactos);
+  const dias = diasPromedioPorEtapa(contactos);
+  const hayAlgoQueMostrar = pasos.some((paso) => paso.tasa !== null);
+  elSinDatos.classList.toggle("oculto", hayAlgoQueMostrar);
+  if (!hayAlgoQueMostrar) return;
+
+  const flojo = pasoMasFlojo(pasos);
+  for (const paso of pasos) {
+    if (paso.tasa === null) continue;
+    const fila = document.createElement("div");
+    fila.className = "embudo-paso";
+    fila.dataset.testid = `embudo-paso-${paso.desde}-${paso.hasta}`;
+    if (flojo && paso.desde === flojo.desde && paso.hasta === flojo.hasta) {
+      fila.classList.add("embudo-paso-flojo");
+    }
+
+    const nombre = document.createElement("span");
+    nombre.className = "embudo-paso-nombre";
+    nombre.textContent = `${ETIQUETA_ETAPA[paso.desde]} → ${ETIQUETA_ETAPA[paso.hasta]}`;
+    fila.appendChild(nombre);
+
+    const tasa = document.createElement("strong");
+    tasa.className = "embudo-paso-tasa";
+    tasa.textContent = `${paso.tasa}%`;
+    fila.appendChild(tasa);
+
+    const detalle = document.createElement("span");
+    detalle.className = "embudo-paso-detalle";
+    const promedio = dias[paso.desde];
+    detalle.textContent =
+      `${paso.avanzaron} de ${paso.base}` +
+      (promedio ? ` · ${promedio.dias} días en ${ETIQUETA_ETAPA[paso.desde]}` : "");
+    fila.appendChild(detalle);
+
+    elPasos.appendChild(fila);
+  }
+}
+
 // panel).
 function renderVentas() {
   const contactos = getContactosActuales();
@@ -431,6 +486,8 @@ function renderVentas() {
 
     elEmbudo.appendChild(fila);
   });
+
+  renderPasosDelEmbudo(contactos);
 
   // motivo_perdido es texto libre que escribe el corredor — textContent,
   // no innerHTML, mismo criterio que el nombre del contacto más arriba.

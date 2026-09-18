@@ -124,6 +124,7 @@ const elEditarLoteEstado = document.getElementById("editar-lote-estado");
 const elEditarLoteReservadoHastaLabel = document.getElementById("editar-lote-reservado-hasta-label");
 const elEditarLoteReservadoHasta = document.getElementById("editar-lote-reservado-hasta");
 const elEditarLotePrecio = document.getElementById("editar-lote-precio");
+const elEditarLoteComision = document.getElementById("editar-lote-comision");
 const elEditarLoteCompradorLabel = document.getElementById("editar-lote-comprador-label");
 const elEditarLoteComprador = document.getElementById("editar-lote-comprador");
 
@@ -374,6 +375,7 @@ const elMasivaForm = document.getElementById("masiva-form");
 const elMasivaSector = document.getElementById("masiva-sector");
 const elMasivaBarrio = document.getElementById("masiva-barrio");
 const elMasivaPrecio = document.getElementById("masiva-precio");
+const elMasivaComision = document.getElementById("masiva-comision");
 const elMasivaConfirmacion = document.getElementById("masiva-confirmacion");
 const elMasivaError = document.getElementById("masiva-error");
 const elMasivaProgreso = document.getElementById("masiva-progreso");
@@ -458,6 +460,7 @@ elBtnAplicarAVarios.addEventListener("click", () => {
   elMasivaBarrio.innerHTML =
     opcionesFijas + getBarriosActuales().map((b) => `<option value="${b.nombre}">${b.nombre}</option>`).join("");
   elMasivaPrecio.value = "";
+  elMasivaComision.value = "";
   for (const select of Object.values(elMasivaServicios)) select.value = SIN_CAMBIO;
   elMasivaError.classList.add("oculto");
   elMasivaProgreso.classList.add("oculto");
@@ -472,6 +475,7 @@ function valoresDelFormularioMasivo() {
     sector: elMasivaSector.value,
     barrio: elMasivaBarrio.value,
     precio: elMasivaPrecio.value,
+    comision: elMasivaComision.value,
     luz: elMasivaServicios.luz.value,
     agua: elMasivaServicios.agua.value,
     gas: elMasivaServicios.gas.value,
@@ -494,6 +498,7 @@ function actualizarConfirmacionMasiva() {
 elMasivaSector.addEventListener("change", actualizarConfirmacionMasiva);
 elMasivaBarrio.addEventListener("change", actualizarConfirmacionMasiva);
 elMasivaPrecio.addEventListener("input", actualizarConfirmacionMasiva);
+elMasivaComision.addEventListener("input", actualizarConfirmacionMasiva);
 for (const select of Object.values(elMasivaServicios)) {
   select.addEventListener("change", actualizarConfirmacionMasiva);
 }
@@ -727,6 +732,9 @@ export function mostrarEditarLoteDesdeGrilla(feature) {
   actualizarVisibilidadReservadoHasta();
   actualizarVisibilidadComprador(p.comprador_contacto_id || "");
   elEditarLotePrecio.value = p.precio_usd ?? "";
+  // Vacío significa "usá el porcentaje general", no 0 — por eso ?? y
+  // no ||: un lote con 0% de comisión tiene que mostrar 0, no vacío.
+  elEditarLoteComision.value = p.comision_pct ?? "";
   poblarSelectSector(elEditarLoteSector, p.sector);
   poblarSelectBarrio(elEditarLoteBarrio, p.barrio);
   const s = p.servicios || {};
@@ -802,6 +810,8 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
           ? elEditarLoteComprador.options[elEditarLoteComprador.selectedIndex].textContent
           : null,
       precio_usd: elEditarLotePrecio.value.trim() === "" ? null : Number(elEditarLotePrecio.value),
+      // null = este lote no tiene porcentaje propio y usa el general.
+      comision_pct: elEditarLoteComision.value.trim() === "" ? null : Number(elEditarLoteComision.value),
       sector: elEditarLoteSector.value.trim() || null,
       barrio: elEditarLoteBarrio.value.trim() || null,
       servicios: {

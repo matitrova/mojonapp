@@ -45,6 +45,7 @@ import { registrarAuditoria } from "./auditoria.js";
 // propio módulo testeable. Ver el plan en curso.
 import {
   ETAPAS,
+  actividadesAutomaticas,
   ETIQUETA_ETAPA,
   COLOR_ETAPA,
   ETIQUETA_ACTIVIDAD,
@@ -231,14 +232,33 @@ async function moverContacto(contacto, nuevoEstado) {
   // Optimista: se pinta ya, sin esperar el updateDoc — con conexión rural
   // lenta, esperar a Firestore antes de mover la tarjeta se siente
   // trabado. Si falla, se revierte más abajo.
+  // El cambio de etapa queda registrado como actividad, igual que
+  // cuando se cambia desde el formulario (ver actividadesAutomaticas).
+  //
+  // ANTES NO SE REGISTRABA ACÁ, y este es el camino PRINCIPAL para mover
+  // un contacto: el selector de la tarjeta. Solo quedaba el evento de
+  // auditoría, que es de quién hizo qué y no del contacto. Resultado: el
+  // historial del contacto se salteaba justo los cambios más comunes, y
+  // el embudo de conversión (js/embudo.js), que se calcula con estas
+  // actividades, quedaba ciego a todo lo que se moviera desde el kanban.
+  const actividadesNuevas = actividadesAutomaticas(
+    { estado: estadoAnterior, lotes_interes: contacto.lotes_interes },
+    { estado: nuevoEstado, lotes_interes: contacto.lotes_interes },
+    auth.currentUser?.email ?? null
+  );
+  const actividadesPrevias = contacto.actividades || [];
+  const actividades = [...actividadesPrevias, ...actividadesNuevas];
+
   contacto.estado = nuevoEstado;
   contacto.motivo_perdido = motivoPerdido;
+  contacto.actividades = actividades;
   contacto.fecha_actualizacion = new Date().toISOString();
   renderTodo();
   try {
     await updateDoc(doc(db, COLECCION_CONTACTOS, contacto.id), {
       estado: nuevoEstado,
       motivo_perdido: motivoPerdido,
+      actividades,
       fecha_actualizacion: contacto.fecha_actualizacion
     });
     registrarAuditoria({
@@ -250,6 +270,7 @@ async function moverContacto(contacto, nuevoEstado) {
   } catch (error) {
     contacto.estado = estadoAnterior;
     contacto.motivo_perdido = motivoAnterior;
+    contacto.actividades = actividadesPrevias;
     renderTodo();
     window.alert(
       error.code === "permission-denied" ? "No tenés permiso para mover contactos." : "No se pudo mover el contacto."
