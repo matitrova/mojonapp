@@ -129,9 +129,14 @@ function renderMapa(feature) {
   // contenedor tenga tamaño real, y mientras el panel está oculto mide 0.
   if (!mapaChico) {
     mapaChico = L.map("lp-mapa", { zoomControl: true, scrollWheelZoom: false, maxZoom: 24 });
+    // maxNativeZoom 17 por el mismo motivo que el mapa principal, y acá
+    // importa todavía más: esta es la página que ve un comprador, y un
+    // recuadro gris que dice "Map data not yet available" donde tendría
+    // que estar la propiedad es lo peor que puede mostrar. Ver el
+    // comentario largo en js/mapa.js.
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
       maxZoom: 24,
-      maxNativeZoom: 18,
+      maxNativeZoom: 17,
       attribution: "Tiles &copy; Esri"
     }).addTo(mapaChico);
   }

@@ -94,14 +94,39 @@ export function configurarMapa(deps) {
 // nunca desaparece — y el polígono del lote, que es un dibujo
 // vectorial y no una imagen, se sigue viendo nítido en cualquier zoom.
 //
-// El valor 18 se verificó bajando tiles reales del servicio para
-// Carpintería/Merlo (zona de los lotes cargados): en zoom 18 la imagen
-// es satelital real (~13-18 KB por tile); en zoom 19 y más, Esri
-// devuelve siempre el mismo tile de "Map data not yet available"
-// (2521 bytes exactos) — el corte real acá es 18, no 19. Si el corredor
-// carga lotes en otra zona con mejor cobertura, en el peor caso el mapa
-// se ve un poco más borroso ahí de lo estrictamente necesario, pero
-// nunca desaparece — eso es preferible a que desaparezca en ESTA zona.
+// EL VALOR ES 17, Y ANTES ERA 18. Vale la pena contar por qué, porque
+// el 18 se había verificado bien y aun así estaba roto.
+//
+// La verificación original bajó tiles reales para Carpintería/Merlo
+// (donde estaban los lotes cargados) y encontró foto real en zoom 18 y
+// el cartel de "Map data not yet available" (2521 bytes exactos) recién
+// en 19. Todo correcto — pero medido en UN SOLO lugar. El resto de San
+// Luis corta un nivel antes:
+//
+//     Potrero de los Funes    foto hasta z=17
+//     Villa Mercedes          foto hasta z=17
+//     San Luis capital        foto hasta z=17
+//     Carpintería/Merlo       foto hasta z=18
+//
+// O sea que con maxNativeZoom 18, en Potrero, Villa Mercedes o la
+// capital el mapa se llenaba de "Map data not yet available" EN ZOOM 18
+// — que es el zoom con el que arranca la app (ver setView acá abajo).
+// Reportado por el usuario como "se rompe el mapa cuando haces mucho
+// zoom".
+//
+// LO QUE HACE ESTO DIFÍCIL DE VER: Esri devuelve el cartel con HTTP 200,
+// no con un 404. Para Leaflet es un tile que cargó bien, así que no hay
+// error en la consola, no falla ninguna petición y maxNativeZoom no
+// tiene forma de detectarlo solo. Solo se ve mirando la pantalla o
+// pesando el archivo (el cartel siempre pesa 2521 bytes; una foto de
+// verdad, 13-22 KB). Por eso hay un test que lo pesa: ver
+// tests/test_tiles_satelitales.py.
+//
+// EL COSTO de bajar a 17 es que en Carpintería/Merlo la imagen se ve un
+// poco más blanda de lo estrictamente necesario (se agranda el tile de
+// 17 en vez de usar el de 18 que ahí sí existe). Se compararon las dos
+// en pantalla: la diferencia es chica. Que tres de las cuatro zonas
+// donde se vende queden en gris, no.
 export const mapa = L.map("mapa", { zoomControl: true, maxZoom: 24 }).setView([-32.34715, -65.01300], 18);
 
 // Capa satelital gratuita (Esri World Imagery, sin API key).
@@ -111,7 +136,7 @@ L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {
     maxZoom: 24,
-    maxNativeZoom: 18,
+    maxNativeZoom: 17,
     attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics"
   }
 ).addTo(mapa);
