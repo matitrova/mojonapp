@@ -13,7 +13,7 @@ OJO: estos tests escriben en las colecciones `motivos_perdida` y
 `etiquetas_contacto`, así que necesitan que las reglas de Firestore de
 esas dos colecciones ya estén publicadas (se pegan a mano en la consola
 de Firebase, ver el bloque en el plan/README de la sesión). Sin eso van a
-fallar con "No tenés permiso para administrar...", que es justamente el
+fallar con "No tienes permiso para administrar...", que es justamente el
 comportamiento esperado de la app hasta que se publiquen.
 
 Cada test limpia lo que crea desde la propia UI (no hace falta un helper

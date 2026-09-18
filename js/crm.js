@@ -273,7 +273,7 @@ async function moverContacto(contacto, nuevoEstado) {
     contacto.actividades = actividadesPrevias;
     renderTodo();
     window.alert(
-      error.code === "permission-denied" ? "No tenés permiso para mover contactos." : "No se pudo mover el contacto."
+      error.code === "permission-denied" ? "No tienes permiso para mover contactos." : "No se pudo mover el contacto."
     );
   }
 }

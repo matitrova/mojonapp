@@ -197,7 +197,7 @@ def test_el_titulo_de_la_pagina_acompana_a_la_seccion(page, base_url):
     expect(page).to_have_title("Dashboard — MojonApp")
 
     _ir_por_el_menu(page, "#btn-abrir-crm")
-    expect(page).to_have_title("Pipeline de contactos — MojonApp")
+    expect(page).to_have_title("Pipeline de leads — MojonApp")
 
 
 @pytest.mark.con_sesion
@@ -209,3 +209,31 @@ def test_el_link_compartido_de_un_lote_sigue_andando(page, base_url, lote_sembra
     page.goto(f"{base_url}/?lote={lote_sembrado['doc_id']}")
     expect(page.locator("#ficha-lote")).to_be_visible()
     assert "lote=" in page.url
+
+
+@pytest.mark.con_sesion
+def test_solo_una_seccion_queda_marcada_como_activa(page, base_url):
+    """Regresión: había SEIS ítems del menú iluminados a la vez.
+
+    Seis botones comparten data-ruta="/" porque son acciones que ocurren
+    sobre el mapa ("Cargar a mano", "Agregar manzana", "Ver catastro
+    cercano"...), no secciones. El router marcaba todo lo que tuviera esa
+    ruta, así que estando en el mapa el menú decía que estabas en seis
+    lugares al mismo tiempo.
+
+    No se notaba mientras el menú era un rail de íconos contraído; quedó
+    a la vista con la barra lateral siempre desplegada del rediseño. Los
+    once tests que ya existían pasaban igual con el bug puesto, que es
+    justamente por qué este hace falta.
+    """
+    page.set_viewport_size(ANCHO_ESCRITORIO)
+    _loguearse(page, base_url)
+
+    activos = page.locator(".drawer-item.ruta-activa")
+    expect(activos).to_have_count(1)
+    expect(activos).to_have_id("btn-abrir-dashboard")
+
+    _ir_por_el_menu(page, "#btn-drawer-mapa")
+    activos = page.locator(".drawer-item.ruta-activa")
+    expect(activos).to_have_count(1)
+    expect(activos).to_have_id("btn-drawer-mapa")

@@ -475,7 +475,7 @@ elBtnAgregarActividad.addEventListener("click", async () => {
     elActividadTexto.value = "";
   } catch (error) {
     window.alert(
-      error.code === "permission-denied" ? "No tenés permiso para agregar actividad." : "No se pudo guardar la actividad."
+      error.code === "permission-denied" ? "No tienes permiso para agregar actividad." : "No se pudo guardar la actividad."
     );
   } finally {
     elBtnAgregarActividad.disabled = false;
@@ -759,7 +759,7 @@ formulario.addEventListener("submit", async (evento) => {
   } catch (error) {
     elError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para gestionar contactos."
+        ? "No tienes permiso para gestionar contactos."
         : "No se pudo guardar el contacto.";
     elError.classList.remove("oculto");
   } finally {
@@ -780,7 +780,7 @@ elBtnBorrarContacto.addEventListener("click", async () => {
     mostrarKanban();
   } catch (error) {
     window.alert(
-      error.code === "permission-denied" ? "No tenés permiso para borrar contactos." : "No se pudo borrar el contacto."
+      error.code === "permission-denied" ? "No tienes permiso para borrar contactos." : "No se pudo borrar el contacto."
     );
   } finally {
     elBtnBorrarContacto.disabled = false;
@@ -877,7 +877,7 @@ elBtnFusionarConfirmar.addEventListener("click", async () => {
     mostrarForm(fusionado || null);
   } catch (error) {
     window.alert(
-      error.code === "permission-denied" ? "No tenés permiso para editar estos contactos." : "No se pudo fusionar."
+      error.code === "permission-denied" ? "No tienes permiso para editar estos contactos." : "No se pudo fusionar."
     );
   } finally {
     elBtnFusionarConfirmar.disabled = false;

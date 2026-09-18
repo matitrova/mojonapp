@@ -275,7 +275,7 @@ function crearPanelCatalogo({
     } catch (error) {
       elError.textContent =
         error.code === "permission-denied"
-          ? `No tenés permiso para administrar ${entidad}s.`
+          ? `No tienes permiso para administrar ${entidad}s.`
           : `No se pudo guardar ${articulo} ${entidad}.`;
       elError.classList.remove("oculto");
     }
@@ -297,7 +297,7 @@ function crearPanelCatalogo({
       await cargarPanel();
     } catch (error) {
       window.alert(
-        error.code === "permission-denied" ? `No tenés permiso para borrar ${entidad}s.` : `No se pudo borrar ${articulo} ${entidad}.`
+        error.code === "permission-denied" ? `No tienes permiso para borrar ${entidad}s.` : `No se pudo borrar ${articulo} ${entidad}.`
       );
     } finally {
       boton.disabled = false;

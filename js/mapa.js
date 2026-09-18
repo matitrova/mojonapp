@@ -522,7 +522,7 @@ async function actualizarCatastroCercano() {
     // La capa de referencia es un complemento opcional: si el catastro no
     // responde, no tiene que interrumpir el resto de la app — pero sí hay
     // que avisar, porque si no parece que el botón no hace nada.
-    mostrarMensajeCatastroCercano("No se pudo cargar el catastro cercano ahora. Probá de nuevo en un momento.");
+    mostrarMensajeCatastroCercano("No se pudo cargar el catastro cercano ahora. Prueba de nuevo en un momento.");
     return;
   }
 

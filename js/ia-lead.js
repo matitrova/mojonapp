@@ -52,12 +52,12 @@ elBtnCancelar.addEventListener("click", cerrarBloque);
 elBtnConvertir.addEventListener("click", async () => {
   const mail = elTexto.value.trim();
   if (!mail) {
-    mostrarMensaje("Pegá el texto del mail primero.");
+    mostrarMensaje("Pega el texto del mail primero.");
     return;
   }
 
   if (!auth.currentUser) {
-    mostrarMensaje("Tenés que iniciar sesión para usar esto.");
+    mostrarMensaje("Tienes que iniciar sesión para usar esto.");
     return;
   }
 
@@ -89,7 +89,7 @@ elBtnConvertir.addEventListener("click", async () => {
     mostrarFormConLead(datos.lead);
     cerrarBloque();
   } catch {
-    mostrarMensaje("No se pudo leer el mail. Revisá la conexión.");
+    mostrarMensaje("No se pudo leer el mail. Revisa la conexión.");
   } finally {
     elBtnConvertir.disabled = false;
     elBtnConvertir.textContent = textoOriginal;

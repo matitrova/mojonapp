@@ -349,7 +349,7 @@ async function borrarFoto(feature, foto) {
     renderFotos(feature);
   } catch (error) {
     window.alert(
-      error.code === "permission-denied" ? "No tenés permiso para borrar fotos de este lote." : "No se pudo borrar la foto."
+      error.code === "permission-denied" ? "No tienes permiso para borrar fotos de este lote." : "No se pudo borrar la foto."
     );
   }
 }
@@ -369,7 +369,7 @@ elInputFotoLote.addEventListener("change", async () => {
     renderFotos(getLoteSeleccionado());
   } catch (error) {
     elFichaFotoError.textContent =
-      error.code === "permission-denied" ? "No tenés permiso para agregar fotos a este lote." : "No se pudo subir la foto. Probá de nuevo.";
+      error.code === "permission-denied" ? "No tienes permiso para agregar fotos a este lote." : "No se pudo subir la foto. Prueba de nuevo.";
     elFichaFotoError.classList.remove("oculto");
   } finally {
     elFichaFotoCargando.classList.add("oculto");
@@ -422,7 +422,7 @@ async function borrarInteresado(feature, interesado) {
   } catch (error) {
     window.alert(
       error.code === "permission-denied"
-        ? "No tenés permiso para borrar interesados."
+        ? "No tienes permiso para borrar interesados."
         : "No se pudo borrar."
     );
   }
@@ -467,7 +467,7 @@ formularioInteresado.addEventListener("submit", async (evento) => {
   } catch (error) {
     elInteresadoError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para agregar interesados."
+        ? "No tienes permiso para agregar interesados."
         : "No se pudo guardar.";
     elInteresadoError.classList.remove("oculto");
   } finally {
@@ -646,7 +646,7 @@ elBtnGuardarServicios.addEventListener("click", async () => {
   } catch (error) {
     elEditorServiciosError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para editar servicios. Iniciá sesión de nuevo."
+        ? "No tienes permiso para editar servicios. Inicia sesión de nuevo."
         : "No se pudieron guardar los servicios.";
     elEditorServiciosError.classList.remove("oculto");
   } finally {
@@ -699,7 +699,7 @@ elBtnGuardarSector.addEventListener("click", async () => {
   } catch (error) {
     elEditorSectorError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para editar la zona. Iniciá sesión de nuevo."
+        ? "No tienes permiso para editar la zona. Inicia sesión de nuevo."
         : "No se pudo guardar la zona.";
     elEditorSectorError.classList.remove("oculto");
   } finally {
@@ -750,7 +750,7 @@ elBtnGuardarBarrio.addEventListener("click", async () => {
   } catch (error) {
     elEditorBarrioError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para editar el barrio. Iniciá sesión de nuevo."
+        ? "No tienes permiso para editar el barrio. Inicia sesión de nuevo."
         : "No se pudo guardar el barrio.";
     elEditorBarrioError.classList.remove("oculto");
   } finally {
@@ -775,7 +775,7 @@ export async function borrarLote(feature, elBoton) {
   } catch (error) {
     window.alert(
       error.code === "permission-denied"
-        ? "No tenés permiso para borrar lotes. Iniciá sesión de nuevo."
+        ? "No tienes permiso para borrar lotes. Inicia sesión de nuevo."
         : "No se pudo borrar el lote."
     );
   } finally {
@@ -987,7 +987,7 @@ const elCompartirLoteMensaje = document.getElementById("compartir-lote-mensaje")
 // — un lote sin ese dato simplemente no lo menciona, no se inventa.
 function textoParaCompartir(feature) {
   const p = feature.properties;
-  const partes = [`Mirá este lote en MojonApp: ${tituloLote(p)}`];
+  const partes = [`Mira este lote en MojonApp: ${tituloLote(p)}`];
   if (p.superficie_m2 != null) partes.push(`${p.superficie_m2} m²`);
   if (p.precio_usd != null) partes.push(`USD ${Number(p.precio_usd).toLocaleString("es-AR")}`);
   return partes.join(" — ");
@@ -1071,7 +1071,7 @@ PORTALES.forEach((portal) => {
     } catch (error) {
       checkbox.checked = valorAnterior; // revertir: no quedó guardado
       window.alert(
-        error.code === "permission-denied" ? "No tenés permiso para editar este lote." : "No se pudo guardar."
+        error.code === "permission-denied" ? "No tienes permiso para editar este lote." : "No se pudo guardar."
       );
     }
   });

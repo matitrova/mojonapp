@@ -4854,3 +4854,82 @@ body.con-nav-secciones #btn-flotante-catastro {
 .crm-stat-comision-ganada strong {
   color: var(--color-positivo);
 }
+
+/* ---------------------------------------------------------------------------
+   Tipografía de las métricas (rediseño 2026-09-18).
+
+   En el mockup el número es lo más grande de la pantalla y la etiqueta
+   queda chica y gris debajo. Es la diferencia entre "una tabla de
+   números" y "un tablero": el ojo va al número primero y recién después
+   lee qué es.
+
+   Van al final y no editando las reglas originales porque conviven con
+   el tamaño de las tarjetas, que sí quedó como estaba.
+   --------------------------------------------------------------------------- */
+
+.crm-stat,
+.dashboard-tarjeta {
+  padding: 16px 14px;
+  text-align: left;
+}
+
+.crm-stat strong,
+.dashboard-tarjeta strong {
+  display: block;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  /* Los números de una columna se leen mejor alineados: mismo ancho por
+     dígito para que no "bailen" entre tarjetas. */
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-stat span,
+.dashboard-tarjeta span {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--color-texto-secundario);
+}
+
+/* Las cifras de plata son más largas: si mantuvieran el tamaño del
+   número suelto, "USD 188.000" se partiría en dos líneas en una tarjeta
+   angosta. */
+.crm-stat-valor strong,
+.crm-stat-comision strong,
+.crm-stat-comision-ganada strong {
+  font-size: 1.35rem;
+}
+
+/* Íconos de los ítems del menú (rediseño 2026-09-18). Antes el ícono
+   estaba en el rótulo del grupo y los ítems eran solo texto; en el
+   mockup es al revés, y tiene más sentido: el ícono ayuda a encontrar
+   una sección, y las secciones son los ítems. */
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-icono {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  /* currentColor: el ícono se pinta solo del color del ítem, así el
+     activo queda naranja sin ninguna regla extra. */
+  color: currentColor;
+  opacity: 0.75;
+}
+
+.item-icono svg {
+  width: 100%;
+  height: 100%;
+}
+
+.drawer-item.ruta-activa .item-icono {
+  opacity: 1;
+}

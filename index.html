@@ -11,11 +11,11 @@
      superficie reales de ESE lote — WhatsApp/Facebook leen el HTML
      crudo con su propio crawler, no ejecutan el JS de la app, así que
      esto no se puede armar solo en el cliente. -->
-<meta name="description" content="Mirá el límite real del terreno sobre imagen satelital, no un pin genérico." />
+<meta name="description" content="Mira el límite real del terreno sobre imagen satelital, no un pin genérico." />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="MojonApp" />
 <meta property="og:title" content="MojonApp" />
-<meta property="og:description" content="Mirá el límite real del terreno sobre imagen satelital, no un pin genérico." />
+<meta property="og:description" content="Mira el límite real del terreno sobre imagen satelital, no un pin genérico." />
 <meta property="og:url" content="https://mojonapp.com.ar/" />
 <!-- Idea #10: imagen de marca propia para el preview de WhatsApp/
      Facebook al compartir un link — antes no había ninguna, quedaba un
@@ -27,7 +27,7 @@
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="MojonApp" />
-<meta name="twitter:description" content="Mirá el límite real del terreno sobre imagen satelital, no un pin genérico." />
+<meta name="twitter:description" content="Mira el límite real del terreno sobre imagen satelital, no un pin genérico." />
 <meta name="twitter:image" content="https://mojonapp.com.ar/og-imagen.svg" />
 <!-- "Modo embed" (?embed=1): para insertar el mapa en la página propia de
      una inmobiliaria vía <iframe> — esconde el encabezado (menú e
@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-05" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-06" />
 </head>
 <body>
 
@@ -122,7 +122,7 @@
         <span class="menu-modulo-nombre">Inicio</span>
       </button>
       <div class="menu-modulo-items">
-        <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard" data-ruta="/dashboard">Dashboard</button>
+        <button type="button" class="drawer-item" id="btn-abrir-dashboard" data-testid="btn-abrir-dashboard" data-ruta="/dashboard"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><span>Dashboard</span></button>
       </div>
     </div>
 
@@ -141,29 +141,29 @@
       <div class="menu-modulo-items">
         <!-- Dispara el mismo botón de la barra de secciones oculta, que es
              quien sabe mostrar el mapa y ocultar el resto (volverAlMapa). -->
-        <button type="button" class="drawer-item" id="btn-drawer-mapa" data-testid="btn-drawer-mapa" data-ruta="/">Mapa</button>
-        <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista" data-ruta="/lotes">Ver como lista</button>
+        <button type="button" class="drawer-item" id="btn-drawer-mapa" data-testid="btn-drawer-mapa" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4-6 2.5v13L9 17l6 3 6-2.5v-13L15 7 9 4Z"/><path d="M9 4v13"/><path d="M15 7v13"/></svg></span><span>Mapa</span></button>
+        <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista" data-ruta="/lotes"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3.5 6h.01"/><path d="M3.5 12h.01"/><path d="M3.5 18h.01"/></svg></span><span>Ver como lista</span></button>
         <!-- Visible sin sesión (guarda en el propio navegador, no en
              Firestore) — un comprador anónimo también puede armarse su
              propia lista para volver a verla después. -->
-        <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos" data-ruta="/favoritos">Favoritos</button>
+        <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos" data-ruta="/favoritos"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 6.5a4 4 0 0 0-7-2 4 4 0 0 0-7 2c0 4 7 9.5 7 9.5s7-5.5 7-9.5Z"/></svg></span><span>Favoritos</span></button>
 
         <div class="solo-con-sesion oculto">
           <p class="menu-categoria">Carga</p>
-          <button type="button" class="drawer-item" id="btn-cargar-lote" data-testid="btn-cargar-lote" data-ruta="/">Cargar a mano</button>
-          <button type="button" class="drawer-item" id="btn-abrir-manzana" data-testid="btn-abrir-manzana" data-ruta="/">Agregar manzana</button>
-          <button type="button" class="drawer-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela" data-ruta="/">Agregar parcela</button>
+          <button type="button" class="drawer-item" id="btn-cargar-lote" data-testid="btn-cargar-lote" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span><span>Cargar a mano</span></button>
+          <button type="button" class="drawer-item" id="btn-abrir-manzana" data-testid="btn-abrir-manzana" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></span><span>Agregar manzana</span></button>
+          <button type="button" class="drawer-item" id="btn-abrir-parcela" data-testid="btn-abrir-parcela" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 8 4l8 3 4 13-8-2Z"/></svg></span><span>Agregar parcela</span></button>
 
           <p class="menu-categoria">Catastro</p>
-          <button type="button" class="drawer-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano" data-ruta="/">Ver catastro cercano</button>
+          <button type="button" class="drawer-item" id="btn-ver-catastro-cercano" data-testid="btn-ver-catastro-cercano" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><span>Ver catastro cercano</span></button>
         </div>
 
         <!-- Gateado por el permiso "administrar_sectores" (ver
              actualizarUIPorPermisos en app.js): el id no cambia. -->
         <div id="drawer-grupo-sectores" class="solo-con-sesion oculto">
           <p class="menu-categoria">Clasificación</p>
-          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores" data-ruta="/zonas">Zonas</button>
-          <button type="button" class="drawer-item" id="btn-abrir-barrios" data-testid="btn-abrir-barrios" data-ruta="/barrios">Barrios</button>
+          <button type="button" class="drawer-item" id="btn-abrir-sectores" data-testid="btn-abrir-sectores" data-ruta="/zonas"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><span>Zonas</span></button>
+          <button type="button" class="drawer-item" id="btn-abrir-barrios" data-testid="btn-abrir-barrios" data-ruta="/barrios"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l5-4 5 4v12"/><path d="M15 21V12h4v9"/></svg></span><span>Barrios</span></button>
         </div>
       </div>
     </div>
@@ -178,28 +178,28 @@
             <path d="M16 5.5a3.2 3.2 0 0 1 0 6.2" /><path d="M18 14.8c2 .7 3 2.5 3 5.2" />
           </svg>
         </span>
-        <span class="menu-modulo-nombre">Contactos</span>
+        <span class="menu-modulo-nombre">Leads</span>
       </button>
       <div class="menu-modulo-items">
         <!-- Los dos gateados por "gestionar_contactos" en
              actualizarUIPorPermisos (app.js) — ids sin cambios. -->
-        <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm" data-ruta="/contactos">Pipeline de contactos</button>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-crm" data-testid="btn-abrir-crm" data-ruta="/contactos"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19a4 4 0 0 0-8 0"/><circle cx="12" cy="9" r="3.5"/><path d="M4.5 19a3.5 3.5 0 0 1 3-3.4"/><path d="M19.5 19a3.5 3.5 0 0 0-3-3.4"/></svg></span><span>Pipeline de leads</span></button>
         <!-- Tareas: mismo permiso que el pipeline, porque son las cosas
              que hay que hacer con esos contactos (ver js/tareas.js). -->
-        <button type="button" class="drawer-item oculto" id="btn-abrir-tareas" data-testid="btn-abrir-tareas" data-ruta="/tareas">Tareas</button>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-tareas" data-testid="btn-abrir-tareas" data-ruta="/tareas"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h11"/><path d="M9 12h11"/><path d="M9 19h11"/><path d="m3.5 5 1.2 1.2L7 4"/><path d="m3.5 12 1.2 1.2L7 11"/><path d="m3.5 19 1.2 1.2L7 18"/></svg></span><span>Tareas</span></button>
         <!-- "Interés del CRM" (idea propia #5 de "el mapa como una cualidad
              del CRM" — resaltar, no filtrar): un pin con la cantidad de
              contactos activos interesados sobre cada lote, ver
              activarInteresCrm en js/mapa.js. -->
-        <button type="button" class="drawer-item oculto" id="btn-ver-interes-crm" data-testid="btn-ver-interes-crm" data-ruta="/">Interés del CRM en el mapa</button>
+        <button type="button" class="drawer-item oculto" id="btn-ver-interes-crm" data-testid="btn-ver-interes-crm" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"/><path d="M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/></svg></span><span>Leads en el mapa</span></button>
 
         <!-- Misma categoría CONFIGURACIÓN que tiene Gestor dentro de su
              módulo CRM. Gateada por el permiso administrar_catalogos_crm
              (ver actualizarUIPorPermisos en app.js). -->
         <div id="drawer-grupo-catalogos-crm" class="oculto">
           <p class="menu-categoria">Configuración</p>
-          <button type="button" class="drawer-item" id="btn-abrir-motivos" data-testid="btn-abrir-motivos" data-ruta="/motivos-de-perdida">Motivos de pérdida</button>
-          <button type="button" class="drawer-item" id="btn-abrir-etiquetas-crm" data-testid="btn-abrir-etiquetas-crm" data-ruta="/etiquetas">Etiquetas</button>
+          <button type="button" class="drawer-item" id="btn-abrir-motivos" data-testid="btn-abrir-motivos" data-ruta="/motivos-de-perdida"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/></svg></span><span>Motivos de pérdida</span></button>
+          <button type="button" class="drawer-item" id="btn-abrir-etiquetas-crm" data-testid="btn-abrir-etiquetas-crm" data-ruta="/etiquetas"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5V4.5h7l9.5 9.5-7 7L3.5 11.5Z"/><circle cx="7.5" cy="8" r="1.2"/></svg></span><span>Etiquetas</span></button>
         </div>
       </div>
     </div>
@@ -219,22 +219,22 @@
         <!-- Gateado por "administrar_usuarios" (app.js) — id sin cambios. -->
         <div id="drawer-grupo-seguridad" class="oculto">
           <p class="menu-categoria">Seguridad</p>
-          <button type="button" class="drawer-item" id="menu-seguridad-usuarios" data-testid="menu-seguridad-usuarios" data-ruta="/usuarios">Usuarios</button>
-          <button type="button" class="drawer-item" id="menu-seguridad-perfiles" data-testid="menu-seguridad-perfiles" data-ruta="/perfiles">Perfiles de seguridad</button>
+          <button type="button" class="drawer-item" id="menu-seguridad-usuarios" data-testid="menu-seguridad-usuarios" data-ruta="/usuarios"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.5"/><path d="M3 19a6 6 0 0 1 12 0"/><path d="M17 8h5"/><path d="M19.5 5.5v5"/></svg></span><span>Usuarios</span></button>
+          <button type="button" class="drawer-item" id="menu-seguridad-perfiles" data-testid="menu-seguridad-perfiles" data-ruta="/perfiles"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.2 3 8 7 9 4-1 7-4.8 7-9V6l-7-3Z"/><path d="m9.5 12 1.8 1.8L15 10"/></svg></span><span>Perfiles de seguridad</span></button>
         </div>
 
         <p class="menu-categoria">Control</p>
         <!-- A diferencia de "Usuarios"/"Perfiles" (permiso
              administrar_usuarios), esto se muestra con esRootActual()
              directo: quién hizo qué lo ve solo root. -->
-        <button type="button" class="drawer-item oculto" id="btn-abrir-actividades" data-testid="btn-abrir-actividades" data-ruta="/actividades">Actividades</button>
-        <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria" data-ruta="/auditoria">Auditoría</button>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-actividades" data-testid="btn-abrir-actividades" data-ruta="/actividades"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3.5L21 6"/><path d="M3 21h18"/></svg></span><span>Actividades</span></button>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-auditoria" data-testid="btn-abrir-auditoria" data-ruta="/auditoria"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6Z"/><path d="M15 3v4h4"/><path d="M9.5 12h5"/><path d="M9.5 16h5"/></svg></span><span>Auditoría</span></button>
 
         <p class="menu-categoria">Avanzado</p>
         <!-- Vidriera de funciones de IA todavía no conectadas a ningún
              servicio pago (ver panel-ia más abajo) — mismo criterio de
              visibilidad que Auditoría. -->
-        <button type="button" class="drawer-item oculto" id="btn-abrir-ia" data-testid="btn-abrir-ia" data-ruta="/ia">Inteligencia Artificial</button>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-ia" data-testid="btn-abrir-ia" data-ruta="/ia"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="m5.6 5.6 2.1 2.1"/><path d="m16.3 16.3 2.1 2.1"/><path d="m18.4 5.6-2.1 2.1"/><path d="m7.7 16.3-2.1 2.1"/><circle cx="12" cy="12" r="3"/></svg></span><span>Inteligencia Artificial</span></button>
       </div>
     </div>
   
@@ -489,7 +489,7 @@
          ficha.js). -->
     <div id="ficha-portales" class="oculto" data-testid="ficha-portales">
       <p class="ficha-calculadora-titulo">Publicación en portales</p>
-      <p class="ficha-calculadora-nota">Marcá dónde ya está publicado este lote — no lo publica automáticamente.</p>
+      <p class="ficha-calculadora-nota">Marca dónde ya está publicado este lote — no lo publica automáticamente.</p>
       <label class="opcion-servicio">
         <input type="checkbox" id="portal-zonaprop" data-testid="portal-zonaprop" /> ZonaProp
       </label>
@@ -562,7 +562,7 @@
         <button type="button" id="btn-modo-lado-tocar" class="activo" data-testid="btn-modo-lado-tocar">Tocar en el mapa</button>
         <button type="button" id="btn-modo-lado-lista" data-testid="btn-modo-lado-lista">Lista de lados</button>
       </div>
-      <p id="lado-tocar-ayuda" class="editor-poligono-ayuda" data-testid="lado-tocar-ayuda">Tocá un lado del lote (la línea del contorno) para seleccionarlo.</p>
+      <p id="lado-tocar-ayuda" class="editor-poligono-ayuda" data-testid="lado-tocar-ayuda">Toca un lado del lote (la línea del contorno) para seleccionarlo.</p>
       <ul id="lista-lados" class="oculto" data-testid="lista-lados"></ul>
       <div id="lado-seleccionado-form" class="oculto" data-testid="lado-seleccionado-form">
         <span>Lado seleccionado: <strong id="lado-seleccionado-medida">—</strong></span>
@@ -706,7 +706,7 @@
     <button id="cerrar-form-parcela" class="btn-cerrar" aria-label="Cerrar">&times;</button>
     <h2>Traer parcela del catastro</h2>
     <p class="texto-ayuda">
-      Busca dentro del área que estás viendo ahora en el mapa. Usá esto
+      Busca dentro del área que estás viendo ahora en el mapa. Usa esto
       cuando "+ Manzana" no encuentra nada — pasa en zonas donde el
       catastro tiene la parcela pero no el contorno de la manzana.
     </p>
@@ -1140,7 +1140,7 @@
           <span id="dashboard-seguimientos-contador" class="dashboard-contador oculto"></span>
         </div>
         <ul id="dashboard-seguimientos" class="dashboard-lista" data-testid="dashboard-seguimientos"></ul>
-        <p id="dashboard-seguimientos-vacio" class="dashboard-vacio oculto">No tenés seguimientos pendientes.</p>
+        <p id="dashboard-seguimientos-vacio" class="dashboard-vacio oculto">No tienes seguimientos pendientes.</p>
       </section>
 
       <!-- "Visitas de hoy" (idea propia #4 de "el mapa como una cualidad
@@ -1157,7 +1157,7 @@
           <span id="dashboard-visitas-contador" class="dashboard-contador oculto"></span>
         </div>
         <ul id="dashboard-visitas" class="dashboard-lista" data-testid="dashboard-visitas"></ul>
-        <p id="dashboard-visitas-vacio" class="dashboard-vacio oculto">No tenés visitas agendadas para hoy.</p>
+        <p id="dashboard-visitas-vacio" class="dashboard-vacio oculto">No tienes visitas agendadas para hoy.</p>
       </section>
 
       <section class="dashboard-seccion">
@@ -1324,10 +1324,10 @@
       <h2>Favoritos</h2>
       <button id="cerrar-panel-favoritos" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
-    <p id="favoritos-comparar-ayuda" class="dashboard-ayuda oculto">Tildá 2 a 4 para compararlos lado a lado.</p>
+    <p id="favoritos-comparar-ayuda" class="dashboard-ayuda oculto">Marca 2 a 4 para compararlos lado a lado.</p>
     <ul id="lista-favoritos" class="dashboard-lista" data-testid="lista-favoritos"></ul>
     <p id="favoritos-vacio" class="dashboard-vacio oculto" data-testid="favoritos-vacio">
-      Todavía no guardaste ningún lote. Tocá el 🤍 en la ficha de un lote para guardarlo acá.
+      Todavía no guardaste ningún lote. Toca el 🤍 en la ficha de un lote para guardarlo acá.
     </p>
     <button type="button" id="btn-comparar-favoritos" class="crm-btn-primario oculto" data-testid="btn-comparar-favoritos">Comparar (0)</button>
   </div>
@@ -1518,9 +1518,9 @@
            comentario largo en functions/ia-lead.js. -->
       <div id="crm-pegar-mail" class="oculto" data-testid="crm-pegar-mail">
         <label class="crm-campo">
-          Pegá el mail que te llegó del portal
+          Pega el mail que te llegó del portal
           <textarea id="crm-pegar-mail-texto" rows="8" data-testid="crm-pegar-mail-texto"
-            placeholder="Pegá acá el mail completo, tal como te llegó."></textarea>
+            placeholder="Pega acá el mail completo, tal como te llegó."></textarea>
         </label>
         <div id="crm-pegar-mail-acciones">
           <button type="button" id="btn-cancelar-pegar-mail" class="crm-btn-fantasma" data-testid="btn-cancelar-pegar-mail">Cancelar</button>
@@ -1737,7 +1737,7 @@
             <textarea id="actividad-texto" placeholder="¿Qué pasó?" data-testid="actividad-texto"></textarea>
             <button type="button" id="btn-agregar-actividad" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-agregar-actividad">+ Agregar</button>
           </div>
-          <p id="crm-actividad-primero-guardar" class="dashboard-vacio" data-testid="crm-actividad-primero-guardar">Guardá el contacto primero para poder registrar actividad.</p>
+          <p id="crm-actividad-primero-guardar" class="dashboard-vacio" data-testid="crm-actividad-primero-guardar">Guarda el contacto primero para poder registrar actividad.</p>
         </div>
         </div><!-- /crm-panel-actividad -->
 
@@ -2097,6 +2097,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-18-05"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-06"></script>
 </body>
 </html>

@@ -163,7 +163,7 @@ async function cargarAuditoria() {
           li.remove();
           if (!elLista.children.length) elVacio.classList.remove("oculto");
         } catch (error) {
-          window.alert(error.code === "permission-denied" ? "No tenés permiso para borrar eventos." : "No se pudo borrar el evento.");
+          window.alert(error.code === "permission-denied" ? "No tienes permiso para borrar eventos." : "No se pudo borrar el evento.");
           botonBorrar.disabled = false;
         }
       });
@@ -173,7 +173,7 @@ async function cargarAuditoria() {
     });
   } catch (error) {
     elError.textContent =
-      error.code === "permission-denied" ? "No tenés permiso para ver la auditoría." : "No se pudo cargar la auditoría.";
+      error.code === "permission-denied" ? "No tienes permiso para ver la auditoría." : "No se pudo cargar la auditoría.";
     elError.classList.remove("oculto");
   }
 }

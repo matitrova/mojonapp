@@ -38,7 +38,7 @@ const TEXTOS = {
       titulo: "El mapa todavía no tiene lotes",
       texto:
         "Traelos del catastro por nomenclatura y quedan dibujados con su forma real, " +
-        "o cargá uno a mano si lo vas a dibujar vos."
+        "o carga uno a mano si lo vas a dibujar vos."
     },
     sinSesion: {
       titulo: "Todavía no hay lotes publicados",

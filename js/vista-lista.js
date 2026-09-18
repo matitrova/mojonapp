@@ -587,7 +587,7 @@ elMasivaForm.addEventListener("submit", async (evento) => {
     for (const feature of fallados) loteSeleccionados.add(feature.id);
     elMasivaError.textContent =
       `Se aplicó a ${aplicados} de ${seleccionados.length}. Los ${fallados.length} que fallaron quedaron ` +
-      "seleccionados: podés apretar Aplicar otra vez, aplicar el mismo cambio dos veces no hace daño.";
+      "seleccionados: puedes apretar Aplicar otra vez, aplicar el mismo cambio dos veces no hace daño.";
     elMasivaError.classList.remove("oculto");
     actualizarVistaLista();
     return;
@@ -732,7 +732,7 @@ export function mostrarEditarLoteDesdeGrilla(feature) {
   actualizarVisibilidadReservadoHasta();
   actualizarVisibilidadComprador(p.comprador_contacto_id || "");
   elEditarLotePrecio.value = p.precio_usd ?? "";
-  // Vacío significa "usá el porcentaje general", no 0 — por eso ?? y
+  // Vacío significa "usa el porcentaje general", no 0 — por eso ?? y
   // no ||: un lote con 0% de comisión tiene que mostrar 0, no vacío.
   elEditarLoteComision.value = p.comision_pct ?? "";
   poblarSelectSector(elEditarLoteSector, p.sector);
@@ -841,7 +841,7 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
     // fallar solas — con el lote ya guardado.
     //
     // Por eso este try/catch y no dejar que el error suba al de afuera:
-    // así el corredor veía "No tenés permiso para editar este lote", que
+    // así el corredor veía "No tienes permiso para editar este lote", que
     // es falso (lo tenía, y el lote se guardó), y además el error cortaba
     // antes de refrescar la pantalla, así que parecía que no había pasado
     // nada mientras Firestore ya tenía los cambios. Pasó de verdad: con
@@ -894,7 +894,7 @@ formularioEditarLote.addEventListener("submit", async (evento) => {
   } catch (error) {
     elEditarLoteError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para editar este lote."
+        ? "No tienes permiso para editar este lote."
         : error.message || "No se pudieron guardar los cambios.";
     elEditarLoteError.classList.remove("oculto");
   } finally {

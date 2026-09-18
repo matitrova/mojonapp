@@ -6,7 +6,7 @@
 // el cableado: traer de Firestore, dibujar y guardar.
 //
 // Los textos de esta pantalla están en español neutro ("tienes", no
-// "tenés") por decisión del usuario del 2026-09-18. El resto de la app
+// "tienes") por decisión del usuario del 2026-09-18. El resto de la app
 // todavía usa voseo: se pasa junto con el rediseño, no a mitad de camino,
 // para no romper los tests que verifican textos visibles sin poder
 // correrlos.

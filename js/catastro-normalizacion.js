@@ -56,7 +56,7 @@ export async function pedirWfsA(baseUrl, params) {
   const url = `${baseUrl}?${new URLSearchParams(params).toString()}`;
   const respuesta = await fetch(url);
   if (!respuesta.ok) {
-    throw new Error("El catastro no respondió. Probá de nuevo en un momento.");
+    throw new Error("El catastro no respondió. Prueba de nuevo en un momento.");
   }
   const datos = await respuesta.json();
   if (!datos.features) {

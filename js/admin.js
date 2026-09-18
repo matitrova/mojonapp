@@ -277,7 +277,7 @@ formularioPerfil.addEventListener("submit", async (evento) => {
   } catch (error) {
     elPerfilError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para administrar perfiles."
+        ? "No tienes permiso para administrar perfiles."
         : "No se pudo guardar el perfil.";
     elPerfilError.classList.remove("oculto");
   }

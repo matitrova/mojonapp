@@ -85,7 +85,7 @@ elBoton.addEventListener("click", async () => {
   if (!feature) return;
 
   if (!auth.currentUser) {
-    mostrarMensaje("Tenés que iniciar sesión para usar esto.");
+    mostrarMensaje("Tienes que iniciar sesión para usar esto.");
     return;
   }
 
@@ -122,7 +122,7 @@ elBoton.addEventListener("click", async () => {
     elTexto.value = datos.texto;
     elResultado.classList.remove("oculto");
   } catch {
-    mostrarMensaje("No se pudo redactar el aviso. Revisá la conexión.");
+    mostrarMensaje("No se pudo redactar el aviso. Revisa la conexión.");
   } finally {
     elBoton.disabled = false;
     elBoton.textContent = textoOriginal;

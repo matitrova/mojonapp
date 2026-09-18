@@ -45,7 +45,7 @@ const RUTAS = [
   { path: "/lotes", clave: "lotes", panel: "vista-lista", boton: "btn-ver-lista", navTab: "nav-tab-lista", titulo: "Lotes" },
   { path: "/favoritos", clave: "favoritos", panel: "panel-favoritos", boton: "btn-abrir-favoritos", navTab: null, titulo: "Favoritos" },
   { path: "/dashboard", clave: "dashboard", panel: "panel-dashboard", boton: "btn-abrir-dashboard", navTab: "nav-tab-dashboard", titulo: "Dashboard" },
-  { path: "/contactos", clave: "contactos", panel: "panel-crm", boton: "btn-abrir-crm", navTab: "nav-tab-crm", titulo: "Pipeline de contactos" },
+  { path: "/contactos", clave: "contactos", panel: "panel-crm", boton: "btn-abrir-crm", navTab: "nav-tab-crm", titulo: "Pipeline de leads" },
   { path: "/tareas", clave: "tareas", panel: "panel-tareas", boton: "btn-abrir-tareas", navTab: null, titulo: "Tareas" },
   { path: "/zonas", clave: "zonas", panel: "panel-sectores", boton: "btn-abrir-sectores", navTab: null, titulo: "Zonas" },
   { path: "/barrios", clave: "barrios", panel: "panel-barrios", boton: "btn-abrir-barrios", navTab: null, titulo: "Barrios" },
@@ -98,9 +98,24 @@ function marcarEnElMenu(ruta) {
   });
   document.querySelectorAll(".menu-modulo").forEach((el) => el.classList.remove("ruta-activa"));
 
-  // Puede haber más de un elemento con la misma ruta (el ítem del menú y
-  // su pestaña equivalente en #nav-secciones), así que se marcan todos.
-  document.querySelectorAll(`[data-ruta="${ruta.path}"]`).forEach((el) => {
+  // SOLO el botón que la tabla de rutas declara como dueño de la
+  // sección, más su pestaña en #nav-secciones.
+  //
+  // Antes se marcaban TODOS los elementos con ese data-ruta, y eso
+  // estaba mal: hay seis botones con data-ruta="/" porque son acciones
+  // que ocurren sobre el mapa ("Cargar a mano", "Agregar manzana",
+  // "Ver catastro cercano"...), no secciones. Con el menú contraído como
+  // rail no se notaba; con la barra lateral siempre desplegada del
+  // rediseño quedaron seis ítems iluminados a la vez, como si estuvieras
+  // en seis lugares al mismo tiempo.
+  //
+  // El dueño de cada sección es ruta.boton: la misma tabla que ya decide
+  // qué panel abrir. Un solo lugar donde se declara la verdad.
+  const propios = [ruta.boton, ruta.navTab]
+    .filter(Boolean)
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  propios.forEach((el) => {
     el.classList.add("ruta-activa");
     el.setAttribute("aria-current", "page");
     // El módulo que contiene al ítem queda marcado también: es lo único

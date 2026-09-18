@@ -165,7 +165,7 @@ function actualizarAreaCalculada() {
     if (superficieDeclarada > 0) {
       const errorRelativo = Math.abs(area - superficieDeclarada) / superficieDeclarada;
       if (errorRelativo > 0.05) {
-        mensaje += ` — se aleja bastante de los ${superficieDeclarada} m² declarados. Revisá el orden de los vértices.`;
+        mensaje += ` — se aleja bastante de los ${superficieDeclarada} m² declarados. Revisa el orden de los vértices.`;
         elLoteAreaCalculada.classList.add("area-advertencia");
       }
     }
@@ -235,7 +235,7 @@ formularioLote.addEventListener("submit", async (evento) => {
     //
     // Con su propio try/catch, y no bajo el de afuera, a propósito: para
     // cuando esto falla el lote YA está guardado, así que dejar que el
-    // error suba mostraría "no tenés permiso" y el formulario abierto,
+    // error suba mostraría "no tienes permiso" y el formulario abierto,
     // como si no se hubiera creado nada — y el corredor lo cargaría de
     // nuevo, duplicado. El caso concreto que lo hace probable: desplegar
     // esto antes de pegar la regla nueva de Firestore. Se pierde la nota,
@@ -258,7 +258,7 @@ formularioLote.addEventListener("submit", async (evento) => {
   } catch (error) {
     elLoteError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para cargar lotes. Iniciá sesión de nuevo."
+        ? "No tienes permiso para cargar lotes. Inicia sesión de nuevo."
         : error.message || "No se pudo guardar el lote.";
     elLoteError.classList.remove("oculto");
   }
@@ -363,7 +363,7 @@ formularioManzana.addEventListener("submit", async (evento) => {
     const manzana = await buscarManzana(elManzanaNumero.value.trim());
     if (!manzana) {
       throw new Error(
-        "No se encontró esa manzana en el área visible del mapa. Acercate o alejate hasta encuadrarla y probá de nuevo."
+        "No se encontró esa manzana en el área visible del mapa. Acercate o alejate hasta encuadrarla y prueba de nuevo."
       );
     }
 
@@ -458,7 +458,7 @@ elManzanaConfirmar.addEventListener("click", async () => {
   } catch (error) {
     elManzanaError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para cargar lotes. Iniciá sesión de nuevo."
+        ? "No tienes permiso para cargar lotes. Inicia sesión de nuevo."
         : error.message || "No se pudieron importar los lotes.";
     elManzanaError.classList.remove("oculto");
   } finally {
@@ -589,7 +589,7 @@ formularioParcela.addEventListener("submit", async (evento) => {
     if (candidatas.length === 0) {
       elParcelaResultado.innerHTML = "";
       throw new Error(
-        "No se encontró esa parcela en el área visible del mapa. Acercate o alejate hasta encuadrarla y probá de nuevo."
+        "No se encontró esa parcela en el área visible del mapa. Acercate o alejate hasta encuadrarla y prueba de nuevo."
       );
     }
 
@@ -690,7 +690,7 @@ function limpiarCaptura() {
 function iniciarCapturaGps() {
   setModoCaptura("gps");
   puntosCaptura = [];
-  elCapturaMensaje.textContent = 'Parate en cada esquina del lote y tocá "Marcar acá".';
+  elCapturaMensaje.textContent = 'Parate en cada esquina del lote y toca "Marcar acá".';
   elBtnCapturaAgregar.classList.remove("oculto");
   actualizarContadorCaptura();
   elFormLote.classList.add("oculto");
@@ -700,7 +700,7 @@ function iniciarCapturaGps() {
 function iniciarCapturaMapa() {
   setModoCaptura("mapa");
   puntosCaptura = [];
-  elCapturaMensaje.textContent = "Tocá cada esquina del lote directo sobre el mapa.";
+  elCapturaMensaje.textContent = "Toca cada esquina del lote directo sobre el mapa.";
   elBtnCapturaAgregar.classList.add("oculto");
   actualizarContadorCaptura();
   elFormLote.classList.add("oculto");
@@ -719,7 +719,7 @@ elBtnCapturaAgregar.addEventListener("click", () => {
   navigator.geolocation.getCurrentPosition(
     (posicion) => agregarPuntoCaptura(posicion.coords.latitude, posicion.coords.longitude),
     () => {
-      elCapturaError.textContent = "No se pudo obtener tu ubicación. Revisá el permiso de ubicación.";
+      elCapturaError.textContent = "No se pudo obtener tu ubicación. Revisa el permiso de ubicación.";
       elCapturaError.classList.remove("oculto");
     },
     { enableHighAccuracy: true, timeout: 10000 }

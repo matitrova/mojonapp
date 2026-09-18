@@ -277,7 +277,7 @@ elBtnAplicarLado.addEventListener("click", () => {
 
   const nuevaLongitud = parseFloat(elInputLadoNuevo.value);
   if (!(nuevaLongitud > 0)) {
-    elEditorPoligonoError.textContent = "Escribí una medida en metros mayor a 0 para aplicar.";
+    elEditorPoligonoError.textContent = "Escribe una medida en metros mayor a 0 para aplicar.";
     elEditorPoligonoError.classList.remove("oculto");
     return;
   }
@@ -346,7 +346,7 @@ elBtnGuardarPoligono.addEventListener("click", async () => {
   } catch (error) {
     elEditorPoligonoError.textContent =
       error.code === "permission-denied"
-        ? "No tenés permiso para editar este lote."
+        ? "No tienes permiso para editar este lote."
         : "No se pudo guardar la forma nueva.";
     elEditorPoligonoError.classList.remove("oculto");
   } finally {
