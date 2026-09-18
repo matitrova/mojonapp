@@ -11,7 +11,15 @@
 // configurarVistaLista() para evitar una dependencia circular.
 // ---------------------------------------------------------------------------
 
-import { getLotesActuales, getContactosActuales, getLoteEditadoDesdeFicha, setLoteEditadoDesdeFicha } from "./estado.js";
+import {
+  getLotesActuales,
+  getContactosActuales,
+  getLoteEditadoDesdeFicha,
+  setLoteEditadoDesdeFicha,
+  getSectoresActuales,
+  getBarriosActuales
+} from "./estado.js";
+import { SIN_CAMBIO, VACIAR, armarCambios, textoDeConfirmacion, detalleParaAuditoria } from "./edicion-masiva.js";
 import { centroideDePoligono } from "./geometria.js";
 // Navegación por URL (ver js/router.js) — capa de abajo, sin ciclos.
 import { navegarA } from "./router.js";
@@ -271,6 +279,7 @@ function irAFichaDesdeVistaLista(feature) {
 }
 
 function renderTabla(lotesPagina) {
+  lotesDeLaPagina = lotesPagina;
   elTablaLotesCuerpo.innerHTML = "";
   lotesPagina.forEach((feature) => {
     const p = feature.properties;
@@ -278,6 +287,7 @@ function renderTabla(lotesPagina) {
     fila.className = "fila-lote";
     fila.dataset.loteId = feature.id; // permite ubicar una fila puntual (tests, debug)
     fila.innerHTML = `
+      <td class="col-tilde"></td>
       <td>${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}</td>
       <td>${p.sector || "—"}</td>
       <td>${p.barrio || "—"}</td>
@@ -289,6 +299,28 @@ function renderTabla(lotesPagina) {
     `;
 
     fila.addEventListener("click", () => irAFichaDesdeVistaLista(feature));
+
+    // El tilde solo aparece en los lotes que este usuario puede editar.
+    // Es más honesto que mostrarlo siempre y fallar al aplicar: el
+    // permiso real lo hace cumplir firestore.rules, y una selección que
+    // incluya lotes ajenos terminaría en "permission-denied" a mitad de
+    // una escritura en masa (ver puedeEditarLote en js/permisos.js).
+    if (puedeEditarLote(feature)) {
+      const tilde = document.createElement("input");
+      tilde.type = "checkbox";
+      tilde.className = "tilde-lote";
+      tilde.checked = loteSeleccionados.has(feature.id);
+      tilde.dataset.tildeLoteId = feature.id;
+      tilde.setAttribute("aria-label", `Seleccionar ${tituloLote(p)}`);
+      // La fila entera abre la ficha: sin esto, tildar te saca de la lista.
+      tilde.addEventListener("click", (evento) => evento.stopPropagation());
+      tilde.addEventListener("change", () => {
+        if (tilde.checked) loteSeleccionados.add(feature.id);
+        else loteSeleccionados.delete(feature.id);
+        actualizarBarraSeleccion();
+      });
+      fila.querySelector("td.col-tilde").appendChild(tilde);
+    }
 
     const celdaAcciones = fila.querySelector("td:last-child");
 
@@ -320,6 +352,242 @@ function renderTabla(lotesPagina) {
     elTablaLotesCuerpo.appendChild(fila);
   });
 }
+
+// ---------------------------------------------------------------------------
+// Edición en masa: tildar varios lotes y cambiarles un campo de una vez.
+//
+// Por qué existe y qué NO deja cambiar está explicado en
+// js/edicion-masiva.js, que tiene la parte con reglas. Acá solo está el
+// cableado con la pantalla.
+// ---------------------------------------------------------------------------
+
+const elSeleccionBarra = document.getElementById("seleccion-barra");
+const elSeleccionCuenta = document.getElementById("seleccion-cuenta");
+const elSeleccionarPagina = document.getElementById("seleccionar-pagina");
+const elBtnSeleccionarFiltro = document.getElementById("btn-seleccionar-filtro");
+const elBtnAplicarAVarios = document.getElementById("btn-aplicar-a-varios");
+const elBtnLimpiarSeleccion = document.getElementById("btn-limpiar-seleccion");
+const elMasivaForm = document.getElementById("masiva-form");
+const elMasivaSector = document.getElementById("masiva-sector");
+const elMasivaBarrio = document.getElementById("masiva-barrio");
+const elMasivaPrecio = document.getElementById("masiva-precio");
+const elMasivaConfirmacion = document.getElementById("masiva-confirmacion");
+const elMasivaError = document.getElementById("masiva-error");
+const elMasivaProgreso = document.getElementById("masiva-progreso");
+const elMasivaAplicar = document.getElementById("masiva-aplicar");
+const elMasivaCancelar = document.getElementById("masiva-cancelar");
+const elMasivaServicios = {
+  luz: document.getElementById("masiva-luz"),
+  agua: document.getElementById("masiva-agua"),
+  gas: document.getElementById("masiva-gas"),
+  cloaca: document.getElementById("masiva-cloaca")
+};
+
+// Ids, no features: la lista se vuelve a dibujar en cada filtro y cada
+// página, y los objetos cambian de identidad en cada carga desde
+// Firestore. Con ids, la selección sobrevive a todo eso.
+const loteSeleccionados = new Set();
+let lotesDeLaPagina = [];
+
+function lotesSeleccionadosActuales() {
+  return getLotesActuales().filter((f) => loteSeleccionados.has(f.id));
+}
+
+function actualizarBarraSeleccion() {
+  const cantidad = loteSeleccionados.size;
+  // En modo grilla no hay tildes, así que la barra tampoco: la selección
+  // se conserva y vuelve a aparecer al volver a la tabla.
+  const visible = cantidad > 0 && modoVistaLista === "tabla";
+  elSeleccionBarra.classList.toggle("oculto", !visible);
+  if (!visible) elMasivaForm.classList.add("oculto");
+  elSeleccionCuenta.textContent =
+    cantidad === 1 ? "1 lote seleccionado" : `${cantidad} lotes seleccionados`;
+
+  const seleccionablesDeLaPagina = lotesDeLaPagina.filter((f) => puedeEditarLote(f));
+  elSeleccionarPagina.checked =
+    seleccionablesDeLaPagina.length > 0 &&
+    seleccionablesDeLaPagina.every((f) => loteSeleccionados.has(f.id));
+
+  // "Seleccionar los N del filtro" solo tiene sentido si el filtro
+  // alcanza más lotes que los que se están viendo en esta página.
+  const seleccionablesDelFiltro = lotesFiltrados().filter((f) => puedeEditarLote(f));
+  const hayMasQueLaPagina = seleccionablesDelFiltro.length > seleccionablesDeLaPagina.length;
+  elBtnSeleccionarFiltro.classList.toggle("oculto", !hayMasQueLaPagina);
+  elBtnSeleccionarFiltro.textContent = `Seleccionar los ${seleccionablesDelFiltro.length} del filtro`;
+
+  if (visible) actualizarConfirmacionMasiva();
+}
+
+elSeleccionarPagina.addEventListener("change", () => {
+  const seleccionables = lotesDeLaPagina.filter((f) => puedeEditarLote(f));
+  for (const feature of seleccionables) {
+    if (elSeleccionarPagina.checked) loteSeleccionados.add(feature.id);
+    else loteSeleccionados.delete(feature.id);
+  }
+  renderTabla(lotesDeLaPagina);
+  actualizarBarraSeleccion();
+});
+
+elBtnSeleccionarFiltro.addEventListener("click", () => {
+  for (const feature of lotesFiltrados().filter((f) => puedeEditarLote(f))) {
+    loteSeleccionados.add(feature.id);
+  }
+  renderTabla(lotesDeLaPagina);
+  actualizarBarraSeleccion();
+});
+
+function limpiarSeleccion() {
+  loteSeleccionados.clear();
+  elMasivaForm.classList.add("oculto");
+  renderTabla(lotesDeLaPagina);
+  actualizarBarraSeleccion();
+}
+elBtnLimpiarSeleccion.addEventListener("click", limpiarSeleccion);
+
+elBtnAplicarAVarios.addEventListener("click", () => {
+  // Los selects se rearman en cada apertura: las zonas y barrios pueden
+  // haberse creado desde su propio panel mientras la lista estaba abierta.
+  const opcionesFijas =
+    `<option value="${SIN_CAMBIO}">No cambiar</option>` +
+    `<option value="${VACIAR}">Vaciar el campo</option>`;
+  elMasivaSector.innerHTML =
+    opcionesFijas + getSectoresActuales().map((s) => `<option value="${s.nombre}">${s.nombre}</option>`).join("");
+  elMasivaBarrio.innerHTML =
+    opcionesFijas + getBarriosActuales().map((b) => `<option value="${b.nombre}">${b.nombre}</option>`).join("");
+  elMasivaPrecio.value = "";
+  for (const select of Object.values(elMasivaServicios)) select.value = SIN_CAMBIO;
+  elMasivaError.classList.add("oculto");
+  elMasivaProgreso.classList.add("oculto");
+  elMasivaForm.classList.remove("oculto");
+  actualizarConfirmacionMasiva();
+});
+
+elMasivaCancelar.addEventListener("click", () => elMasivaForm.classList.add("oculto"));
+
+function valoresDelFormularioMasivo() {
+  return {
+    sector: elMasivaSector.value,
+    barrio: elMasivaBarrio.value,
+    precio: elMasivaPrecio.value,
+    luz: elMasivaServicios.luz.value,
+    agua: elMasivaServicios.agua.value,
+    gas: elMasivaServicios.gas.value,
+    cloaca: elMasivaServicios.cloaca.value
+  };
+}
+
+// El resumen se actualiza a medida que se elige, no al apretar Aplicar:
+// es la única forma de que el usuario vea a cuántos lotes le va a pegar
+// ANTES de pegarles. Con una escritura sobre decenas de documentos, esa
+// frase es la última chance de darse cuenta de un error.
+function actualizarConfirmacionMasiva() {
+  const { resumen, error } = armarCambios(valoresDelFormularioMasivo());
+  const hayResumen = !error && resumen.length > 0;
+  elMasivaConfirmacion.classList.toggle("oculto", !hayResumen);
+  if (hayResumen) elMasivaConfirmacion.textContent = textoDeConfirmacion(loteSeleccionados.size, resumen);
+  elMasivaAplicar.disabled = !hayResumen;
+}
+
+elMasivaSector.addEventListener("change", actualizarConfirmacionMasiva);
+elMasivaBarrio.addEventListener("change", actualizarConfirmacionMasiva);
+elMasivaPrecio.addEventListener("input", actualizarConfirmacionMasiva);
+for (const select of Object.values(elMasivaServicios)) {
+  select.addEventListener("change", actualizarConfirmacionMasiva);
+}
+
+elMasivaForm.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  elMasivaError.classList.add("oculto");
+
+  const { cambios, resumen, error } = armarCambios(valoresDelFormularioMasivo());
+  if (error) {
+    elMasivaError.textContent = error;
+    elMasivaError.classList.remove("oculto");
+    return;
+  }
+
+  const seleccionados = lotesSeleccionadosActuales();
+  if (seleccionados.length === 0) {
+    elMasivaError.textContent = "No quedó ningún lote seleccionado.";
+    elMasivaError.classList.remove("oculto");
+    return;
+  }
+
+  elMasivaAplicar.disabled = true;
+  elMasivaProgreso.textContent = `Guardando ${seleccionados.length}...`;
+  elMasivaProgreso.classList.remove("oculto");
+
+  // En paralelo y con allSettled a propósito, en vez de un batch
+  // atómico: aplicar el MISMO cambio dos veces no hace ningún daño
+  // (escribe los mismos valores), así que una aplicación parcial se
+  // arregla reintentando. A cambio se puede decir exactamente cuántos
+  // fallaron en vez de perder todo por uno.
+  const resultados = await Promise.allSettled(
+    seleccionados.map((feature) => updateDoc(doc(db, COLECCION_LOTES, feature.id), cambios))
+  );
+
+  const fallados = [];
+  resultados.forEach((resultado, indice) => {
+    if (resultado.status === "fulfilled") {
+      // Se refleja en memoria para que la lista muestre el cambio sin
+      // esperar la recarga. Las rutas con punto ("servicios.luz") hay
+      // que aplicarlas a mano: Object.assign no entiende de anidados.
+      const p = seleccionados[indice].properties;
+      for (const [campo, valor] of Object.entries(cambios)) {
+        if (campo.startsWith("servicios.")) {
+          p.servicios = { ...(p.servicios || {}), [campo.slice("servicios.".length)]: valor };
+        } else {
+          p[campo] = valor;
+        }
+      }
+    } else {
+      fallados.push(seleccionados[indice]);
+    }
+  });
+
+  const aplicados = seleccionados.length - fallados.length;
+  if (aplicados > 0) {
+    // UN evento por operación, no uno por lote: 40 filas iguales en la
+    // auditoría tapan todo lo demás, y además fue una sola acción. Los
+    // títulos van en el detalle mientras sean pocos, porque saber QUÉ se
+    // tocó vale más que saber cuántos.
+    const titulos = seleccionados
+      .filter((f) => !fallados.includes(f))
+      .map((f) => tituloLote(f.properties));
+    const hasta = 10;
+    const listado =
+      titulos.length <= hasta
+        ? titulos.join(", ")
+        : `${titulos.slice(0, hasta).join(", ")} y ${titulos.length - hasta} más`;
+    registrarAuditoria({
+      accion: "editar_lotes_en_masa",
+      objetoId: null,
+      objetoTitulo: null,
+      detalle: `${detalleParaAuditoria(aplicados, resumen)} — ${listado}`
+    });
+  }
+
+  await cargarLotesDesdeFirestore();
+
+  elMasivaProgreso.classList.add("oculto");
+  elMasivaAplicar.disabled = false;
+
+  if (fallados.length > 0) {
+    // Los que fallaron quedan seleccionados y los que salieron bien no:
+    // así "Aplicar" de nuevo reintenta exactamente lo que falta.
+    loteSeleccionados.clear();
+    for (const feature of fallados) loteSeleccionados.add(feature.id);
+    elMasivaError.textContent =
+      `Se aplicó a ${aplicados} de ${seleccionados.length}. Los ${fallados.length} que fallaron quedaron ` +
+      "seleccionados: podés apretar Aplicar otra vez, aplicar el mismo cambio dos veces no hace daño.";
+    elMasivaError.classList.remove("oculto");
+    actualizarVistaLista();
+    return;
+  }
+
+  limpiarSeleccion();
+  actualizarVistaLista();
+});
 
 // Misma info que la tabla, sin las acciones de editar/borrar (esas se
 // siguen haciendo desde la tabla) — con la primera foto si el lote
@@ -364,10 +632,12 @@ function actualizarModoVistaLista(hayLotes = hayLotesParaMostrar) {
 elBtnModoTabla.addEventListener("click", () => {
   modoVistaLista = "tabla";
   actualizarModoVistaLista();
+  actualizarBarraSeleccion();
 });
 elBtnModoGrilla.addEventListener("click", () => {
   modoVistaLista = "grilla";
   actualizarModoVistaLista();
+  actualizarBarraSeleccion();
 });
 
 export function actualizarVistaLista() {
@@ -397,10 +667,17 @@ export function actualizarVistaLista() {
   renderTabla(lotesPagina);
   renderGrilla(lotesPagina);
   actualizarModoVistaLista(lotes.length > 0);
+  actualizarBarraSeleccion();
 }
 
 function reiniciarPaginaYActualizar() {
   paginaActual = 1;
+  // Cambiar el filtro limpia la selección, a propósito. Si no, quedarían
+  // lotes tildados fuera de la vista y "Aplicar a todos" les pegaría a
+  // lotes que no se están viendo — el peor final posible para una
+  // escritura en masa. Además calza con cómo se usa esto: filtrar una
+  // manzana, seleccionar todo, aplicar, y pasar a la siguiente.
+  loteSeleccionados.clear();
   actualizarVistaLista();
 }
 elFiltroBuscar.addEventListener("input", reiniciarPaginaYActualizar);

@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["scripts/servidor_dev.py", "8137"],
       "port": 8137
+    },
+    {
+      "name": "worktree-fase00",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["scripts/servidor_dev.py", "8143"],
+      "port": 8143
     }
   ]
 }

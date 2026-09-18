@@ -4022,3 +4022,157 @@ body.con-nav-secciones #btn-flotante-catastro {
   font-size: 0.78rem;
   color: var(--color-texto-secundario);
 }
+
+/* ---------------------------------------------------------------------------
+   Edición en masa desde la lista de lotes.
+
+   La barra y el formulario están ocultos hasta que se tilda algo, así la
+   pantalla no cambia para quien solo viene a mirar la lista. Ver
+   js/edicion-masiva.js.
+   --------------------------------------------------------------------------- */
+
+/* Angosta y pegada al borde: la columna de tildes no tiene que empujar la
+   primera columna con datos. */
+.tabla-panel th.col-tilde,
+.tabla-panel td.col-tilde {
+  width: 28px;
+  padding-right: 0;
+  text-align: center;
+}
+
+.tilde-lote,
+#seleccionar-pagina {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primario);
+}
+
+/* Fondo neutro con el acento a la izquierda, NO el rojo suave: en esta
+   app ese rojo es el color de error (lo usa .masiva-error acá al lado),
+   y tener una selección no es un problema. Se vio en la captura de
+   revisión: la barra parecía una advertencia. */
+#seleccion-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-borde);
+  border-left: 3px solid var(--color-primario);
+  border-radius: var(--radio-chico);
+  background: var(--color-fondo-alterno);
+}
+
+#seleccion-cuenta {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-primario-oscuro);
+}
+
+.seleccion-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#masiva-form {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: var(--color-fondo-alterno);
+}
+
+.masiva-titulo {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.masiva-ayuda {
+  margin: 2px 0 10px;
+  font-size: 0.78rem;
+  color: var(--color-texto-secundario);
+}
+
+/* auto-fit en vez de un número fijo de columnas: en el teléfono queda
+   una sola y en el escritorio entran todas las que quepan, sin media
+   queries propias. */
+.masiva-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.masiva-campos label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+  color: var(--color-texto-secundario);
+}
+
+.masiva-campos select,
+.masiva-campos input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: #fff;
+  color: var(--color-texto);
+  font-size: 0.85rem;
+}
+
+/* El resumen de lo que va a pasar: es la última cosa que se lee antes de
+   escribir sobre decenas de documentos, así que va destacado y no como
+   texto auxiliar. */
+#masiva-confirmacion {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--color-primario);
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-primario-oscuro);
+}
+
+.masiva-error {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--color-acento);
+  background: var(--color-acento-suave);
+  font-size: 0.8rem;
+  color: var(--color-texto);
+}
+
+#masiva-progreso {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-texto-secundario);
+}
+
+.masiva-botones {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#masiva-aplicar {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: var(--color-primario);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#masiva-aplicar:disabled {
+  background: var(--color-texto-secundario);
+  cursor: not-allowed;
+}

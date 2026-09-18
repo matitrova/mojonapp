@@ -61,7 +61,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-17-02" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-18-01" />
 </head>
 <body>
 
@@ -1741,10 +1741,79 @@
         <button type="button" id="btn-modo-grilla" data-testid="btn-modo-grilla">▦ Grilla</button>
       </div>
       <div id="grilla-lotes" class="oculto" data-testid="grilla-lotes"></div>
+      <!-- Edición en masa. Solo aparece cuando hay algo tildado, así la
+           pantalla de siempre no cambia para quien solo mira la lista.
+           Cargar una cartera del catastro es repetir zona y servicios
+           manzana por manzana: en la cartera real había 108 lotes con
+           geometría y 3 con zona cargada. Ver js/edicion-masiva.js. -->
+      <div id="seleccion-barra" class="oculto" data-testid="seleccion-barra">
+        <p id="seleccion-cuenta" data-testid="seleccion-cuenta"></p>
+        <div class="seleccion-acciones">
+          <button type="button" id="btn-seleccionar-filtro" class="crm-btn-fantasma crm-btn-chico oculto" data-testid="btn-seleccionar-filtro"></button>
+          <button type="button" id="btn-aplicar-a-varios" class="crm-btn-chico" data-testid="btn-aplicar-a-varios">Aplicar un cambio a todos</button>
+          <button type="button" id="btn-limpiar-seleccion" class="crm-btn-fantasma crm-btn-chico" data-testid="btn-limpiar-seleccion">Quitar selección</button>
+        </div>
+      </div>
+      <form id="masiva-form" class="oculto" data-testid="masiva-form">
+        <p class="masiva-titulo">Cambiar en los lotes seleccionados</p>
+        <p class="masiva-ayuda">Los campos que dejes en “No cambiar” quedan como están en cada lote.</p>
+        <div class="masiva-campos">
+          <label for="masiva-sector">Zona
+            <select id="masiva-sector" data-testid="masiva-sector"></select>
+          </label>
+          <label for="masiva-barrio">Barrio
+            <select id="masiva-barrio" data-testid="masiva-barrio"></select>
+          </label>
+          <label for="masiva-precio">Precio USD
+            <input type="number" id="masiva-precio" min="1" step="1" placeholder="No cambiar" data-testid="masiva-precio" />
+          </label>
+          <label for="masiva-luz">Luz
+            <select id="masiva-luz" data-testid="masiva-luz">
+              <option value="">No cambiar</option>
+              <option value="si">Sí tiene</option>
+              <option value="no">No tiene</option>
+            </select>
+          </label>
+          <label for="masiva-agua">Agua
+            <select id="masiva-agua" data-testid="masiva-agua">
+              <option value="">No cambiar</option>
+              <option value="si">Sí tiene</option>
+              <option value="no">No tiene</option>
+            </select>
+          </label>
+          <label for="masiva-gas">Gas
+            <select id="masiva-gas" data-testid="masiva-gas">
+              <option value="">No cambiar</option>
+              <option value="si">Sí tiene</option>
+              <option value="no">No tiene</option>
+            </select>
+          </label>
+          <label for="masiva-cloaca">Cloaca
+            <select id="masiva-cloaca" data-testid="masiva-cloaca">
+              <option value="">No cambiar</option>
+              <option value="si">Sí tiene</option>
+              <option value="no">No tiene</option>
+            </select>
+          </label>
+        </div>
+        <!-- El estado del lote no está acá a propósito: "reservado" pide
+             fecha y "vendido" pide comprador, distintos en cada lote.
+             Ver el comentario de js/edicion-masiva.js. -->
+        <p id="masiva-confirmacion" class="oculto" data-testid="masiva-confirmacion"></p>
+        <p id="masiva-error" class="masiva-error oculto" data-testid="masiva-error"></p>
+        <p id="masiva-progreso" class="oculto" data-testid="masiva-progreso"></p>
+        <div class="masiva-botones">
+          <button type="submit" id="masiva-aplicar" data-testid="masiva-aplicar">Aplicar</button>
+          <button type="button" id="masiva-cancelar" class="crm-btn-fantasma" data-testid="masiva-cancelar">Cancelar</button>
+        </div>
+      </form>
       <div id="tabla-lotes-scroll" class="tabla-scroll">
         <table id="tabla-lotes" class="tabla-panel" data-testid="tabla-lotes">
           <thead>
             <tr>
+              <th class="col-tilde">
+                <input type="checkbox" id="seleccionar-pagina" data-testid="seleccionar-pagina" aria-label="Seleccionar los lotes de esta página" />
+              </th>
               <th>Lote</th>
               <th>Zona</th>
               <th>Barrio</th>
@@ -1884,6 +1953,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-17-02"></script>
+  <script type="module" src="/js/app.js?v=2026-09-18-01"></script>
 </body>
 </html>

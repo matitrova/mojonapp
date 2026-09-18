@@ -66,6 +66,10 @@ export function registrarAuditoria({ accion, objetoId = null, objetoTitulo = nul
 const ETIQUETA_ACCION = {
   crear_lote: "Cargó el lote",
   editar_lote: "Editó el lote",
+  // Un solo evento para toda la operación, con los lotes en el detalle
+  // (ver la edición en masa en js/vista-lista.js): 40 filas iguales acá
+  // taparían todo lo demás del día.
+  editar_lotes_en_masa: "Editó varios lotes a la vez",
   borrar_lote: "Borró el lote",
   reservar_lote: "Reservó el lote",
   quitar_reserva: "Quitó la reserva del lote",
