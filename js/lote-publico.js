@@ -43,6 +43,9 @@ const elForm = document.getElementById("lp-form");
 const elFormMensaje = document.getElementById("lp-form-mensaje");
 const elWhatsapp = document.getElementById("lp-whatsapp");
 const elTrampa = document.getElementById("lp-apellido");
+const elEsperando = document.getElementById("lp-esperando");
+const elEsperandoTexto = document.getElementById("lp-esperando-texto");
+const elReintentar = document.getElementById("lp-reintentar");
 
 const SERVICIOS = [
   { clave: "luz", etiqueta: "Luz" },
@@ -157,6 +160,7 @@ function mensajeDeWhatsapp(p) {
 }
 
 function render(feature) {
+  clearTimeout(relojDeEspera);
   loteActual = feature;
   const p = feature.properties;
 
@@ -175,14 +179,48 @@ function render(feature) {
 
   elContenido.classList.remove("oculto");
   elNoEncontrado.classList.add("oculto");
+  elEsperando.classList.add("oculto");
 }
 
 function noEncontrado() {
+  clearTimeout(relojDeEspera);
   loteActual = null;
   elTitulo.textContent = "Lote";
   elContenido.classList.add("oculto");
+  elEsperando.classList.add("oculto");
   elNoEncontrado.classList.remove("oculto");
 }
+
+// Cuánto se espera a los datos antes de admitir que algo salió mal. Es
+// generoso a propósito: con una conexión rural una lectura puede tardar
+// varios segundos y cortar antes sería declarar un error que no hubo.
+const ESPERA_MAXIMA_MS = 15000;
+let relojDeEspera = null;
+
+function cargando() {
+  clearTimeout(relojDeEspera);
+  elContenido.classList.add("oculto");
+  elNoEncontrado.classList.add("oculto");
+  elEsperando.classList.remove("oculto");
+  elEsperandoTexto.textContent = "Cargando la propiedad…";
+  elReintentar.classList.add("oculto");
+
+  relojDeEspera = setTimeout(() => {
+    // Se distingue de "no existe" a propósito: el lote puede estar
+    // perfectamente, y decirle a alguien que la propiedad no existe
+    // cuando lo que falló fue la conexión es perder una venta por un
+    // error nuestro.
+    elEsperandoTexto.textContent =
+      "No pudimos cargar la propiedad. Puede ser la conexión.";
+    elReintentar.classList.remove("oculto");
+  }, ESPERA_MAXIMA_MS);
+}
+
+// Recargar y no "reintentar la consulta": lo que falló fue la carga
+// inicial de los lotes, que la hace app.js al arrancar. Volver a
+// arrancar la página es lo único que la vuelve a disparar, y para quien
+// está del otro lado es lo mismo.
+elReintentar.addEventListener("click", () => location.reload());
 
 /**
  * Dibuja la página si la ruta actual es la de un lote.
@@ -210,11 +248,21 @@ onRutaAplicada((ruta) => {
   if (ruta.clave !== "lote-publico") return;
   elPanel.classList.remove("oculto");
   const feature = getLotesActuales().find((f) => f.id === ruta.loteId);
-  // Todavía sin datos: se deja la pantalla en silencio (ni contenido ni
-  // "no encontrado") hasta que lleguen. Decir "no existe" mientras se
-  // está cargando sería mentir.
-  if (feature) render(feature);
-  else if (getLotesActuales().length > 0) noEncontrado();
+  if (feature) {
+    render(feature);
+  } else if (getLotesActuales().length > 0) {
+    noEncontrado();
+  } else {
+    // Todavía sin datos. NO se dice "no existe" mientras se carga: sería
+    // mentirle a alguien que tiene un link bueno.
+    //
+    // Pero tampoco se deja la pantalla en blanco y en silencio, que es
+    // lo que hacía antes: si la lectura falla (sin señal, se cortó en la
+    // mitad), los datos no llegan NUNCA y el comprador se queda mirando
+    // una página vacía sin saber si está cargando o si se rompió. Con la
+    // conexión de un pueblo eso no es un caso raro.
+    cargando();
+  }
 });
 
 // ---------------------------------------------------------------------------

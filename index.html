@@ -1328,6 +1328,16 @@
       No se encontró este lote. Puede que ya no esté publicado.
     </p>
 
+    <!-- Mientras llegan los datos. Es un estado aparte de "no
+         encontrado" a propósito: el lote puede existir perfectamente y
+         haber fallado la conexión, y decirle a un comprador que la
+         propiedad no existe cuando el error fue nuestro es perder una
+         venta. Ver cargando() en js/lote-publico.js. -->
+    <div id="lp-esperando" class="dashboard-vacio oculto" data-testid="lp-esperando">
+      <p id="lp-esperando-texto" data-testid="lp-esperando-texto">Cargando la propiedad…</p>
+      <button type="button" id="lp-reintentar" class="oculto" data-testid="lp-reintentar">Reintentar</button>
+    </div>
+
     <div id="lp-contenido" class="oculto" data-testid="lp-contenido">
       <!-- Galería: foto grande + miniaturas, como cualquier portal. Un
            lote sin fotos no muestra un placeholder genérico (mismo

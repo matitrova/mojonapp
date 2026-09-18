@@ -130,9 +130,6 @@ async function tituloDelLote(loteId, idToken, proyecto) {
 
 export async function onRequestPost(context) {
   const env = context.env;
-  if (!env.CUENTA_WEB_EMAIL || !env.CUENTA_WEB_PASSWORD) {
-    return json({ error: "Las consultas web todavía no están configuradas." }, 503);
-  }
 
   let cuerpo;
   try {
@@ -149,6 +146,15 @@ export async function onRequestPost(context) {
 
   const validacion = validarConsulta(cuerpo);
   if (!validacion.ok) return json({ error: validacion.error }, 400);
+
+  // La configuración se chequea DESPUÉS de leer y validar, no antes.
+  // Cuesta lo mismo y hace que el endpoint se pueda probar de verdad
+  // antes de que existan los secrets: sin esto, todo contesta 503 y no
+  // hay forma de saber si el resto funciona hasta que ya está en
+  // producción.
+  if (!env.CUENTA_WEB_EMAIL || !env.CUENTA_WEB_PASSWORD) {
+    return json({ error: "Las consultas web todavía no están configuradas." }, 503);
+  }
 
   const proyecto = proyectoDelPedido(context.request);
   const cuenta = await tokenDeLaCuentaWeb(env, proyecto);
