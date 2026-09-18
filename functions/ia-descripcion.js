@@ -31,6 +31,8 @@
 // vienen estructurados no es un problema difícil; si los textos salen
 // flojos, se prueba "claude-opus-5" (2,5 veces más caro, ~1 dólar por
 // mes de diferencia al volumen de una inmobiliaria chica).
+import { configPara } from "../js/firebase-proyecto.js";
+
 const MODELO = "claude-sonnet-5";
 
 // Techo duro de lo que puede costar UNA llamada. No es una estimación
@@ -44,10 +46,16 @@ const MODELO = "claude-sonnet-5";
 // coma el presupuesto y la respuesta llegue cortada o vacía.
 const MAX_TOKENS = 1000;
 
-// La misma config pública que js/firebase-config.js — no es secreta
-// (ver el comentario ahí), la seguridad real la dan las reglas de
-// Firestore y la validación del token de acá abajo.
-const FIREBASE_API_KEY = "AIzaSyCR9w0fwXixk4CZV051-srq9PsTvmp5lGQ";
+// La clave del proyecto Firebase depende del DOMINIO por el que entró el
+// pedido, igual que la app (ver js/firebase-proyecto.js, que es la única
+// lista de dominios de producción del proyecto — se importa en vez de
+// copiarla acá para que no puedan quedar desincronizadas).
+//
+// Por qué importa: los tokens de Firebase son de un proyecto. Con la
+// clave de producción fija, un corredor logueado en el despliegue de
+// demo —que usa la base de pruebas— fallaba la validación y recibía
+// "tenés que iniciar sesión" con la sesión abierta. Ninguna de estas
+// claves es secreta: viajan en el JavaScript que sirve la app.
 
 // Qué campos del lote se aceptan, y cuánto texto se deja pasar de cada
 // uno. Sin esta lista blanca, alguien con una cuenta válida puede
@@ -71,11 +79,12 @@ function json(cuerpo, status = 200) {
 // Sin esta verificación el endpoint es una API de IA gratis para
 // cualquiera que descubra la URL — que es pública, como la de cualquier
 // otra ruta del sitio.
-async function sesionValida(idToken) {
+async function sesionValida(idToken, hostname) {
   if (typeof idToken !== "string" || idToken.length < 20) return false;
+  const apiKeyFirebase = configPara(hostname).apiKey;
   try {
     const resp = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`,
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKeyFirebase}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -218,7 +227,7 @@ export async function onRequestPost(context) {
     return json({ error: "Pedido inválido." }, 400);
   }
 
-  if (!(await sesionValida(cuerpo.idToken))) {
+  if (!(await sesionValida(cuerpo.idToken, new URL(context.request.url).hostname))) {
     return json({ error: "Tenés que iniciar sesión para usar esto." }, 401);
   }
 

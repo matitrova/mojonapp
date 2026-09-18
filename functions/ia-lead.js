@@ -30,9 +30,16 @@
 // existe, se eligió duplicar. Si algún día se suma wrangler, esto se
 // unifica.
 // -------------------------------------------------------------------------
+import { configPara } from "../js/firebase-proyecto.js";
+
 const MODELO = "claude-sonnet-5";
 const MAX_TOKENS = 1000;
-const FIREBASE_API_KEY = "AIzaSyCR9w0fwXixk4CZV051-srq9PsTvmp5lGQ";
+
+// La clave del proyecto Firebase depende del DOMINIO por el que entró el
+// pedido, igual que la app (ver js/firebase-proyecto.js, la única lista
+// de dominios de producción del proyecto). Los tokens de Firebase son de
+// un proyecto: con la clave de producción fija, un corredor logueado en
+// el despliegue de demo fallaba la validación con la sesión abierta.
 
 // Un mail de portal con la cadena de respuestas abajo puede ser larguísimo.
 // Se corta acá: lo que importa (quién consultó y por qué) siempre está
@@ -46,11 +53,12 @@ function json(cuerpo, status = 200) {
   });
 }
 
-async function sesionValida(idToken) {
+async function sesionValida(idToken, hostname) {
   if (typeof idToken !== "string" || idToken.length < 20) return false;
+  const apiKeyFirebase = configPara(hostname).apiKey;
   try {
     const resp = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`,
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKeyFirebase}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -113,7 +121,7 @@ export async function onRequestPost(context) {
     return json({ error: "Pedido inválido." }, 400);
   }
 
-  if (!(await sesionValida(cuerpo.idToken))) {
+  if (!(await sesionValida(cuerpo.idToken, new URL(context.request.url).hostname))) {
     return json({ error: "Tenés que iniciar sesión para usar esto." }, 401);
   }
 
