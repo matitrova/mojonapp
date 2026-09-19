@@ -305,12 +305,28 @@ export async function subirFotoACloudinary(archivo) {
   return { url: datos.secure_url, id: datos.public_id };
 }
 
-function renderFotos(feature) {
-  const fotos = feature.properties.fotos || [];
+/**
+ * Lo único de las fotos que depende del permiso: si se ve el bloque y
+ * si se ve el botón de subir.
+ *
+ * SEPARADO DE renderFotos A PROPÓSITO. Cuando llega el perfil hay que
+ * volver a aplicar esto, pero NO reconstruir la galería: renderFotos
+ * hace innerHTML = "" y vuelve a crear cada <img>, así que redibujarla
+ * mueve el contenido de la ficha y recarga las imágenes. Con la ficha
+ * abierta eso corre lo que está debajo del cursor — dos tests del
+ * editor de forma empezaron a fallar con "subtree intercepts pointer
+ * events" cuando el refresco de permisos llamaba a renderFotos entero.
+ */
+function aplicarPermisosDeFotos(feature) {
   const puedeSubir = puedeEditarLote(feature);
-
+  const fotos = feature.properties.fotos || [];
   elFichaFotos.classList.toggle("oculto", fotos.length === 0 && !puedeSubir);
   elSubirFotoLabel.classList.toggle("oculto", !puedeSubir);
+}
+
+function renderFotos(feature) {
+  const fotos = feature.properties.fotos || [];
+  aplicarPermisosDeFotos(feature);
 
   elGaleriaFotos.innerHTML = "";
   fotos.forEach((foto) => {
@@ -1120,9 +1136,10 @@ function aplicarPermisosEnLaFicha(feature) {
   document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(feature));
   elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(feature));
   actualizarPortales(feature);
-  // Subir fotos también depende del permiso (ver renderFotos): se
-  // redibujan para que reaparezca el botón.
-  renderFotos(feature);
+  // Solo los toggles de las fotos, NO la galería entera: redibujarla
+  // movería el contenido de una ficha que ya está abierta. Ver
+  // aplicarPermisosDeFotos.
+  aplicarPermisosDeFotos(feature);
 }
 
 /**
