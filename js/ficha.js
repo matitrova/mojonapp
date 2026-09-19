@@ -27,6 +27,7 @@ import {
   setLoteSeleccionado,
   setLoteEditadoDesdeFicha,
   getDeepLinkAbierto,
+  getModoCaptura,
   setDeepLinkAbierto,
   getLotesActuales
 } from "./estado.js";
@@ -1351,6 +1352,26 @@ export function abrirLoteDesdeUrlSiCorresponde() {
     abrirTooltipDeLote(feature.id);
     return;
   }
+
+  // SI EL CORREDOR YA ESTÁ HACIENDO ALGO, no se le abre la ficha encima.
+  //
+  // Esta función corre DOS veces al arrancar (ver app.js): al dibujarse
+  // el mapa y otra vez cuando terminan de cargar los lotes con la
+  // sesión ya resuelta. Desde que el lote abierto vive en la URL, la
+  // primera pasada suele salir sin hacer nada —todavía no hay "?lote="
+  // porque lo agrega mostrarFicha— y entonces la SEGUNDA se encuentra
+  // con una URL que el propio usuario acaba de generar abriendo una
+  // ficha a mano.
+  //
+  // Si para entonces él ya tocó "Ajustar forma", el editor escondió la
+  // ficha (ver iniciarEdicionPoligono) y esto se la volvía a abrir
+  // ENCIMA del editor, tapándole los botones. Se veía como un editor
+  // que no responde a los clicks; lo agarró un test del editor de forma
+  // que fallaba una de cada dos corridas.
+  //
+  // modoCaptura marca justamente eso: hay una edición o una captura de
+  // vértices en curso. Mientras dure, la URL no manda.
+  if (getModoCaptura() !== null) return;
 
   if (getDeepLinkAbierto()) return;
   setDeepLinkAbierto(true);
