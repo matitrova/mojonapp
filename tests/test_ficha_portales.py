@@ -68,14 +68,16 @@ def test_marcar_un_portal_persiste_al_recargar(page, base_url):
         # el mensaje "Guardado." antes de recargar, porque el updateDoc
         # es asíncrono y un reload inmediato podría ganarle de mano.
         expect(page.locator("#portales-mensaje")).to_contain_text("Guardado")
-        # Un reload con la sesión ya persistida (Firebase Auth) vuelve a
-        # abrir el Dashboard solo, igual que el login manual (ver
-        # onAuthStateChanged en app.js) — hay que cerrarlo antes de
-        # poder llegar a la ficha por el drawer.
+
+        # AL RECARGAR, LA FICHA SE REABRE SOLA. Antes no: abrir una ficha
+        # no dejaba rastro en la URL, así que un reload caía en el
+        # Dashboard y había que cerrarlo y volver a buscar el lote en la
+        # lista. Desde que el lote abierto vive en la URL (2026-09-18) el
+        # reload lleva "?lote=<id>" y entra derecho a la ficha — que es
+        # justamente para lo que se puso el lote en la URL.
         page.reload()
         expect(page.locator("#sesion-activa")).to_be_visible()
-        page.locator("#cerrar-panel-dashboard").click()
-        _abrir_ficha_desde_lista(page, doc_id)
+        expect(page.locator("#ficha-lote")).to_be_visible()
 
         expect(page.locator("#portal-zonaprop")).to_be_checked()
         expect(page.locator("#portal-mercadolibre")).not_to_be_checked()

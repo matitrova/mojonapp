@@ -562,12 +562,8 @@ export function mostrarFicha(feature, contactoOrigen = null) {
   actualizarCercanias(feature);
   actualizarNotasInternas(feature);
 
-  document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
-  document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
-  document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(feature));
-  elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(feature));
+  aplicarPermisosEnLaFicha(feature);
   renderInteresados(feature);
-  actualizarPortales(feature);
   cerrarEditorServicios(); // por si había quedado abierto en el lote anterior
   cerrarEditorSector();
   cerrarEditorBarrio();
@@ -1098,6 +1094,50 @@ const PORTALES = ["zonaprop", "mercadolibre", "argenprop"];
 const elFichaPortales = document.getElementById("ficha-portales");
 const elPortalesMensaje = document.getElementById("portales-mensaje");
 const elsPortalCheckbox = Object.fromEntries(PORTALES.map((p) => [p, document.getElementById(`portal-${p}`)]));
+
+/**
+ * Todo lo de la ficha que depende de los permisos, en un solo lugar.
+ *
+ * ESTÁ SEPARADO PARA PODER VOLVER A APLICARLO, y eso es lo importante.
+ * El perfil del corredor llega por una lectura asíncrona a Firestore
+ * (resolverMiPerfil en app.js), así que puede resolverse DESPUÉS de que
+ * la ficha ya se dibujó. Antes, cuando eso pasaba, nadie la volvía a
+ * dibujar: la ficha quedaba de SOLO LECTURA —sin botón de editar, sin
+ * borrar, sin interesados, sin portales— hasta que el corredor la
+ * cerrara y la abriera de nuevo.
+ *
+ * Se veía poco mientras abrir una ficha era siempre un click (para
+ * entonces el perfil ya había llegado). Pasó a verse siempre desde que
+ * el lote abierto vive en la URL: recargar, o entrar por un link
+ * compartido, abre la ficha en la primera pasada, antes del perfil.
+ *
+ * Lo llama app.js desde actualizarUIPorPermisos, que es el mismo lugar
+ * que ya arregla la lista por el mismo motivo.
+ */
+function aplicarPermisosEnLaFicha(feature) {
+  document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(feature));
+  document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(feature));
+  document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(feature));
+  elFichaInteresados.classList.toggle("oculto", !puedeEditarLote(feature));
+  actualizarPortales(feature);
+  // Subir fotos también depende del permiso (ver renderFotos): se
+  // redibujan para que reaparezca el botón.
+  renderFotos(feature);
+}
+
+/**
+ * Vuelve a aplicar los permisos sobre la ficha que esté abierta.
+ *
+ * No redibuja la ficha entera a propósito: mostrarFicha registra una
+ * visita en el contador de "más consultados" (registrarVistaDeLote),
+ * así que llamarla de nuevo inflaría esa métrica cada vez que llega el
+ * perfil.
+ */
+export function refrescarPermisosDeLaFicha() {
+  const feature = getLoteSeleccionado();
+  if (!feature || elFicha.classList.contains("oculto")) return;
+  aplicarPermisosEnLaFicha(feature);
+}
 
 function actualizarPortales(feature) {
   const puedeEditar = puedeEditarLote(feature);

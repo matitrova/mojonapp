@@ -58,7 +58,8 @@ import {
   cerrarEditorServicios,
   cerrarEditorSector,
   cerrarEditorBarrio,
-  abrirLoteDesdeUrlSiCorresponde
+  abrirLoteDesdeUrlSiCorresponde,
+  refrescarPermisosDeLaFicha
 } from "./ficha.js";
 import "./admin.js";
 import "./auditoria.js";
@@ -423,6 +424,12 @@ function actualizarUIPorPermisos() {
   // cientos de lecturas hechas, el perfil llega más tarde. El test
   // intermitente era real, no ruido.
   actualizarVistaLista();
+  // La ficha, por el MISMO motivo que la lista. Desde que el lote
+  // abierto vive en la URL, recargar (o entrar por un link compartido)
+  // abre la ficha en la primera pasada, antes de que el perfil llegue:
+  // sin esto queda de solo lectura —sin editar, sin borrar, sin
+  // interesados, sin portales— hasta cerrarla y volver a abrirla.
+  refrescarPermisosDeLaFicha();
   pintarTarjetaDeUsuario(auth.currentUser);
   // Los tres botones de carga viven ahora dentro del flotante (ver
   // js/fab-carga.js), así que se gatea el flotante entero: esconder los
@@ -590,14 +597,18 @@ onAuthStateChanged(auth, async (usuario) => {
   }
 
   // Si la ficha de un lote está abierta al cambiar de sesión (login,
-  // logout, o root reasignando el perfil de alguien), "Borrar lote" y
-  // "Editar servicios"/"Editar sector" tienen que reflejar el permiso
-  // nuevo sin esperar a que se cierre y se vuelva a abrir.
+  // logout, o root reasignando el perfil de alguien), lo que depende
+  // del permiso tiene que reflejar el permiso nuevo sin esperar a que
+  // se cierre y se vuelva a abrir.
+  //
+  // ACÁ HABÍA UNA COPIA de esos toggles, escrita a mano. Se quedó corta
+  // sin que nadie lo notara: cuando se sumaron los PORTALES a la ficha,
+  // nadie se acordó de agregarlos también acá, así que al recargar con
+  // un lote abierto los portales quedaban ocultos aunque el corredor
+  // pudiera editar. Ahora las dos situaciones llaman a la MISMA función
+  // de ficha.js, que es la que sabe qué gatea la ficha.
   if (getLoteSeleccionado()) {
-    document.getElementById("btn-borrar-lote").classList.toggle("oculto", !puedeBorrarLote(getLoteSeleccionado()));
-    document.getElementById("btn-editar-lote-completo").classList.toggle("oculto", !puedeEditarLote(getLoteSeleccionado()));
-    document.getElementById("btn-editar-forma-lote").classList.toggle("oculto", !puedeEditarLote(getLoteSeleccionado()));
-    document.getElementById("ficha-interesados").classList.toggle("oculto", !puedeEditarLote(getLoteSeleccionado()));
+    refrescarPermisosDeLaFicha();
     cerrarEditorServicios();
     cerrarEditorSector();
     cerrarEditorBarrio();

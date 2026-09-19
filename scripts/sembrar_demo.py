@@ -277,6 +277,16 @@ def texto(doc, campo):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--aplicar", action="store_true", help="escribir de verdad (sin esto, solo informa)")
+    # Sin esto, un cambio en la FORMA de los datos de demo no llega nunca
+    # a una base ya sembrada: el script saltea por nombre lo que ya
+    # existe. Pasó el 2026-09-19 — los contactos estaban creados sin
+    # cambios de etapa y con un día de antigüedad, así que el Dashboard
+    # no tenía mes anterior y las variaciones no se veían.
+    parser.add_argument(
+        "--rehacer-contactos",
+        action="store_true",
+        help="borra los contactos de la demo y los vuelve a crear con la forma actual",
+    )
     args = parser.parse_args()
 
     if conftest.FIREBASE_PROJECT_ID == "mojonapp":
@@ -291,7 +301,12 @@ def main():
     contactos_ya = {texto(d, "nombre") for d in existentes("contactos")}
 
     lotes_nuevos = [l for l in LOTES if (l["manzana"], l["lote"]) not in lotes_ya]
-    contactos_nuevos = [c for c in CONTACTOS if c[0] not in contactos_ya]
+    # Con --rehacer-contactos se crean TODOS, y más abajo se borran
+    # primero los que ya estaban.
+    contactos_nuevos = (
+        list(CONTACTOS) if args.rehacer_contactos
+        else [c for c in CONTACTOS if c[0] not in contactos_ya]
+    )
 
     # Se listan por nombre los que se saltean, no solo la cantidad. Salió
     # de un problema real: una corrida informó "11 a crear, 1 ya estaba" y
@@ -314,6 +329,20 @@ def main():
         return
 
     print()
+
+    if args.rehacer_contactos:
+        # Se borran por ID y solo los que coinciden EXACTO con un nombre
+        # de la demo: nada de patrones ni de "todo lo que parezca de
+        # prueba". Los contactos reales de una demo que alguien haya
+        # cargado a mano no se tocan.
+        nombres_de_la_demo = {c[0] for c in CONTACTOS}
+        borrados = 0
+        for doc in existentes("contactos"):
+            if texto(doc, "nombre") in nombres_de_la_demo:
+                conftest.borrar_contacto_de_prueba(doc["name"].rsplit("/", 1)[-1])
+                borrados += 1
+        print(f"Rehaciendo: {borrados} contactos de la demo borrados\n")
+
     ids_por_clave = {}
     for l in lotes_nuevos:
         doc_id = conftest.crear_lote_de_prueba(l)
