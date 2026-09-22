@@ -228,3 +228,44 @@ def test_ninguna_metaetiqueta_de_imagen_apunta_a_un_svg():
     assert (raiz / "og-imagen.png").exists(), (
         "falta og-imagen.png — generalo con scripts/generar_og_imagen.py"
     )
+
+
+@pytest.fixture
+def imagen_de(page, base_url):
+    page.goto(base_url)
+
+    def _correr(datos, origen):
+        return page.evaluate(
+            f"""(a) => import('{MODULO}').then((m) => m.imagenDeLaTarjeta(a[0], a[1]))""",
+            [datos, origen],
+        )
+
+    return _correr
+
+
+def test_con_foto_la_tarjeta_lleva_la_foto(imagen_de):
+    r = imagen_de({"foto": "https://res.cloudinary.com/demo/image/upload/x.jpg"}, "https://mojonapp.com.ar")
+    assert r["url"].endswith("x.jpg")
+    assert r["tipo"] == "image/jpeg"
+
+
+def test_sin_foto_la_reserva_sale_del_dominio_que_esta_sirviendo(imagen_de):
+    """EL BUG QUE ESTO TAPA, encontrado al publicar.
+
+    index.html declara la imagen con el dominio de producción escrito a
+    mano. Desde la vista previa ese archivo no existe — y Cloudflare
+    Pages no devuelve 404 sino el index.html con HTTP 200, así que
+    "parece" que está y en realidad es una página HTML. WhatsApp la
+    descarta y la tarjeta sale sin imagen.
+
+    O sea que lo único que no se podía verificar antes de publicar era,
+    justamente, el arreglo de que la tarjeta tuviera imagen.
+    """
+    r = imagen_de({"foto": None}, "https://preview.mojonapp.pages.dev")
+    assert r["url"] == "https://preview.mojonapp.pages.dev/og-imagen.png"
+    assert r["tipo"] == "image/png"
+
+
+def test_sin_datos_igual_devuelve_una_imagen(imagen_de):
+    r = imagen_de(None, "https://mojonapp.com.ar")
+    assert r["url"] == "https://mojonapp.com.ar/og-imagen.png"

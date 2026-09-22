@@ -164,6 +164,26 @@ export function idDeLoteEnLaUrl(url) {
   return ID_DE_LOTE.test(id) ? id : null;
 }
 
+/**
+ * Qué imagen lleva la tarjeta, y de qué tipo.
+ *
+ * La foto de la propiedad si la hay. Si no, la imagen de reserva DEL
+ * DOMINIO QUE ESTÁ SIRVIENDO, no la del dominio de producción que está
+ * escrita a mano en index.html.
+ *
+ * POR QUÉ IMPORTA ESE DETALLE. La metaetiqueta dice
+ * "https://mojonapp.com.ar/og-imagen.png". Desde la vista previa eso
+ * apunta a un archivo que ahí todavía no existe —y Cloudflare Pages no
+ * devuelve 404 sino el index.html con HTTP 200, así que parece que está
+ * y en realidad es una página HTML— con lo cual WhatsApp la descarta y
+ * la tarjeta sale sin imagen. O sea: justo lo que no se podía verificar
+ * antes de publicar era el arreglo de que la tarjeta tuviera imagen.
+ */
+export function imagenDeLaTarjeta(datos, origen) {
+  if (datos?.foto) return { url: datos.foto, tipo: "image/jpeg" };
+  return { url: `${origen}/og-imagen.png`, tipo: "image/png" };
+}
+
 export async function onRequest(context) {
   const url = new URL(context.request.url);
   const loteId = idDeLoteEnLaUrl(url);
@@ -221,15 +241,15 @@ export async function onRequest(context) {
       .on('meta[name="twitter:description"]', { element: (el) => el.setAttribute("content", descripcion) })
       .on('meta[name="description"]', { element: (el) => el.setAttribute("content", descripcion) });
 
-    // La foto de la propiedad, si tiene. Si no, se deja la imagen de
-    // reserva que ya viene en el HTML: una tarjeta con un dibujo de
-    // marca es mejor que una sin imagen.
-    if (datos.foto) {
-      reescritor = reescritor
-        .on('meta[property="og:image"]', { element: (el) => el.setAttribute("content", datos.foto) })
-        .on('meta[property="og:image:type"]', { element: (el) => el.setAttribute("content", "image/jpeg") })
-        .on('meta[name="twitter:image"]', { element: (el) => el.setAttribute("content", datos.foto) });
-    }
+    // La foto de la propiedad si la hay, y si no la de reserva de ESTE
+    // dominio. Siempre se reescribe: la que trae el HTML apunta al
+    // dominio de producción a mano, y desde cualquier otro (la vista
+    // previa) eso no existe.
+    const imagen = imagenDeLaTarjeta(datos, url.origin);
+    reescritor = reescritor
+      .on('meta[property="og:image"]', { element: (el) => el.setAttribute("content", imagen.url) })
+      .on('meta[property="og:image:type"]', { element: (el) => el.setAttribute("content", imagen.tipo) })
+      .on('meta[name="twitter:image"]', { element: (el) => el.setAttribute("content", imagen.url) });
 
     return reescritor.transform(respuesta);
   } catch {
