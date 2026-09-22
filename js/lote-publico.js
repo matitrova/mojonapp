@@ -221,7 +221,11 @@ function renderAgencia() {
   // El botón de WhatsApp vive o muere con el teléfono: sin número
   // destino abre el selector de contactos del comprador y la consulta no
   // llega nunca. Mejor no ofrecerlo — el formulario sigue estando.
-  elWhatsapp.classList.toggle("oculto", !whatsappDeLaInmobiliaria(""));
+  //
+  // Y sin lote no hay nada por lo que consultar, así que tampoco: esa
+  // columna entera está escondida en la página de "ya no está
+  // publicada".
+  elWhatsapp.classList.toggle("oculto", !loteActual || !whatsappDeLaInmobiliaria(""));
 
   if (!inmo) return;
 
@@ -286,9 +290,11 @@ function renderAgencia() {
 // entra directo por el link vería la página sin saber de quién es, y el
 // botón de WhatsApp escondido aunque haya teléfono cargado.
 alCambiarLaInmobiliaria(() => {
-  if (!loteActual) return;
+  // Sin lote también: la página de "ya no está publicada" muestra la
+  // inmobiliaria, y los datos de la agencia llegan igual de tarde.
+  if (elPanel.classList.contains("oculto")) return;
   renderAgencia();
-  ponerTituloDeLaSeccion(tituloDe(loteActual.properties));
+  if (loteActual) ponerTituloDeLaSeccion(tituloDe(loteActual.properties));
 });
 
 function render(feature) {
@@ -326,6 +332,11 @@ function noEncontrado() {
   elContenido.classList.add("oculto");
   elEsperando.classList.add("oculto");
   elNoEncontrado.classList.remove("oculto");
+  // La inmobiliaria SIGUE MOSTRÁNDOSE. Quien llegó hasta acá estaba
+  // buscando un terreno: un link viejo que alguien reenvió meses
+  // después no tiene por qué terminar en una página muerta, sin decir
+  // de quién es ni cómo llamar.
+  renderAgencia();
 }
 
 // Cuánto se espera a los datos antes de admitir que algo salió mal. Es

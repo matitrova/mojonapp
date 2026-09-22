@@ -1,41 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <!-- Imagen de marca para el preview al compartir un link (idea #10) —
-       mismo criterio visual que el resto de la app: paleta cálida/rural
-       (verde oliva + terracota sobre fondo crema, ver :root en
-       estilos.css), sin depender de ninguna fuente externa (system-ui,
-       igual que el resto de MojonApp). El motivo central es el límite
-       real de un lote sobre "imagen satelital" (el diferencial de la
-       app frente a un pin genérico de portal) -->
+  <!-- Imagen de RESERVA para la tarjeta que se ve al compartir un link.
+       Solo se usa cuando el lote no tiene fotos: si las tiene, la
+       tarjeta lleva la foto de la propiedad (ver functions/_middleware.js),
+       que es lo que hace cualquier portal y lo que de verdad hace que
+       alguien abra el link.
+
+       NO DICE "MojonApp". Esta imagen la ve un comprador al que le
+       mandaron una propiedad, no alguien evaluando el software: el
+       nombre del producto ahí no le dice nada, y peor, le tapa a la
+       inmobiliaria. Antes decía el nombre del producto en grande.
+
+       Paleta del rediseño de 2026-09-18 (naranja como único color de
+       marca, fondo gris azulado, ver :root en css/estilos.css) — la
+       anterior era la cálida/rural que ya no usa ninguna pantalla.
+
+       Sin fuentes externas: system-ui, igual que si no cargara nada. -->
   <defs>
     <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fdfaf5" />
-      <stop offset="1" stop-color="#f5eee1" />
+      <stop offset="0" stop-color="#f7f8fa" />
+      <stop offset="1" stop-color="#eceff4" />
     </linearGradient>
-    <pattern id="pastoSutil" width="42" height="42" patternUnits="userSpaceOnUse">
-      <path d="M0 42 L21 0 L42 42" fill="none" stroke="#e4d7c3" stroke-width="1" opacity="0.5" />
+    <pattern id="tramaSutil" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M0 48 L24 0 L48 48" fill="none" stroke="#dfe4ec" stroke-width="1" opacity="0.6" />
     </pattern>
   </defs>
 
   <rect width="1200" height="630" fill="url(#fondo)" />
-  <rect width="1200" height="630" fill="url(#pastoSutil)" />
+  <rect width="1200" height="630" fill="url(#tramaSutil)" />
 
-  <!-- "Imagen satelital" estilizada: parches verdes irregulares, como
-       manzanas de un loteo visto desde arriba -->
+  <!-- "Imagen satelital" estilizada: parches irregulares, como manzanas
+       de un loteo vistas desde arriba. -->
   <g opacity="0.9">
-    <rect x="760" y="40" width="180" height="150" rx="6" fill="#5c7f3f" opacity="0.35" />
-    <rect x="960" y="70" width="150" height="130" rx="6" fill="#33523a" opacity="0.3" />
-    <rect x="800" y="210" width="160" height="140" rx="6" fill="#33523a" opacity="0.25" />
-    <rect x="980" y="220" width="140" height="160" rx="6" fill="#5c7f3f" opacity="0.3" />
-    <rect x="760" y="370" width="170" height="150" rx="6" fill="#5c7f3f" opacity="0.28" />
-    <rect x="960" y="400" width="160" height="140" rx="6" fill="#33523a" opacity="0.32" />
+    <rect x="760" y="40" width="180" height="150" rx="8" fill="#94a3b8" opacity="0.30" />
+    <rect x="960" y="70" width="150" height="130" rx="8" fill="#64748b" opacity="0.26" />
+    <rect x="800" y="210" width="160" height="140" rx="8" fill="#64748b" opacity="0.22" />
+    <rect x="980" y="220" width="140" height="160" rx="8" fill="#94a3b8" opacity="0.28" />
+    <rect x="760" y="370" width="170" height="150" rx="8" fill="#94a3b8" opacity="0.24" />
+    <rect x="960" y="400" width="160" height="140" rx="8" fill="#64748b" opacity="0.28" />
   </g>
 
-  <!-- El lote destacado: límite real dibujado a mano, terracota, con sus
-       vértices marcados — la idea central de todo el producto -->
+  <!-- El lote: el límite real dibujado sobre la imagen, con sus
+       vértices marcados. Es la idea central del producto y lo único
+       que esta imagen necesita comunicar. -->
   <polygon points="840,220 990,190 1030,320 900,380 830,320"
-           fill="#c1663f" fill-opacity="0.22" stroke="#c1663f" stroke-width="5"
+           fill="#e2591f" fill-opacity="0.18" stroke="#e2591f" stroke-width="5"
            stroke-dasharray="2 10" stroke-linecap="round" />
-  <g fill="#c1663f">
+  <g fill="#e2591f">
     <circle cx="840" cy="220" r="7" />
     <circle cx="990" cy="190" r="7" />
     <circle cx="1030" cy="320" r="7" />
@@ -43,17 +53,15 @@
     <circle cx="830" cy="320" r="7" />
   </g>
 
-  <!-- Marca -->
-  <text x="80" y="270" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-        font-size="86" font-weight="800" fill="#33523a">MojonApp</text>
-  <text x="80" y="330" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-        font-size="32" font-weight="600" fill="#7a6a58">El límite real de tu terreno,</text>
-  <text x="80" y="372" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-        font-size="32" font-weight="600" fill="#7a6a58">no un pin genérico</text>
+  <text x="80" y="290" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="64" font-weight="800" fill="#0f172a">El límite real</text>
+  <text x="80" y="366" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="64" font-weight="800" fill="#0f172a">del terreno</text>
+  <text x="80" y="424" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="30" font-weight="600" fill="#64748b">sobre la imagen satelital, no un pin</text>
 
-  <!-- Chip "disponible", mismo verbo visual que usa la app en el mapa -->
-  <rect x="80" y="420" width="190" height="52" rx="26" fill="#5c7f3f" />
-  <circle cx="112" cy="446" r="7" fill="#fff" />
-  <text x="132" y="454" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+  <rect x="80" y="468" width="196" height="54" rx="27" fill="#e2591f" />
+  <circle cx="113" cy="495" r="7" fill="#fff" />
+  <text x="134" y="504" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
         font-size="24" font-weight="700" fill="#fff">Disponible</text>
 </svg>

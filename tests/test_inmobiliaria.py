@@ -175,6 +175,39 @@ def test_sin_configurar_la_pagina_igual_se_ve_entera(
     expect(page.locator("#lp-pie")).to_be_hidden()
 
 
+def test_un_lote_que_ya_no_existe_igual_deja_contactar(
+    page, base_url, inmobiliaria_configurada
+):
+    """UN LINK VIEJO NO TIENE POR QUÉ SER UNA CONSULTA PERDIDA.
+
+    Alguien reenvía por WhatsApp un link de hace meses. La propiedad ya
+    se vendió. Antes esa página decía "no se encontró este lote" y nada
+    más: ni de quién era, ni cómo llamar, ni otras propiedades. Quien
+    llegó ahí estaba buscando un terreno y se iba sin dejar rastro.
+    """
+    abrir_lote_publico(page, base_url, "este-id-no-existe")
+    expect(page.locator("#lp-no-encontrado")).to_be_visible()
+    # Quién publica, arriba.
+    expect(page.locator("#lp-agencia-nombre")).to_have_text(
+        inmobiliaria_configurada["nombre"], timeout=15000
+    )
+    # Cómo llamarla, abajo.
+    expect(page.locator("#lp-pie")).to_be_visible()
+    expect(page.locator("#lp-pie-datos")).to_contain_text(inmobiliaria_configurada["telefono"])
+    # Y una salida, que es lo que convierte la visita en algo.
+    expect(page.locator("#lp-ver-catalogo")).to_be_visible()
+
+
+def test_el_boton_de_whatsapp_no_aparece_si_no_hay_lote(
+    page, base_url, inmobiliaria_configurada
+):
+    """"Consultar por WhatsApp" arma el mensaje con los datos del lote.
+    Sin lote no hay nada por lo que consultar."""
+    abrir_lote_publico(page, base_url, "este-id-no-existe")
+    expect(page.locator("#lp-no-encontrado")).to_be_visible()
+    expect(page.locator("#lp-whatsapp")).to_be_hidden()
+
+
 # ---------------------------------------------------------------------------
 # La pantalla de configuración
 # ---------------------------------------------------------------------------

@@ -17,18 +17,24 @@
 <meta property="og:title" content="MojonApp" />
 <meta property="og:description" content="Mira el límite real del terreno sobre imagen satelital, no un pin genérico." />
 <meta property="og:url" content="https://mojonapp.com.ar/" />
-<!-- Idea #10: imagen de marca propia para el preview de WhatsApp/
-     Facebook al compartir un link — antes no había ninguna, quedaba un
-     preview pelado sin imagen. og-imagen.svg (raíz del repo, junto a
-     index.html) — mismo paisaje/paleta que el resto de la app. -->
-<meta property="og:image" content="https://mojonapp.com.ar/og-imagen.svg" />
-<meta property="og:image:type" content="image/svg+xml" />
+<!-- Imagen de la tarjeta de WhatsApp/Facebook al compartir un link.
+     PNG y no SVG: los dos DESCARTAN el SVG, así que durante un tiempo
+     la tarjeta salió sin ninguna imagen — justo lo que esta etiqueta
+     venía a arreglar. El PNG se genera desde el SVG con
+     scripts/generar_og_imagen.py y se versiona.
+
+     Es la imagen de RESERVA: cuando se comparte un lote con fotos, el
+     middleware reemplaza esto por la foto de la propiedad, que es lo
+     que de verdad hace que alguien abra el link (ver
+     functions/_middleware.js). -->
+<meta property="og:image" content="https://mojonapp.com.ar/og-imagen.png" />
+<meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="MojonApp" />
 <meta name="twitter:description" content="Mira el límite real del terreno sobre imagen satelital, no un pin genérico." />
-<meta name="twitter:image" content="https://mojonapp.com.ar/og-imagen.svg" />
+<meta name="twitter:image" content="https://mojonapp.com.ar/og-imagen.png" />
 <!-- "Modo embed" (?embed=1): para insertar el mapa en la página propia de
      una inmobiliaria vía <iframe> — esconde el encabezado (menú e
      "Ingresar"), dejando solo el mapa/catálogo público. Sincrónico y ANTES
@@ -75,7 +81,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-22-04" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-22-05" />
 </head>
 <body>
 
@@ -1409,9 +1415,26 @@
       <button id="cerrar-panel-lote-publico" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
 
-    <p id="lp-no-encontrado" class="dashboard-vacio oculto" data-testid="lp-no-encontrado">
-      No se encontró este lote. Puede que ya no esté publicado.
-    </p>
+    <!-- Quién publica. FUERA de #lp-contenido a propósito: tiene que
+         verse también cuando el lote no existe. Un link viejo que
+         alguien reenvió meses después es una consulta perdida si la
+         página no dice de quién es ni cómo llamar. -->
+    <header id="lp-agencia" class="lp-agencia oculto" data-testid="lp-agencia">
+      <img id="lp-agencia-logo" class="lp-agencia-logo oculto" alt="" data-testid="lp-agencia-logo" />
+      <div class="lp-agencia-texto">
+        <p id="lp-agencia-nombre" class="lp-agencia-nombre" data-testid="lp-agencia-nombre"></p>
+        <p id="lp-agencia-donde" class="lp-agencia-donde oculto" data-testid="lp-agencia-donde"></p>
+      </div>
+    </header>
+
+    <div id="lp-no-encontrado" class="lp-no-encontrado oculto" data-testid="lp-no-encontrado">
+      <p>Esta propiedad ya no está publicada.</p>
+      <!-- No es cortesía: quien llegó hasta acá estaba buscando un
+           terreno. Mandarlo al catálogo en vez de dejarlo en una página
+           muerta es la diferencia entre un lead y una pestaña que se
+           cierra. -->
+      <a id="lp-ver-catalogo" class="lp-ver-catalogo" href="/lotes" data-ruta="/lotes" data-testid="lp-ver-catalogo">Ver las propiedades disponibles</a>
+    </div>
 
     <!-- Mientras llegan los datos. Es un estado aparte de "no
          encontrado" a propósito: el lote puede existir perfectamente y
@@ -1424,19 +1447,6 @@
     </div>
 
     <div id="lp-contenido" class="oculto" data-testid="lp-contenido">
-      <!-- Quién publica. Va ARRIBA DE TODO porque es lo primero que
-           necesita saber alguien a quien le llegó un link por WhatsApp:
-           de quién es esto. Se esconde entero si todavía no se cargaron
-           los datos de la agencia (ver js/inmobiliaria.js): una banda
-           vacía se ve peor que ninguna banda. -->
-      <header id="lp-agencia" class="lp-agencia oculto" data-testid="lp-agencia">
-        <img id="lp-agencia-logo" class="lp-agencia-logo oculto" alt="" data-testid="lp-agencia-logo" />
-        <div class="lp-agencia-texto">
-          <p id="lp-agencia-nombre" class="lp-agencia-nombre" data-testid="lp-agencia-nombre"></p>
-          <p id="lp-agencia-donde" class="lp-agencia-donde oculto" data-testid="lp-agencia-donde"></p>
-        </div>
-      </header>
-
       <!-- Galería: foto grande + miniaturas, como cualquier portal. Un
            lote sin fotos no muestra un placeholder genérico (mismo
            criterio que la grilla): muestra el aviso de que faltan. -->
@@ -1519,18 +1529,18 @@
           </section>
         </aside>
       </div>
-
-      <!-- Cómo ubicar a la inmobiliaria por fuera del formulario.
-           Mucha gente no deja sus datos en un formulario pero sí llama,
-           y la matrícula es lo que distingue a una inmobiliaria
-           registrada de un aviso suelto. Cada línea aparece solo si hay
-           qué poner. -->
-      <footer id="lp-pie" class="lp-pie oculto" data-testid="lp-pie">
-        <p id="lp-pie-nombre" class="lp-pie-nombre" data-testid="lp-pie-nombre"></p>
-        <ul id="lp-pie-datos" class="lp-pie-datos" data-testid="lp-pie-datos"></ul>
-        <p id="lp-pie-matricula" class="lp-pie-matricula oculto" data-testid="lp-pie-matricula"></p>
-      </footer>
     </div>
+
+    <!-- Cómo ubicar a la inmobiliaria por fuera del formulario. Mucha
+         gente no deja sus datos en un formulario pero sí llama, y la
+         matrícula es lo que distingue a una inmobiliaria registrada de
+         un aviso suelto. También fuera de #lp-contenido: es el único
+         contacto que queda cuando el lote no existe. -->
+    <footer id="lp-pie" class="lp-pie oculto" data-testid="lp-pie">
+      <p id="lp-pie-nombre" class="lp-pie-nombre" data-testid="lp-pie-nombre"></p>
+      <ul id="lp-pie-datos" class="lp-pie-datos" data-testid="lp-pie-datos"></ul>
+      <p id="lp-pie-matricula" class="lp-pie-matricula oculto" data-testid="lp-pie-matricula"></p>
+    </footer>
   </div>
 
   <div id="panel-tareas" class="oculto panel-pantalla-completa" data-testid="panel-tareas">
@@ -2366,6 +2376,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-22-04"></script>
+  <script type="module" src="/js/app.js?v=2026-09-22-05"></script>
 </body>
 </html>

@@ -15,6 +15,9 @@ función habla con Firestore y con HTMLRewriter (una API que solo existe
 en Cloudflare) y se verifica contra el deploy, como catastro-proxy.js.
 """
 
+import re
+from pathlib import Path
+
 import pytest
 
 MODULO = "/functions/_middleware.js"
@@ -123,3 +126,105 @@ def test_un_id_de_verdad_sigue_pasando(id_en):
     """El filtro no puede dejar afuera los ids que genera Firestore."""
     assert id_en(f"{BASE}/lote/A1b2C3d4E5f6G7h8I9j0") == "A1b2C3d4E5f6G7h8I9j0"
     assert id_en(f"{BASE}/lote/con-guion_y_bajo") == "con-guion_y_bajo"
+
+
+# ---------------------------------------------------------------------------
+# La imagen de la tarjeta
+# ---------------------------------------------------------------------------
+#
+# POR QUÉ IMPORTA. Un comprador decide en un segundo si abre el link o
+# sigue scrolleando, y lo que lo decide es la foto de la propiedad. La
+# app declaraba un SVG como og:image — WhatsApp y Facebook DESCARTAN el
+# SVG, así que la tarjeta salía sin ninguna imagen: justo lo que esa
+# etiqueta venía a arreglar, y sin nada que fallara a la vista.
+
+
+@pytest.fixture
+def foto_de(page, base_url):
+    page.goto(base_url)
+
+    def _correr(campos):
+        return page.evaluate(
+            f"""(c) => import('{MODULO}').then((m) => m.fotoParaLaTarjeta(c))""",
+            campos,
+        )
+
+    return _correr
+
+
+def _campos_con_fotos(*urls):
+    """La forma en que Firestore devuelve un array de mapas por REST."""
+    return {
+        "fotos": {
+            "arrayValue": {
+                "values": [
+                    {"mapValue": {"fields": {"url": {"stringValue": u}, "id": {"stringValue": "x"}}}}
+                    for u in urls
+                ]
+            }
+        }
+    }
+
+
+CLOUDINARY = "https://res.cloudinary.com/demo/image/upload/v1699/lotes/frente.jpg"
+
+
+def test_la_tarjeta_lleva_la_primera_foto_del_lote(foto_de):
+    r = foto_de(_campos_con_fotos(CLOUDINARY, "https://res.cloudinary.com/demo/image/upload/otra.jpg"))
+    assert r is not None
+    assert "lotes/frente.jpg" in r
+
+
+def test_la_foto_se_pide_del_tamaño_de_la_tarjeta(foto_de):
+    """La foto original puede pesar varios megas y Facebook descarta las
+    de más de 8 MB. Cloudinary recorta con una transformación en la
+    URL, así que se le pide el tamaño exacto."""
+    r = foto_de(_campos_con_fotos(CLOUDINARY))
+    assert "w_1200,h_630" in r
+    assert r.startswith("https://res.cloudinary.com/demo/image/upload/")
+    # Y no se pierde la parte de la URL que identifica a la imagen.
+    assert r.endswith("v1699/lotes/frente.jpg")
+
+
+def test_un_lote_sin_fotos_no_tiene_foto_para_la_tarjeta(foto_de):
+    """Ahí queda la imagen de reserva que ya viene en el HTML."""
+    assert foto_de({}) is None
+    assert foto_de({"fotos": {"arrayValue": {}}}) is None
+    assert foto_de(None) is None
+
+
+def test_una_foto_que_no_es_de_cloudinary_se_manda_tal_cual(foto_de):
+    """No se le puede pedir un recorte a un servidor cualquiera, pero
+    una foto sin recortar es mejor que ninguna."""
+    otra = "https://ejemplo.com/foto.jpg"
+    assert foto_de(_campos_con_fotos(otra)) == otra
+
+
+def test_una_entrada_con_forma_rara_no_tira(foto_de):
+    """Lo que hay en Firestore lo pudo haber editado alguien a mano."""
+    assert foto_de({"fotos": {"stringValue": "no soy un array"}}) is None
+    assert foto_de({"fotos": {"arrayValue": {"values": [{"mapValue": {"fields": {}}}]}}}) is None
+
+
+def test_ninguna_metaetiqueta_de_imagen_apunta_a_un_svg():
+    """GUARDIA. Esto ya pasó una vez y nadie lo vio.
+
+    og:image apuntaba a un .svg. WhatsApp y Facebook lo descartan sin
+    decir nada, así que la tarjeta salía sin imagen — y del lado de
+    quien comparte no hay forma de darse cuenta salvo mandándose el
+    link a uno mismo. Se lee el HTML fuente: es lo único que no puede
+    "pasar por otro motivo".
+    """
+    raiz = Path(__file__).resolve().parent.parent
+    html = (raiz / "index.html").read_text(encoding="utf-8")
+
+    etiquetas = re.findall(r'<meta[^>]*(?:og:image|twitter:image)[^>]*>', html)
+    assert etiquetas, "no quedó ninguna metaetiqueta de imagen"
+    for etiqueta in etiquetas:
+        assert ".svg" not in etiqueta, f"apunta a un SVG, que WhatsApp descarta: {etiqueta}"
+
+    # Y el archivo que declara tiene que existir de verdad: una etiqueta
+    # apuntando a un 404 se ve igual de vacía que una a un SVG.
+    assert (raiz / "og-imagen.png").exists(), (
+        "falta og-imagen.png — generalo con scripts/generar_og_imagen.py"
+    )
