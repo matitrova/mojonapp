@@ -21,6 +21,7 @@ Lo que se prueba acá, en orden de importancia:
     vacía con el precio en blanco.
 """
 
+import re
 import uuid
 
 import pytest
@@ -99,13 +100,16 @@ def test_se_llega_por_la_url_directa(page, base_url, lote_publicado):
     expect(page.locator("#lp-ubicacion")).to_contain_text("Potrero de los Funes")
 
 
-def test_un_visitante_sin_sesion_la_ve_completa(page, base_url, lote_publicado):
+def test_un_visitante_sin_sesion_la_ve_completa(page, base_url, lote_publicado, inmobiliaria_configurada):
     """Si pidiera iniciar sesión, el link no serviría para nada."""
     abrir_lote_publico(page, base_url, lote_publicado["id"])
     expect(page.locator("#lp-descripcion")).to_contain_text("vista al dique")
     expect(page.locator("#lp-datos")).to_contain_text("900 m²")
     # El formulario de consulta es el motivo de la página: tiene que estar.
     expect(page.locator("#lp-form")).to_be_visible()
+    # El botón de WhatsApp necesita el teléfono de la inmobiliaria: sin
+    # número destino no se muestra (ver renderAgencia en
+    # js/lote-publico.js), por eso el fixture.
     expect(page.locator("#lp-whatsapp")).to_be_visible()
 
 
@@ -143,9 +147,16 @@ def test_un_lote_que_no_existe_lo_dice(page, base_url, lote_publicado):
 
 
 def test_el_titulo_de_la_pestana_es_el_del_lote(page, base_url, lote_publicado):
-    """Es lo que se ve al compartir el link y al guardarlo en favoritos."""
+    """Es lo que se ve al compartir el link y al guardarlo en favoritos.
+
+    Se prueba la parte del LOTE. Lo que va después es el nombre de la
+    inmobiliaria si está configurada (ver test_inmobiliaria.py), así que
+    fijarlo acá rompería este test el día que se carguen esos datos.
+    """
     abrir_lote_publico(page, base_url, lote_publicado["id"])
-    expect(page).to_have_title(f"Manzana {lote_publicado['manzana']} — Lote 7 — MojonApp")
+    expect(page).to_have_title(
+        re.compile(rf"^Manzana {re.escape(lote_publicado['manzana'])} — Lote 7 — .+")
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -266,7 +277,7 @@ def test_el_campo_trampa_viaja_en_el_envio(page, base_url, lote_publicado):
     assert enviados[0]["apellido"] == ""
 
 
-def test_whatsapp_se_lleva_lo_que_ya_se_escribio(page, base_url, lote_publicado):
+def test_whatsapp_se_lleva_lo_que_ya_se_escribio(page, base_url, lote_publicado, inmobiliaria_configurada):
     """Escribir los datos dos veces es donde se abandona una consulta."""
     abrir_lote_publico(page, base_url, lote_publicado["id"])
     _llenar(page, nombre="Ana Pérez", telefono="2664123456")

@@ -111,6 +111,31 @@ service cloud.firestore {
       allow write: if esRoot() || tienePermiso('administrar_sectores');
     }
 
+    // Los datos de la inmobiliaria: nombre, teléfono, logo, matrícula
+    // (ver js/inmobiliaria.js). UN SOLO documento, "inmobiliaria" —
+    // cada instalación de MojonApp es de una sola agencia.
+    //
+    // LECTURA ABIERTA. La página pública de un lote la ve un comprador
+    // sin cuenta, y es justo ahí donde estos datos hacen falta: sin
+    // ellos esa página dice "MojonApp" (el nombre del software) en vez
+    // del nombre del negocio. No hay nada sensible: es exactamente la
+    // información que una inmobiliaria pone en su cartel.
+    //
+    // ESCRIBIR, SOLO ROOT. De acá sale el número al que llegan TODAS
+    // las consultas de la web. Cambiarlo mal no rompe nada visible —
+    // simplemente las consultas dejan de llegar y nadie se entera — así
+    // que no alcanza con un permiso de corredor, ni siquiera con
+    // administrar_sectores. Es el equivalente a cambiarle el cartel a
+    // la oficina.
+    //
+    // El {docId} deja la puerta abierta a otras claves de configuración
+    // más adelante, con el mismo criterio: público de leer, root de
+    // escribir. Nada que no se pueda mostrar va acá.
+    match /configuracion/{docId} {
+      allow read: if true;
+      allow write: if esRoot();
+    }
+
     // El catálogo de lotes sigue siendo público en lectura — ese es el
     // propósito comercial de la app, no depende de perfiles. Lo que se
     // restringe por perfil es quién puede cargar/editar/borrar, y si un

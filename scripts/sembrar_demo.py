@@ -257,6 +257,33 @@ def actividades_del_camino(estado, creado, antiguedad_dias=0):
     return actividades, f"{fecha_creacion.isoformat()}T10:00:00.000Z"
 
 
+# La inmobiliaria de la demo. Sin esto, la demo que se le muestra a un
+# cliente abre la página pública de un lote diciendo "MojonApp" y sin
+# botón de WhatsApp — o sea, mostrando exactamente el problema que la
+# app viene a resolver.
+#
+# El teléfono es inventado pero con forma real: es el que arma el link
+# de WhatsApp, y en una demo se toca.
+INMOBILIARIA = {
+    "nombre": "Inmobiliaria Los Algarrobos",
+    "telefono": "2664558821",
+    "localidad": "Merlo, San Luis",
+    "direccion": "Av. del Sol 1240",
+    "horario": "Lunes a viernes de 9 a 13 y de 17 a 20 · Sábados de 9 a 13",
+    "email": "contacto@losalgarrobos.com.ar",
+    "web": "https://www.losalgarrobos.com.ar",
+    "matricula": "CSI 1234",
+    "logo_url": None,
+}
+
+
+def sembrar_inmobiliaria():
+    """Escribe configuracion/inmobiliaria. Es un documento único, así que
+    se pisa siempre: no hay "ya estaba" que saltear."""
+    conftest._escribir_inmobiliaria(INMOBILIARIA)
+    print(f"  inmobiliaria: {INMOBILIARIA['nombre']} (tel {INMOBILIARIA['telefono']})")
+
+
 def existentes(coleccion):
     """Lo que ya hay cargado, para no duplicar al correr dos veces."""
     base = (
@@ -343,6 +370,8 @@ def main():
                 borrados += 1
         print(f"Rehaciendo: {borrados} contactos de la demo borrados\n")
 
+    sembrar_inmobiliaria()
+
     ids_por_clave = {}
     for l in lotes_nuevos:
         doc_id = conftest.crear_lote_de_prueba(l)
@@ -394,6 +423,12 @@ def verificar_el_estado_final():
     algo, así que la demo incompleta deja de ser un final feliz.
     """
     print("\nVerificando contra la base...")
+    # La inmobiliaria se verifica primero porque es la que decide si la
+    # demo se ve como un producto o como un software sin dueño.
+    inmo = conftest._leer_inmobiliaria()
+    if not inmo or inmo.get("nombre") != INMOBILIARIA["nombre"]:
+        sys.exit("\nNo quedaron cargados los datos de la inmobiliaria (configuracion/inmobiliaria).")
+    print(f"  inmobiliaria:                    {inmo['nombre']}")
     docs_de_lotes = existentes("lotes")
     estado_por_clave = {(texto(d, "manzana"), texto(d, "lote")): texto(d, "estado") for d in docs_de_lotes}
     contactos_en_base = {texto(d, "nombre") for d in existentes("contactos")}

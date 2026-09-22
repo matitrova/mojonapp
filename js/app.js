@@ -66,7 +66,10 @@ import "./auditoria.js";
 import "./ia-proximamente.js";
 import "./ia-descripcion.js";
 import "./ia-lead.js";
-import { entrarEnLaRutaDeLaUrl, navegarA } from "./router.js";
+import "./inmobiliaria-panel.js";
+import { cargarInmobiliaria, alCambiarLaInmobiliaria } from "./inmobiliaria.js";
+import { nombreParaMostrar } from "./inmobiliaria-datos.js";
+import { entrarEnLaRutaDeLaUrl, navegarA, ponerNombreDeLaApp } from "./router.js";
 import {
   collection,
   getDocs,
@@ -302,6 +305,13 @@ configurarCrm({ mapa, centrarDejandoVer, mostrarFicha, tituloLote });
 configurarFavoritos({ mapa, centrarDejandoVer, mostrarFicha, tituloLote });
 configurarCargarLote({ mapa, cargarLotesDesdeFirestore, anilloAGeometryFirestore });
 
+// Quién es la inmobiliaria. Se pide SIN esperar sesión, a propósito: el
+// comprador que abre /lote/<id> no tiene cuenta y es justamente el que
+// necesita ver de quién es la propiedad. Es una lectura de Firestore por
+// carga de página, cacheada (ver js/inmobiliaria.js).
+alCambiarLaInmobiliaria((datos) => ponerNombreDeLaApp(nombreParaMostrar(datos)));
+cargarInmobiliaria();
+
 iniciarEstoyYendo();
 
 // Primera pasada del router (ver entrarEnLaRutaDeLaUrl en router.js):
@@ -452,6 +462,11 @@ function actualizarUIPorPermisos() {
   // implican costo por uso (APIs pagas) — mismo criterio que Auditoría,
   // decisión de root, no de cualquiera con administrar_usuarios.
   document.getElementById("btn-abrir-ia").classList.toggle("oculto", !esRootActual());
+  // Los datos de la inmobiliaria: de acá sale el número al que llegan
+  // TODAS las consultas de la web, así que es decisión de root y no de
+  // cualquiera con administrar_usuarios. Mismo criterio en
+  // firestore.rules (match /configuracion/{docId}).
+  document.getElementById("btn-abrir-inmobiliaria").classList.toggle("oculto", !esRootActual());
   // Sectores es un permiso propio, distinto de "administrar_usuarios": un
   // corredor puede organizar su propia cartera en zonas sin depender de
   // root, y root puede sacarle ese permiso puntual sin tocarle el resto.

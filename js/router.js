@@ -56,6 +56,7 @@ const RUTAS = [
   // así que son dos rutas sobre el mismo panel.
   { path: "/usuarios", clave: "usuarios", panel: "panel-admin", boton: "menu-seguridad-usuarios", navTab: null, titulo: "Usuarios" },
   { path: "/perfiles", clave: "perfiles", panel: "panel-admin", boton: "menu-seguridad-perfiles", navTab: null, titulo: "Perfiles de seguridad" },
+  { path: "/inmobiliaria", clave: "inmobiliaria", panel: "panel-inmobiliaria", boton: "btn-abrir-inmobiliaria", navTab: null, titulo: "Datos de la inmobiliaria" },
   { path: "/actividades", clave: "actividades", panel: "panel-actividades", boton: "btn-abrir-actividades", navTab: null, titulo: "Actividades" },
   { path: "/auditoria", clave: "auditoria", panel: "panel-auditoria", boton: "btn-abrir-auditoria", navTab: null, titulo: "Auditoría" },
   { path: "/ia", clave: "ia", panel: "panel-ia", boton: "btn-abrir-ia", navTab: null, titulo: "Inteligencia Artificial" }
@@ -100,6 +101,26 @@ export function rutaPorPath(path) {
     };
   }
   return null;
+}
+
+// El nombre que se muestra en la pestaña. Arranca en "MojonApp" y lo
+// reemplaza el de la inmobiliaria en cuanto se lee (ver
+// ponerNombreDeLaApp, que llama app.js).
+//
+// Esto vive acá y no en js/inmobiliaria.js para que el router siga sin
+// importar nada de la app: es la capa de abajo. Recibe el nombre, no lo
+// va a buscar.
+let nombreDeLaApp = "MojonApp";
+let ultimaRuta = null;
+
+function refrescarTitulo() {
+  if (!ultimaRuta) return;
+  document.title = ultimaRuta.clave === "mapa" ? nombreDeLaApp : `${ultimaRuta.titulo} — ${nombreDeLaApp}`;
+}
+
+export function ponerNombreDeLaApp(nombre) {
+  nombreDeLaApp = nombre || "MojonApp";
+  refrescarTitulo();
 }
 
 // Posición dentro del historial DE LA APP. Se guarda en el propio
@@ -212,7 +233,17 @@ function aplicarEstado(ruta) {
   document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("activo"));
   if (ruta.navTab) document.getElementById(ruta.navTab).classList.add("activo");
 
-  document.title = ruta.clave === "mapa" ? "MojonApp" : `${ruta.titulo} — MojonApp`;
+  // El nombre que va en la pestaña es el de la INMOBILIARIA, no el del
+  // software. Es lo que ve el comprador cuando le llega el link y lo que
+  // queda guardado si se lo agrega a favoritos.
+  //
+  // Se guarda la última ruta aplicada porque el nombre llega tarde: la
+  // lectura de Firestore casi siempre termina después de que la pantalla
+  // se dibujó, y sin esto la pestaña quedaría con "MojonApp" hasta la
+  // próxima navegación. Cuando llega, refrescarTitulo() lo vuelve a
+  // armar con la misma ruta.
+  ultimaRuta = ruta;
+  refrescarTitulo();
 
   for (const avisar of suscriptores) avisar(ruta);
   marcarEnElMenu(ruta);

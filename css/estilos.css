@@ -1580,7 +1580,8 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-perfil,
 #formulario-usuario,
 #formulario-editar-lote,
-#formulario-sector {
+#formulario-sector,
+#formulario-inmobiliaria {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1592,7 +1593,8 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-perfil label,
 #formulario-usuario label,
 #formulario-editar-lote label,
-#formulario-sector label {
+#formulario-sector label,
+#formulario-inmobiliaria label {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1611,7 +1613,10 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-editar-lote input,
 #formulario-editar-lote select,
 #formulario-editar-lote textarea,
-#formulario-sector input {
+#formulario-sector input,
+#formulario-inmobiliaria input[type="text"],
+#formulario-inmobiliaria input[type="tel"],
+#formulario-inmobiliaria input[type="email"] {
   font: inherit;
   font-weight: 400;
   color: var(--color-texto);
@@ -1632,7 +1637,8 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-editar-lote input:focus,
 #formulario-editar-lote select:focus,
 #formulario-editar-lote textarea:focus,
-#formulario-sector input:focus {
+#formulario-sector input:focus,
+#formulario-inmobiliaria input:focus {
   outline: none;
   border-color: var(--color-primario);
   box-shadow: 0 0 0 3px rgba(51, 82, 58, 0.15);
@@ -1797,7 +1803,8 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-perfil button[type="submit"],
 #formulario-usuario button[type="submit"],
 #formulario-editar-lote button[type="submit"],
-#formulario-sector button[type="submit"] {
+#formulario-sector button[type="submit"],
+#formulario-inmobiliaria button[type="submit"] {
   background: var(--color-primario);
   color: #fff;
   border: none;
@@ -1813,7 +1820,8 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-perfil button[type="submit"]:hover,
 #formulario-usuario button[type="submit"]:hover,
 #formulario-editar-lote button[type="submit"]:hover,
-#formulario-sector button[type="submit"]:hover {
+#formulario-sector button[type="submit"]:hover,
+#formulario-inmobiliaria button[type="submit"]:hover {
   background: var(--color-primario-oscuro);
 }
 
@@ -5586,5 +5594,172 @@ body:not(.en-el-mapa) #btn-flotante-interes-crm {
   padding: 8px 10px;
   border-radius: var(--radio-chico);
   background: var(--color-fondo-alterno);
+  font-size: 0.8rem;
+}
+
+/* ---------------------------------------------------------------------
+   Datos de la inmobiliaria (#panel-inmobiliaria). El formulario hereda
+   el aspecto de los demás paneles (ver las listas de selectores de
+   arriba); acá va solo lo propio: la bajada, el bloque del logo y el
+   aviso de guardado.
+   --------------------------------------------------------------------- */
+
+/* Una línea que explica para qué sirve la pantalla. Esta en particular
+   no es decorativa: sin ella, "Teléfono" parece el teléfono de la ficha
+   de un lote y no el número al que llegan las consultas de la web. */
+.panel-bajada {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-texto-secundario);
+  max-width: 60ch;
+}
+
+.campo-ayuda {
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--color-texto-secundario);
+}
+
+#inmobiliaria-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inmo-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px;
+  background: var(--color-fondo-alterno);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+}
+
+.inmo-logo-titulo {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+/* Fondo blanco explícito: la mayoría de los logos vienen en PNG con
+   transparencia y pensados para papel — sobre el gris del bloque se ven
+   sucios, y un logo que se ve mal acá parece un problema de la app. */
+.inmo-logo-preview {
+  max-width: 220px;
+  max-height: 110px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 8px;
+}
+
+.inmo-logo-vacio,
+.inmo-logo-estado {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-texto-secundario);
+}
+
+.inmo-logo-acciones {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.inmo-logo-acciones .btn-link {
+  margin-left: 0;
+}
+
+.mensaje-ok {
+  color: var(--color-positivo);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Quién publica, en la página pública de un lote (/lote/<id>).
+
+   Dos bloques: una banda arriba de todo (lo primero que necesita saber
+   alguien a quien le llegó un link: de quién es esto) y un pie con cómo
+   ubicar a la inmobiliaria. Los dos se esconden enteros si todavía no
+   se cargaron los datos — ver renderAgencia en js/lote-publico.js.
+   --------------------------------------------------------------------- */
+
+.lp-agencia {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 0 14px;
+  margin: 0 0 18px;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+/* Fondo blanco explícito: los logos suelen venir en PNG transparente
+   pensados para papel. */
+.lp-agencia-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 4px;
+  flex: none;
+}
+
+.lp-agencia-texto {
+  min-width: 0;
+}
+
+.lp-agencia-nombre {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.lp-agencia-donde {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-texto-secundario);
+}
+
+.lp-pie {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-borde);
+  font-size: 0.88rem;
+  color: var(--color-texto-secundario);
+}
+
+.lp-pie-nombre {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+.lp-pie-datos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
+.lp-pie-datos a {
+  color: inherit;
+}
+
+/* Lo que distingue a una inmobiliaria registrada de un aviso suelto: va
+   separada del resto, como en cualquier cartel. */
+.lp-pie-matricula {
+  margin: 10px 0 0;
   font-size: 0.8rem;
 }

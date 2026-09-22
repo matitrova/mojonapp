@@ -75,7 +75,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-22-02" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-22-03" />
 </head>
 <body>
 
@@ -233,6 +233,13 @@
         <span class="menu-modulo-nombre">Sistema</span>
       </button>
       <div class="menu-modulo-items">
+        <!-- Quién es la agencia: nombre, teléfono, logo. Es lo que ve un
+             comprador en la página pública de un lote, así que es
+             decisión de root y no de cualquiera con administrar_usuarios
+             (mismo criterio que Auditoría). -->
+        <p class="menu-categoria">La agencia</p>
+        <button type="button" class="drawer-item oculto" id="btn-abrir-inmobiliaria" data-testid="btn-abrir-inmobiliaria" data-ruta="/inmobiliaria"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M4 21V8l8-5 8 5v13"/><path d="M9.5 21v-5h5v5"/><path d="M9 11h1.5"/><path d="M13.5 11H15"/></svg></span><span>Datos de la inmobiliaria</span></button>
+
         <!-- Gateado por "administrar_usuarios" (app.js) — id sin cambios. -->
         <div id="drawer-grupo-seguridad" class="oculto">
           <p class="menu-categoria">Seguridad</p>
@@ -1029,6 +1036,43 @@
   <!-- Panel "Sectores": el catálogo de nombres que ofrece el combo de
        Sector/zona al cargar o editar un lote — para que no cada
        corredor invente su propia variante del mismo nombre a mano. -->
+  <!-- Datos de la inmobiliaria. Un solo formulario, sin lista: no hay
+       varias agencias. Guarda en configuracion/inmobiliaria, lo lee
+       hasta la página pública de un lote (ver js/inmobiliaria.js). -->
+  <div id="panel-inmobiliaria" class="oculto panel-pantalla-completa" data-testid="panel-inmobiliaria">
+    <div class="panel-header">
+      <h2>Datos de la inmobiliaria</h2>
+      <button id="cerrar-panel-inmobiliaria" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
+    </div>
+
+    <p class="panel-bajada">
+      Esto es lo que ve un comprador cuando le mandás el link de un lote:
+      el nombre arriba, cómo contactarte abajo. El teléfono es el número
+      al que llegan las consultas por WhatsApp.
+    </p>
+
+    <form id="formulario-inmobiliaria" data-testid="formulario-inmobiliaria">
+      <div id="inmobiliaria-campos"></div>
+
+      <div class="inmo-logo">
+        <p class="inmo-logo-titulo">Logo</p>
+        <img id="inmobiliaria-logo-preview" class="inmo-logo-preview oculto" alt="Logo de la inmobiliaria" data-testid="inmobiliaria-logo-preview" />
+        <p id="inmobiliaria-logo-vacio" class="inmo-logo-vacio" data-testid="inmobiliaria-logo-vacio">Todavía no cargaste un logo.</p>
+        <input type="hidden" id="inmobiliaria-logo_url" value="" />
+        <div class="inmo-logo-acciones">
+          <button type="button" id="inmobiliaria-logo-subir" class="btn-link" data-testid="inmobiliaria-logo-subir">Subir logo</button>
+          <button type="button" id="inmobiliaria-logo-quitar" class="btn-link oculto" data-testid="inmobiliaria-logo-quitar">Quitar</button>
+        </div>
+        <input type="file" id="inmobiliaria-logo-input" accept="image/*" class="oculto" />
+        <p id="inmobiliaria-logo-estado" class="inmo-logo-estado oculto" data-testid="inmobiliaria-logo-estado"></p>
+      </div>
+
+      <button type="submit" id="inmobiliaria-guardar" data-testid="inmobiliaria-guardar">Guardar</button>
+      <p id="inmobiliaria-error" class="mensaje-error oculto" data-testid="inmobiliaria-error"></p>
+      <p id="inmobiliaria-ok" class="mensaje-ok oculto" data-testid="inmobiliaria-ok">Listo, guardado.</p>
+    </form>
+  </div>
+
   <div id="panel-sectores" class="oculto panel-pantalla-completa" data-testid="panel-sectores">
     <div class="panel-header">
       <h2>Zonas</h2>
@@ -1375,6 +1419,19 @@
     </div>
 
     <div id="lp-contenido" class="oculto" data-testid="lp-contenido">
+      <!-- Quién publica. Va ARRIBA DE TODO porque es lo primero que
+           necesita saber alguien a quien le llegó un link por WhatsApp:
+           de quién es esto. Se esconde entero si todavía no se cargaron
+           los datos de la agencia (ver js/inmobiliaria.js): una banda
+           vacía se ve peor que ninguna banda. -->
+      <header id="lp-agencia" class="lp-agencia oculto" data-testid="lp-agencia">
+        <img id="lp-agencia-logo" class="lp-agencia-logo oculto" alt="" data-testid="lp-agencia-logo" />
+        <div class="lp-agencia-texto">
+          <p id="lp-agencia-nombre" class="lp-agencia-nombre" data-testid="lp-agencia-nombre"></p>
+          <p id="lp-agencia-donde" class="lp-agencia-donde oculto" data-testid="lp-agencia-donde"></p>
+        </div>
+      </header>
+
       <!-- Galería: foto grande + miniaturas, como cualquier portal. Un
            lote sin fotos no muestra un placeholder genérico (mismo
            criterio que la grilla): muestra el aviso de que faltan. -->
@@ -1451,12 +1508,23 @@
               <p id="lp-form-mensaje" class="oculto" data-testid="lp-form-mensaje"></p>
               <button type="submit" id="lp-enviar" data-testid="lp-enviar">Enviar consulta</button>
             </form>
-            <button type="button" id="lp-whatsapp" class="lp-whatsapp" data-testid="lp-whatsapp">
+            <button type="button" id="lp-whatsapp" class="lp-whatsapp oculto" data-testid="lp-whatsapp">
               Consultar por WhatsApp
             </button>
           </section>
         </aside>
       </div>
+
+      <!-- Cómo ubicar a la inmobiliaria por fuera del formulario.
+           Mucha gente no deja sus datos en un formulario pero sí llama,
+           y la matrícula es lo que distingue a una inmobiliaria
+           registrada de un aviso suelto. Cada línea aparece solo si hay
+           qué poner. -->
+      <footer id="lp-pie" class="lp-pie oculto" data-testid="lp-pie">
+        <p id="lp-pie-nombre" class="lp-pie-nombre" data-testid="lp-pie-nombre"></p>
+        <ul id="lp-pie-datos" class="lp-pie-datos" data-testid="lp-pie-datos"></ul>
+        <p id="lp-pie-matricula" class="lp-pie-matricula oculto" data-testid="lp-pie-matricula"></p>
+      </footer>
     </div>
   </div>
 
@@ -2293,6 +2361,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-22-02"></script>
+  <script type="module" src="/js/app.js?v=2026-09-22-03"></script>
 </body>
 </html>

@@ -24,6 +24,8 @@ import { crearContactoDesdeInteresado } from "./crm-datos.js";
 // Las mismas reglas que aplica functions/consulta-lote.js del otro lado.
 import { validarConsulta } from "./consulta-lote.js";
 import { capaConMargen, seguirElCalce } from "./calce-aplicar.js";
+import { getInmobiliaria, alCambiarLaInmobiliaria, whatsappDeLaInmobiliaria } from "./inmobiliaria.js";
+import { comoUbicarla, nombreParaMostrar } from "./inmobiliaria-datos.js";
 
 // Pane propio para la foto, como en el mapa principal (ver PANE_FOTO en
 // js/mapa.js). Nombre distinto porque son dos mapas de Leaflet
@@ -52,6 +54,16 @@ const elTrampa = document.getElementById("lp-apellido");
 const elEsperando = document.getElementById("lp-esperando");
 const elEsperandoTexto = document.getElementById("lp-esperando-texto");
 const elReintentar = document.getElementById("lp-reintentar");
+
+// Quién publica: la banda de arriba y el pie con los datos de contacto.
+const elAgencia = document.getElementById("lp-agencia");
+const elAgenciaLogo = document.getElementById("lp-agencia-logo");
+const elAgenciaNombre = document.getElementById("lp-agencia-nombre");
+const elAgenciaDonde = document.getElementById("lp-agencia-donde");
+const elPie = document.getElementById("lp-pie");
+const elPieNombre = document.getElementById("lp-pie-nombre");
+const elPieDatos = document.getElementById("lp-pie-datos");
+const elPieMatricula = document.getElementById("lp-pie-matricula");
 
 const SERVICIOS = [
   { clave: "luz", etiqueta: "Luz" },
@@ -190,19 +202,106 @@ function mensajeDeWhatsapp(p) {
   return `Hola, me interesa ${tituloDe(p)}${p.sector ? ` en ${p.sector}` : ""}. ${location.href}`;
 }
 
+// Quién publica: la banda de arriba y el pie de abajo.
+//
+// SE DIBUJA APARTE DEL LOTE porque llega en otro momento: los datos de
+// la agencia son una lectura propia que casi siempre termina después de
+// que la página ya se pintó (ver alCambiarLaInmobiliaria más abajo).
+//
+// Si no hay datos cargados, los dos bloques se esconden enteros. Una
+// banda vacía o un pie con guiones se ve peor que no tenerlos — y es lo
+// que pasaría el día que alguien instale la app y todavía no haya
+// configurado nada.
+function renderAgencia() {
+  const inmo = getInmobiliaria();
+
+  elAgencia.classList.toggle("oculto", !inmo);
+  elPie.classList.toggle("oculto", !inmo);
+
+  // El botón de WhatsApp vive o muere con el teléfono: sin número
+  // destino abre el selector de contactos del comprador y la consulta no
+  // llega nunca. Mejor no ofrecerlo — el formulario sigue estando.
+  elWhatsapp.classList.toggle("oculto", !whatsappDeLaInmobiliaria(""));
+
+  if (!inmo) return;
+
+  elAgenciaNombre.textContent = inmo.nombre;
+
+  const donde = comoUbicarla(inmo);
+  elAgenciaDonde.textContent = donde || "";
+  elAgenciaDonde.classList.toggle("oculto", !donde);
+
+  const hayLogo = !!inmo.logo_url;
+  if (hayLogo) {
+    elAgenciaLogo.src = inmo.logo_url;
+    elAgenciaLogo.alt = inmo.nombre;
+  }
+  elAgenciaLogo.classList.toggle("oculto", !hayLogo);
+
+  elPieNombre.textContent = inmo.nombre;
+
+  // Cada línea aparece solo si hay qué poner. El teléfono y la web son
+  // links y no texto: en un teléfono, que el número se toque y llame es
+  // la diferencia entre una consulta y ninguna.
+  elPieDatos.innerHTML = "";
+  const lineas = [
+    { texto: comoUbicarla(inmo) },
+    { texto: inmo.horario },
+    { texto: inmo.telefono, href: `tel:${inmo.telefono}` },
+    { texto: inmo.email, href: `mailto:${inmo.email}` },
+    { texto: inmo.web, href: inmo.web }
+  ];
+  for (const linea of lineas) {
+    if (!linea.texto) continue;
+    const li = document.createElement("li");
+    if (linea.href) {
+      const a = document.createElement("a");
+      a.href = linea.href;
+      a.textContent = linea.texto;
+      // Solo la web sale de la página; tel: y mailto: abren una app y
+      // no tiene sentido mandarlos a otra pestaña.
+      if (linea.href === inmo.web) {
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+      }
+      li.appendChild(a);
+    } else {
+      li.textContent = linea.texto;
+    }
+    elPieDatos.appendChild(li);
+  }
+
+  const matricula = inmo.matricula ? `Matrícula ${inmo.matricula}` : "";
+  elPieMatricula.textContent = matricula;
+  elPieMatricula.classList.toggle("oculto", !matricula);
+}
+
+// Los datos de la agencia llegan tarde (una lectura de Firestore) y casi
+// siempre DESPUÉS de que la página se dibujó. Sin esto, el comprador que
+// entra directo por el link vería la página sin saber de quién es, y el
+// botón de WhatsApp escondido aunque haya teléfono cargado.
+alCambiarLaInmobiliaria(() => {
+  if (!loteActual) return;
+  renderAgencia();
+  document.title = `${tituloDe(loteActual.properties)} — ${nombreParaMostrar(getInmobiliaria())}`;
+});
+
 function render(feature) {
   clearTimeout(relojDeEspera);
   loteActual = feature;
   const p = feature.properties;
 
   elTitulo.textContent = tituloDe(p);
-  document.title = `${tituloDe(p)} — MojonApp`;
+  // El nombre de la INMOBILIARIA, no el del software: esta pestaña la
+  // abre un comprador al que le llegó un link.
+  document.title = `${tituloDe(p)} — ${nombreParaMostrar(getInmobiliaria())}`;
   elPrecio.textContent = precioEnTexto(p);
   elUbicacion.textContent = [p.sector, p.barrio].filter(Boolean).join(" · ") || "Ubicación sin cargar";
 
   renderGaleria(p);
   renderDatos(p);
   renderMapa(feature);
+  renderAgencia();
 
   // Subir fotos: solo con sesión. Un visitante no puede, y mostrarle el
   // botón sería prometerle algo que las reglas van a rechazar.
@@ -355,7 +454,14 @@ function abrirWhatsapp() {
   if (email) partes.push(`Email: ${email}`);
   if (mensaje) partes.push(`\n${mensaje}`);
 
-  window.open(`https://wa.me/?text=${encodeURIComponent(partes.join("\n"))}`, "_blank", "noopener");
+  // CON destino. Antes esto era un wa.me SIN número: abría WhatsApp con
+  // el mensaje escrito pero sin a quién mandárselo, así que el comprador
+  // tenía que elegir un contacto a mano — y la consulta podía terminar
+  // en cualquier lado, o en ninguno. El número sale de los datos de la
+  // inmobiliaria (ver js/inmobiliaria.js).
+  const link = whatsappDeLaInmobiliaria(partes.join("\n"));
+  if (!link) return;
+  window.open(link, "_blank", "noopener");
 }
 
 elWhatsapp.addEventListener("click", abrirWhatsapp);

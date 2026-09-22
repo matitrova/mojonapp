@@ -23,6 +23,8 @@ levanta la fixture `base_url` (ver tests/conftest.py) justamente por este
 motivo.
 """
 
+import re
+
 import pytest
 from playwright.sync_api import expect
 
@@ -192,12 +194,19 @@ def test_el_menu_marca_la_seccion_activa(page, base_url):
 @pytest.mark.con_sesion
 def test_el_titulo_de_la_pagina_acompana_a_la_seccion(page, base_url):
     """Que cada sección "sea una página" incluye el título del navegador:
-    es lo que se ve en la pestaña y lo que se guarda en un favorito."""
+    es lo que se ve en la pestaña y lo que se guarda en un favorito.
+
+    Lo que prueba este test es la parte de la SECCIÓN. Lo que va después
+    del guion es el nombre de la inmobiliaria si está configurada, y
+    "MojonApp" si no (ver js/inmobiliaria.js) — eso se prueba en
+    test_inmobiliaria.py. Fijarlo acá haría fallar este test en cuanto
+    alguien cargue los datos de la agencia, que es lo normal.
+    """
     _loguearse(page, base_url)
-    expect(page).to_have_title("Dashboard — MojonApp")
+    expect(page).to_have_title(re.compile(r"^Dashboard — .+"))
 
     _ir_por_el_menu(page, "#btn-abrir-crm")
-    expect(page).to_have_title("Pipeline de leads — MojonApp")
+    expect(page).to_have_title(re.compile(r"^Pipeline de leads — .+"))
 
 
 @pytest.mark.con_sesion

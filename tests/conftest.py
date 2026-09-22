@@ -658,6 +658,93 @@ def lote_sembrado():
 
 
 # ---------------------------------------------------------------------------
+# Los datos de la inmobiliaria (configuracion/inmobiliaria)
+# ---------------------------------------------------------------------------
+
+# Un documento FIJO, no uno por test. Es configuración de la instalación,
+# no un dato de negocio: hay uno solo y la app lo lee por id. Por eso este
+# fixture guarda lo que había y lo repone al terminar, en vez de crear y
+# borrar como los demás — si el proyecto de pruebas ya tiene datos
+# cargados a mano, un test no tiene por qué pisárselos.
+INMOBILIARIA_PRUEBA = {
+    "nombre": "Inmobiliaria de Prueba",
+    "telefono": "2664558821",
+    "localidad": "Merlo, San Luis",
+    "direccion": "Av. del Sol 1240",
+    "horario": "Lunes a viernes de 9 a 13",
+    "email": "contacto@ejemplo.com.ar",
+    "web": "https://www.ejemplo.com.ar",
+    "matricula": "CSI 1234",
+    "logo_url": None,
+}
+
+
+def _leer_inmobiliaria():
+    """Lo que hay guardado, o None si no hay documento."""
+    respuesta = requests.get(
+        f"{FIRESTORE_RAIZ}/configuracion/inmobiliaria",
+        headers={"Authorization": f"Bearer {_id_token_de_prueba()}"},
+        timeout=20,
+    )
+    if respuesta.status_code == 404:
+        return None
+    respuesta.raise_for_status()
+    campos = respuesta.json().get("fields", {})
+    return {
+        clave: (None if "nullValue" in valor else valor.get("stringValue"))
+        for clave, valor in campos.items()
+    }
+
+
+def _escribir_inmobiliaria(datos):
+    _commit(
+        [
+            {
+                "update": {
+                    "name": f"{FIRESTORE_RAIZ_RELATIVA}/configuracion/inmobiliaria",
+                    "fields": {k: _a_valor_firestore(v) for k, v in datos.items()},
+                }
+            }
+        ]
+    )
+
+
+def _borrar_inmobiliaria():
+    _commit([{"delete": f"{FIRESTORE_RAIZ_RELATIVA}/configuracion/inmobiliaria"}])
+
+
+@pytest.fixture
+def inmobiliaria_configurada():
+    """Deja datos de agencia conocidos, y repone lo que había al terminar."""
+    anterior = _leer_inmobiliaria()
+    _escribir_inmobiliaria(INMOBILIARIA_PRUEBA)
+    try:
+        yield dict(INMOBILIARIA_PRUEBA)
+    finally:
+        if anterior is None:
+            _borrar_inmobiliaria()
+        else:
+            _escribir_inmobiliaria(anterior)
+
+
+@pytest.fixture
+def inmobiliaria_sin_configurar():
+    """El caso "recién instalada": no hay documento de agencia.
+
+    Importa tanto como el caso configurado — es el estado en el que queda
+    la app apenas se instala, y es donde se ve si algo asume que los
+    datos están.
+    """
+    anterior = _leer_inmobiliaria()
+    _borrar_inmobiliaria()
+    try:
+        yield
+    finally:
+        if anterior is not None:
+            _escribir_inmobiliaria(anterior)
+
+
+# ---------------------------------------------------------------------------
 # Abrir el menú, sin que cada test tenga que saber en qué ancho corre
 # ---------------------------------------------------------------------------
 
