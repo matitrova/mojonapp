@@ -63,6 +63,9 @@ const SERVICIOS = [
 let loteActual = null;
 let mapaChico = null;
 let capaDelLote = null;
+// El calce se engancha una sola vez, y recién cuando el mapa ya tiene
+// vista (ver el final de renderMapa).
+let calceEnganchado = false;
 
 function tituloDe(p) {
   return `Manzana ${p.manzana ?? "?"} — Lote ${p.lote ?? "?"}`;
@@ -157,7 +160,6 @@ function renderMapa(feature) {
       pane: PANE_FOTO_PUBLICO,
       attribution: "Tiles &copy; Esri"
     }).addTo(mapaChico);
-    seguirElCalce(mapaChico, PANE_FOTO_PUBLICO);
   }
   if (capaDelLote) capaDelLote.remove();
   capaDelLote = L.geoJSON(feature, { style: { color: "#e2591f", weight: 2, fillOpacity: 0.25 } }).addTo(mapaChico);
@@ -166,6 +168,22 @@ function renderMapa(feature) {
   // tuvo el mapa principal al abrirse detrás de un panel).
   mapaChico.invalidateSize();
   mapaChico.fitBounds(capaDelLote.getBounds(), { padding: [20, 20], maxZoom: 18, animate: false });
+
+  // EL CALCE VA DESPUÉS DEL fitBounds, no al crear el mapa. Un mapa de
+  // Leaflet recién creado todavía no tiene centro ni zoom, y
+  // seguirElCalce lo primero que hace es preguntarle el centro para
+  // saber en qué zona está: eso tiraba "Set map center and zoom first."
+  // en cada carga de la página pública. La página se veía bien igual
+  // —el fitBounds de acá arriba le daba la vista un instante después—
+  // pero la corrección de la foto NUNCA se aplicaba, justo en la
+  // pantalla para la que se hizo.
+  //
+  // Se engancha una sola vez: seguirElCalce se suscribe a los eventos
+  // del mapa, y llamarlo de nuevo por cada lote acumularía suscripciones.
+  if (!calceEnganchado) {
+    seguirElCalce(mapaChico, PANE_FOTO_PUBLICO);
+    calceEnganchado = true;
+  }
 }
 
 function mensajeDeWhatsapp(p) {

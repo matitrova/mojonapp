@@ -327,6 +327,16 @@ function aplicarPermisosDeFotos(feature) {
 
 function renderFotos(feature) {
   const fotos = feature.properties.fotos || [];
+  // También lo calcula aplicarPermisosDeFotos, y así tiene que ser: esa
+  // función existe para poder re-aplicar los permisos SIN reconstruir la
+  // galería, y el botón de borrar de cada foto se crea acá abajo.
+  // Recalcularlo cuesta una comparación y evita que las dos funciones
+  // queden atadas por una variable compartida — que es exactamente cómo
+  // se rompió: al separarlas, el `const` se fue con la mitad nueva y
+  // este cuerpo quedó usando un nombre inexistente. Tiraba
+  // "puedeSubir is not defined" a la mitad de mostrarFicha, así que
+  // NINGÚN LOTE CON FOTOS abría su ficha.
+  const puedeSubir = puedeEditarLote(feature);
   aplicarPermisosDeFotos(feature);
 
   elGaleriaFotos.innerHTML = "";
