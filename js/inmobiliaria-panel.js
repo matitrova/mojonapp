@@ -72,7 +72,11 @@ function dibujarCampos() {
   }
 }
 
-function mostrarLogo(url) {
+// tocado: lo marca cuando el cambio lo pidió la persona (subir o quitar
+// el logo), no cuando es la pantalla llenándose sola. Sin esto, una
+// lectura tardía le devolvería el logo que acaba de quitar.
+function mostrarLogo(url, tocado = false) {
+  if (tocado) formularioTocado = true;
   elLogoUrl.value = url || "";
   const hay = !!url;
   if (hay) elLogoPreview.src = url;
@@ -89,6 +93,25 @@ function llenarCon(datos) {
   }
   mostrarLogo(datos?.logo_url || "");
 }
+
+// ¿La persona ya escribió algo desde que se abrió la pantalla?
+//
+// EXISTE POR UN BUG QUE SE VEÍA COMO UN ÉXITO. Al entrar, el formulario
+// se llena dos veces: primero con lo que ya estaba cacheado y después
+// con lo recién leído de Firestore. Si esa segunda lectura volvía
+// DESPUÉS de que empezaste a escribir, te pisaba lo escrito con el
+// valor guardado — y al apretar Guardar se guardaba el valor viejo, con
+// el cartel de "Listo, guardado" arriba. Nada parecía fallar.
+//
+// Con esto, una lectura que llega tarde no toca un formulario que ya
+// está en uso: ganó la persona, no la red.
+let formularioTocado = false;
+
+// En el contenedor y no en cada input: los campos se dibujan solos desde
+// CAMPOS, así que un campo nuevo queda cubierto sin acordarse de nada.
+elCampos.addEventListener("input", () => {
+  formularioTocado = true;
+});
 
 function leerDelFormulario() {
   const datos = {};
@@ -115,7 +138,7 @@ elLogoSubir.addEventListener("click", () => elLogoInput.click());
 // recién se aplica al apretar Guardar, igual que los demás campos. Un
 // borrado que se aplica de una es el que después nadie sabe deshacer.
 elLogoQuitar.addEventListener("click", () => {
-  mostrarLogo("");
+  mostrarLogo("", true);
   elLogoEstado.classList.add("oculto");
 });
 
@@ -129,7 +152,7 @@ elLogoInput.addEventListener("change", async () => {
     // Misma subida que las fotos de un lote (js/ficha.js): un solo
     // camino a Cloudinary, con su preset y su manejo de errores.
     const subida = await subirFotoACloudinary(archivo);
-    mostrarLogo(subida.url);
+    mostrarLogo(subida.url, true);
     elLogoEstado.textContent = "Logo listo. Acordate de guardar.";
   } catch (error) {
     elLogoEstado.textContent = `No se pudo subir el logo: ${error.message}`;
@@ -169,6 +192,7 @@ elFormulario.addEventListener("submit", async (evento) => {
     // sin https://, por ejemplo) el formulario muestra lo que quedó
     // guardado de verdad, no lo que se tipeó.
     llenarCon(getInmobiliaria());
+    formularioTocado = false;
     elOk.classList.remove("oculto");
   } catch (error) {
     mostrarError(
@@ -198,16 +222,55 @@ dibujarCampos();
 // desde otra sesión, o si la lectura todavía no había vuelto cuando se
 // cargó la app, entrar a la pantalla tiene que mostrar lo que hay.
 const elPanel = document.getElementById("panel-inmobiliaria");
+let entradaActual = 0;
+
+// ¿Ya estábamos en esta pantalla la vez anterior que avisó el router?
+//
+// EL ROUTER AVISA MÁS DE UNA VEZ POR LA MISMA PANTALLA. app.js aplica la
+// ruta al arrancar (js/app.js:324) y otra vez cuando resuelve la sesión
+// (js/app.js:561), porque las pantallas con permisos no se pueden
+// decidir antes de saber quién sos. Las dos pasadas caen sobre la misma
+// ruta, y la segunda llega cuando ya se está usando la pantalla.
+//
+// Sin este guardia, esa segunda pasada volvía a llenar el formulario y
+// borraba lo que la persona estaba escribiendo. Era el mecanismo real
+// detrás del bug de "guardé y quedó el valor viejo".
+let estabaAdentro = false;
 
 onRutaAplicada(async (ruta) => {
-  if (ruta.clave !== "inmobiliaria") return;
+  if (ruta.clave !== "inmobiliaria") {
+    estabaAdentro = false;
+    return;
+  }
+
   // Sincrónico y antes de cualquier await: si se esperara la lectura de
   // Firestore, entre el click y la respuesta no habría NINGUNA pantalla
-  // visible — el router ya escondió todas.
+  // visible — el router ya escondió todas. Esto sí se hace siempre: la
+  // pasada que no entra igual escondió el panel y hay que volver a
+  // mostrarlo.
   elPanel.classList.remove("oculto");
+
+  // Ya estábamos acá: no es una entrada, es el router pasando de nuevo
+  // por la misma pantalla. No se toca nada de lo que hay en el
+  // formulario.
+  if (estabaAdentro) return;
+  estabaAdentro = true;
+
   elError.classList.add("oculto");
   elOk.classList.add("oculto");
   elLogoEstado.classList.add("oculto");
+  formularioTocado = false;
   llenarCon(getInmobiliaria());
-  llenarCon(await recargarInmobiliaria());
+
+  // Cada entrada a la pantalla tiene su propio número. Si se entró, se
+  // salió y se volvió a entrar mientras la lectura viajaba, la respuesta
+  // vieja llega con un número que ya no corre y se descarta — si no,
+  // pisaría el formulario de la visita nueva.
+  //
+  // Y formularioTocado cubre el otro lado: la lectura que vuelve cuando
+  // la persona ya empezó a escribir. Son dos carreras distintas.
+  const miEntrada = ++entradaActual;
+  const frescos = await recargarInmobiliaria();
+  if (miEntrada !== entradaActual || formularioTocado) return;
+  llenarCon(frescos);
 });

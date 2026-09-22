@@ -26,6 +26,7 @@ con "Solo el usuario principal puede cambiar los datos", que es
 exactamente lo que hace la app hasta que se publique.
 """
 
+import time
 import uuid
 
 import pytest
@@ -185,6 +186,48 @@ def test_se_guarda_y_queda_guardado(page, base_url, inmobiliaria_configurada):
     page.reload()
     expect(page.locator("#inmobiliaria-nombre")).to_have_value(nombre_nuevo, timeout=15000)
     expect(page.locator("#inmobiliaria-telefono")).to_have_value("266 4 11-2233")
+
+
+@pytest.mark.con_sesion
+def test_una_segunda_pasada_del_router_no_pisa_lo_que_se_esta_escribiendo(
+    page, base_url, inmobiliaria_configurada
+):
+    """REGRESIÓN, y de las que se ven como un éxito.
+
+    El router aplica la ruta DOS veces al abrir la app: una al arrancar
+    (js/app.js:324) y otra cuando resuelve la sesión (js/app.js:561),
+    porque las pantallas con permisos no se pueden decidir antes de
+    saber quién sos. Las dos caen sobre la misma ruta.
+
+    Si la segunda llegaba con la pantalla ya en uso, volvía a llenar el
+    formulario con lo guardado y borraba lo que se estaba escribiendo —
+    y Guardar guardaba el valor VIEJO, con el cartel de "Listo,
+    guardado" arriba. Nada parecía fallar.
+
+    ACÁ LA SEGUNDA PASADA SE DISPARA A MANO y no se espera a que la
+    sesión resuelva sola: así el test falla SIEMPRE que el bug esté, en
+    vez de depender de cuánto tardó el login. La primera versión de este
+    test escribía "rápido" y esperaba que la carrera saliera mal: pasaba
+    igual con el arreglo sacado, o sea que no probaba nada.
+    """
+    page.set_viewport_size(ANCHO_ESCRITORIO)
+    nombre_nuevo = f"Escrito a mitad de camino {uuid.uuid4().hex[:6]}"
+
+    page.goto(f"{base_url}/inmobiliaria")
+    expect(page.locator("#inmobiliaria-nombre")).to_have_value(
+        inmobiliaria_configurada["nombre"], timeout=15000
+    )
+
+    page.fill("#inmobiliaria-nombre", nombre_nuevo)
+
+    # Exactamente lo que hace app.js cuando resuelve la sesión: volver a
+    # aplicar la ruta en la que ya estamos.
+    page.evaluate(
+        """() => import('/js/router.js').then((m) => m.navegarA('/inmobiliaria'))"""
+    )
+    page.wait_for_timeout(2500)
+
+    expect(page.locator("#inmobiliaria-nombre")).to_have_value(nombre_nuevo)
 
 
 @pytest.mark.con_sesion
