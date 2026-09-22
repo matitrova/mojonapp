@@ -734,13 +734,48 @@ def inmobiliaria_sin_configurar():
     Importa tanto como el caso configurado — es el estado en el que queda
     la app apenas se instala, y es donde se ve si algo asume que los
     datos están.
+
+    NO CORRE CONTRA PRODUCCIÓN, y no es una formalidad: este fixture
+    BORRA el documento y su única copia vive en memoria de este proceso.
+    Si la corrida se corta en el medio (Ctrl-C, un crash, el runner que
+    mata el proceso), esa copia se va con él. En el proyecto de pruebas
+    eso cuesta volver a sembrar la demo; en producción sería dejar a la
+    inmobiliaria sin su teléfono de contacto y sin forma de recuperarlo.
+    El resto de la suite avisa fuerte sobre producción pero igual corre
+    (ver el aviso de arriba); este caso puntual no.
     """
+    if USA_PRODUCCION:
+        pytest.skip(
+            "Este test borra configuracion/inmobiliaria y la única copia queda en "
+            "memoria: no se corre contra producción. Configurá FIREBASE_PROJECT_ID "
+            "en tests/.env con el proyecto de pruebas."
+        )
     anterior = _leer_inmobiliaria()
     _borrar_inmobiliaria()
     try:
         yield
     finally:
         if anterior is not None:
+            _escribir_inmobiliaria(anterior)
+
+
+@pytest.fixture
+def inmobiliaria_sin_telefono():
+    """Configurada a medias: con nombre, sin teléfono.
+
+    Es el estado más probable de los dos "incompletos" — una
+    inmobiliaria carga su nombre y deja el teléfono para después — y es
+    donde se decide si el botón de WhatsApp se ofrece o no.
+    """
+    datos = {**INMOBILIARIA_PRUEBA, "telefono": None}
+    anterior = _leer_inmobiliaria()
+    _escribir_inmobiliaria(datos)
+    try:
+        yield dict(datos)
+    finally:
+        if anterior is None:
+            _borrar_inmobiliaria()
+        else:
             _escribir_inmobiliaria(anterior)
 
 

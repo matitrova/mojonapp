@@ -123,6 +123,27 @@ export function ponerNombreDeLaApp(nombre) {
   refrescarTitulo();
 }
 
+/**
+ * Le cambia el título a la sección en la que estamos.
+ *
+ * Existe porque hay una pantalla cuyo título no se sabe hasta que
+ * llegan los datos: la página pública de un lote, que en la tabla de
+ * rutas figura como "Lote" y en la pestaña tiene que decir "Manzana 3 —
+ * Lote 7". Esa pantalla escribía document.title por su cuenta, y
+ * cualquier refrescarTitulo() posterior —por ejemplo el que dispara el
+ * nombre de la inmobiliaria cuando termina de leerse— se lo pisaba con
+ * el genérico. El resultado era una pestaña que decía "Lote" a secas,
+ * que es lo que ve alguien a quien le compartieron la propiedad.
+ *
+ * Se copia la ruta en vez de mutarla: las de la tabla son compartidas y
+ * mutarlas dejaría el título pegado para la próxima visita.
+ */
+export function ponerTituloDeLaSeccion(titulo) {
+  if (!ultimaRuta || !titulo) return;
+  ultimaRuta = { ...ultimaRuta, titulo };
+  refrescarTitulo();
+}
+
 // Posición dentro del historial DE LA APP. Se guarda en el propio
 // history.state de cada entrada (no como un contador suelto) para que
 // siga siendo correcta cuando el usuario va y viene con atrás/adelante:

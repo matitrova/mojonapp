@@ -75,7 +75,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-22-03" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-22-04" />
 </head>
 <body>
 
@@ -1068,6 +1068,11 @@
       </div>
 
       <button type="submit" id="inmobiliaria-guardar" data-testid="inmobiliaria-guardar">Guardar</button>
+      <!-- Guardar arranca trabado hasta saber qué hay guardado: el
+           formulario manda los nueve campos de una, así que guardar sin
+           haber leído borraría lo que no esté en pantalla. Esta línea
+           dice por qué, para que no parezca un botón roto. -->
+      <p id="inmobiliaria-esperando" class="inmo-esperando oculto" data-testid="inmobiliaria-esperando">Leyendo los datos guardados…</p>
       <p id="inmobiliaria-error" class="mensaje-error oculto" data-testid="inmobiliaria-error"></p>
       <p id="inmobiliaria-ok" class="mensaje-ok oculto" data-testid="inmobiliaria-ok">Listo, guardado.</p>
     </form>
@@ -2361,6 +2366,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-22-03"></script>
+  <script type="module" src="/js/app.js?v=2026-09-22-04"></script>
 </body>
 </html>

@@ -82,14 +82,44 @@ def test_un_lote_en_otra_ruta_no_cuenta(id_en):
 
 
 # --- Lo que manda cualquiera --------------------------------------------
+#
+# El id no lo elige la app: lo elige quien arma el link. Y termina pegado
+# en la URL REST de Firestore, así que acá se decide qué entra.
 
 
-def test_un_id_con_caracteres_escapados_se_decodifica(id_en):
-    assert id_en(f"{BASE}/lote/abc%20123") == "abc 123"
+def test_un_id_que_no_tiene_forma_de_id_se_rechaza(id_en):
+    """Antes esto devolvía "abc 123" y lo mandaba a Firestore.
+
+    Un id de Firestore son letras, números, guion y guion bajo. Cualquier
+    otra cosa es alguien probando, no un lote.
+    """
+    assert id_en(f"{BASE}/lote/abc%20123") is None
+
+
+def test_no_se_puede_salir_del_lugar_donde_viven_los_lotes(id_en):
+    """EL AGUJERO QUE ESTO TAPA.
+
+    El corte por "/" pasaba ANTES de decodificar, así que un %2F
+    sobrevivía y después se volvía una barra de verdad. Pegado en
+    `${base}/lotes/${id}`, el fetch resolvía los ".." solo: el preview
+    leía un documento de OTRO proyecto y armaba la tarjeta de WhatsApp
+    con datos ajenos — pero con el dominio real de la inmobiliaria y su
+    nombre en og:site_name. Una tarjeta que parece de la inmobiliaria y
+    no lo es.
+    """
+    assert id_en(f"{BASE}/lote/x%2F..%2F..%2Fprojects%2Fotro%2Fdocuments%2Flotes%2Ffalso") is None
+    assert id_en(f"{BASE}/lote/..%2F..%2Fusuarios%2Falguien") is None
+    # Y por el otro camino, el de "?lote=", que no pasa por decodeURIComponent.
+    assert id_en(f"{BASE}/?lote=../../usuarios/alguien") is None
 
 
 def test_un_escape_roto_no_tira(id_en):
-    """El id lo elige quien manda el pedido, no la app. Un "%" suelto
-    hace que decodeURIComponent tire, y una excepción acá rompería la
-    carga de la página entera para ese visitante."""
+    """Un "%" suelto hace que decodeURIComponent tire, y una excepción
+    acá rompería la carga de la página entera para ese visitante."""
     assert id_en(f"{BASE}/lote/abc%ZZ") is None
+
+
+def test_un_id_de_verdad_sigue_pasando(id_en):
+    """El filtro no puede dejar afuera los ids que genera Firestore."""
+    assert id_en(f"{BASE}/lote/A1b2C3d4E5f6G7h8I9j0") == "A1b2C3d4E5f6G7h8I9j0"
+    assert id_en(f"{BASE}/lote/con-guion_y_bajo") == "con-guion_y_bajo"

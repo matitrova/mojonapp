@@ -142,12 +142,66 @@ export function iniciales(nombre) {
 // corredor) antes que una validación estricta.
 // ---------------------------------------------------------------------------
 
+// Un número argentino "nacional" —código de área + abonado, sin el 0 de
+// larga distancia y sin el 15— tiene 10 dígitos: 2664 55-8821, 11
+// 3456-7890. Con el 15 en el medio son 12. Esas dos longitudes son lo
+// único que hace falta saber para desarmarlo.
+const LARGO_NACIONAL = 10;
+const LARGO_CON_15 = 12;
+
+// El 0 y el 15 son prefijos para llamar DESDE Argentina; WhatsApp no los
+// quiere. El problema es que el 15 no va adelante sino después del
+// código de área, y el código de área mide 2, 3 o 4 dígitos según la
+// ciudad (11 en Buenos Aires, 266 en San Luis capital, 2664 en Merlo).
+// Por eso se prueban las tres posiciones en vez de cortar por un largo
+// fijo.
+function sinPrefijosDeDiscado(digitos) {
+  let n = digitos.startsWith("0") ? digitos.slice(1) : digitos;
+  if (n.length === LARGO_CON_15) {
+    for (const largoDeArea of [2, 3, 4]) {
+      if (n.slice(largoDeArea, largoDeArea + 2) === "15") {
+        return n.slice(0, largoDeArea) + n.slice(largoDeArea + 2);
+      }
+    }
+  }
+  return n;
+}
+
+/**
+ * El número tal como lo quiere wa.me: 54 + 9 + área + abonado.
+ *
+ * SACA EL 0 Y EL 15, que es como escribe el teléfono cualquier persona
+ * en Argentina ("0266 15 455-8821"). Antes no: solo se quedaba con los
+ * dígitos y anteponía 549, así que ese número salía como
+ * wa.me/5490266154558821 y WhatsApp contestaba que no existe. De ocho
+ * formatos reales, cinco armaban un link roto — y no se veía fallar:
+ * el botón abría WhatsApp igual, el mensaje simplemente no llegaba.
+ *
+ * Sigue siendo una heurística de mejor esfuerzo: no hay forma de
+ * adivinar con certeza un número mal escrito. Lo que cambia es que
+ * ahora acierta en los formatos que la gente usa de verdad.
+ */
 export function normalizarTelefonoWhatsapp(telefono) {
-  const soloDigitos = (telefono || "").replace(/\D/g, "");
-  if (!soloDigitos) return null;
-  if (soloDigitos.startsWith("54")) return soloDigitos;
-  if (soloDigitos.startsWith("9")) return `54${soloDigitos}`;
-  return `549${soloDigitos}`;
+  let digitos = (telefono || "").replace(/\D/g, "");
+  if (!digitos) return null;
+
+  // Prefijo internacional escrito como 00 en vez de +.
+  if (digitos.startsWith("00")) digitos = digitos.slice(2);
+
+  // El 54 del país. Se saca SOLO si lo que queda puede ser un número
+  // argentino entero: un abonado porteño de ocho dígitos puede empezar
+  // con 54 ("5455-8821") y no es el código de país.
+  if (digitos.startsWith("54") && digitos.length >= LARGO_NACIONAL + 2) {
+    digitos = digitos.slice(2);
+  }
+
+  // El 9 de móvil se saca acá y se vuelve a poner al final: así el
+  // resto del desarmado trabaja siempre sobre la misma forma.
+  if (digitos.startsWith("9") && digitos.length > LARGO_NACIONAL) {
+    digitos = digitos.slice(1);
+  }
+
+  return `549${sinPrefijosDeDiscado(digitos)}`;
 }
 
 // "mensaje" es opcional (compatible con el uso ya existente, el botón

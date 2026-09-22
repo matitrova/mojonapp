@@ -16,7 +16,7 @@
 // ---------------------------------------------------------------------------
 
 import { getLotesActuales } from "./estado.js";
-import { onRutaAplicada } from "./router.js";
+import { onRutaAplicada, ponerTituloDeLaSeccion } from "./router.js";
 import { subirFotoACloudinary } from "./ficha.js";
 import { db, auth } from "./firebase-config.js";
 import { doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
@@ -25,7 +25,7 @@ import { crearContactoDesdeInteresado } from "./crm-datos.js";
 import { validarConsulta } from "./consulta-lote.js";
 import { capaConMargen, seguirElCalce } from "./calce-aplicar.js";
 import { getInmobiliaria, alCambiarLaInmobiliaria, whatsappDeLaInmobiliaria } from "./inmobiliaria.js";
-import { comoUbicarla, nombreParaMostrar } from "./inmobiliaria-datos.js";
+import { comoUbicarla } from "./inmobiliaria-datos.js";
 
 // Pane propio para la foto, como en el mapa principal (ver PANE_FOTO en
 // js/mapa.js). Nombre distinto porque son dos mapas de Leaflet
@@ -231,8 +231,13 @@ function renderAgencia() {
   elAgenciaDonde.textContent = donde || "";
   elAgenciaDonde.classList.toggle("oculto", !donde);
 
+  // Si la URL del logo ya no carga (se borró de Cloudinary, se pegó mal),
+  // el <img> queda con el ícono de imagen rota ARRIBA DE TODO en la
+  // página que ve un comprador. Es la primera impresión de la
+  // inmobiliaria, así que mejor sin logo que con un cuadrito roto.
   const hayLogo = !!inmo.logo_url;
   if (hayLogo) {
+    elAgenciaLogo.onerror = () => elAgenciaLogo.classList.add("oculto");
     elAgenciaLogo.src = inmo.logo_url;
     elAgenciaLogo.alt = inmo.nombre;
   }
@@ -283,7 +288,7 @@ function renderAgencia() {
 alCambiarLaInmobiliaria(() => {
   if (!loteActual) return;
   renderAgencia();
-  document.title = `${tituloDe(loteActual.properties)} — ${nombreParaMostrar(getInmobiliaria())}`;
+  ponerTituloDeLaSeccion(tituloDe(loteActual.properties));
 });
 
 function render(feature) {
@@ -292,9 +297,11 @@ function render(feature) {
   const p = feature.properties;
 
   elTitulo.textContent = tituloDe(p);
-  // El nombre de la INMOBILIARIA, no el del software: esta pestaña la
-  // abre un comprador al que le llegó un link.
-  document.title = `${tituloDe(p)} — ${nombreParaMostrar(getInmobiliaria())}`;
+  // Se le avisa al router en vez de escribir document.title acá: el
+  // router también arma el título (le pega el nombre de la
+  // inmobiliaria) y si los dos escriben, gana el último — que era el
+  // genérico "Lote".
+  ponerTituloDeLaSeccion(tituloDe(p));
   elPrecio.textContent = precioEnTexto(p);
   elUbicacion.textContent = [p.sector, p.barrio].filter(Boolean).join(" · ") || "Ubicación sin cargar";
 

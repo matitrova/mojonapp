@@ -45,7 +45,10 @@ function valorSimple(campos, nombre) {
 }
 
 async function datosDelLote(base, loteId) {
-  const resp = await fetch(`${base}/lotes/${loteId}`);
+  // encodeURIComponent aunque idDeLoteEnLaUrl ya filtró: el filtro y el
+  // sink están en dos lugares distintos y el día que alguien afloje uno,
+  // el otro sigue.
+  const resp = await fetch(`${base}/lotes/${encodeURIComponent(loteId)}`);
   if (!resp.ok) return null;
   const doc = await resp.json();
   const campos = doc.fields || {};
@@ -76,23 +79,41 @@ async function nombreDeLaInmobiliaria(base) {
 
 const ETIQUETA_ESTADO = { disponible: "Disponible", reservado: "Reservado", vendido: "Vendido" };
 
+// Un id de documento de Firestore, tal como los genera la app: letras,
+// números, guion y guion bajo. Nada más.
+//
+// NO ES PARANOIA. El id sale de la URL —o sea, lo elige quien manda el
+// link— y termina pegado en la URL REST de Firestore. Sin este filtro,
+// un id como "x%2F..%2F..%2Fprojects%2Fotro%2F..." se convertía, al
+// decodificarlo, en barras de verdad y el fetch resolvía los ".." solo:
+// el preview terminaba leyendo un documento de OTRO proyecto y armando
+// la tarjeta de WhatsApp con datos ajenos, pero con el dominio real de
+// la inmobiliaria y con su nombre en og:site_name. O sea una tarjeta
+// que parece de la inmobiliaria y no lo es.
+const ID_DE_LOTE = /^[A-Za-z0-9_-]{1,128}$/;
+
 // Las dos formas de link que valen. La tabla vive acá y no desparramada
 // en ifs para que agregar una tercera no obligue a releer el flujo.
-//
-// El id del path se decodifica: un id de Firestore no trae caracteres
-// raros, pero lo que llega en la URL lo elige quien manda el pedido.
 export function idDeLoteEnLaUrl(url) {
-  if (url.pathname === "/") return url.searchParams.get("lote");
-  if (url.pathname.startsWith("/lote/")) {
-    const crudo = url.pathname.slice("/lote/".length).split("/")[0];
-    if (!crudo) return null;
-    try {
-      return decodeURIComponent(crudo);
-    } catch {
-      return null;
-    }
+  const crudo =
+    url.pathname === "/"
+      ? url.searchParams.get("lote")
+      : url.pathname.startsWith("/lote/")
+        ? url.pathname.slice("/lote/".length).split("/")[0]
+        : null;
+  if (!crudo) return null;
+
+  // searchParams ya viene decodificado; el path no. decodeURIComponent
+  // tira con un escape roto ("%ZZ"), y una excepción acá rompería la
+  // carga de la página para ese visitante.
+  let id;
+  try {
+    id = url.pathname === "/" ? crudo : decodeURIComponent(crudo);
+  } catch {
+    return null;
   }
-  return null;
+
+  return ID_DE_LOTE.test(id) ? id : null;
 }
 
 export async function onRequest(context) {

@@ -111,12 +111,29 @@ def test_el_whatsapp_lleva_al_numero_de_la_inmobiliaria(
     assert "2664558821" in abierto, f"el número no es el de la inmobiliaria: {abierto}"
 
 
-def test_sin_telefono_cargado_no_se_ofrece_whatsapp(
+def test_sin_inmobiliaria_configurada_no_se_ofrece_whatsapp(
     page, base_url, lote_publicado, inmobiliaria_sin_configurar
 ):
     """Un botón sin destino es peor que no tener botón: promete que la
     consulta llega, y no llega. El formulario sigue estando."""
     abrir_lote_publico(page, base_url, lote_publicado["id"])
+    expect(page.locator("#lp-whatsapp")).to_be_hidden()
+    expect(page.locator("#lp-form")).to_be_visible()
+
+
+def test_con_inmobiliaria_pero_sin_telefono_tampoco_se_ofrece_whatsapp(
+    page, base_url, lote_publicado, inmobiliaria_sin_telefono
+):
+    """EL CASO QUE FALTABA, y es el más probable de los dos.
+
+    El test de arriba borra el documento entero, o sea prueba "todavía
+    no configuraron nada". Lo que de verdad va a pasar es esto: una
+    inmobiliaria que cargó su nombre y su dirección pero dejó el
+    teléfono para después. Ahí la banda de arriba SÍ tiene que verse
+    —hay identidad que mostrar— y el botón de WhatsApp no.
+    """
+    abrir_lote_publico(page, base_url, lote_publicado["id"])
+    expect(page.locator("#lp-agencia-nombre")).to_have_text(inmobiliaria_sin_telefono["nombre"])
     expect(page.locator("#lp-whatsapp")).to_be_hidden()
     expect(page.locator("#lp-form")).to_be_visible()
 
@@ -231,20 +248,31 @@ def test_una_segunda_pasada_del_router_no_pisa_lo_que_se_esta_escribiendo(
 
 
 @pytest.mark.con_sesion
-def test_no_deja_guardar_sin_nombre(page, base_url, inmobiliaria_configurada):
+def test_no_deja_guardar_con_el_nombre_en_blanco(page, base_url, inmobiliaria_configurada):
     """Sin nombre no hay identidad que mostrar: es como no haber
-    configurado nada, pero con datos a medias guardados."""
+    configurado nada, pero con datos a medias guardados.
+
+    SE ESCRIBEN ESPACIOS, no se deja vacío. Con el campo vacío lo frena
+    el `required` del navegador y el submit ni corre, así que el test
+    pasaba aunque la validación de la app no existiera: era un verde que
+    no probaba nada. Con espacios, `required` está conforme y la regla
+    que tiene que rechazar es la nuestra.
+    """
     page.set_viewport_size(ANCHO_ESCRITORIO)
     page.goto(f"{base_url}/inmobiliaria")
     expect(page.locator("#inmobiliaria-nombre")).to_have_value(
         inmobiliaria_configurada["nombre"], timeout=15000
     )
 
-    page.fill("#inmobiliaria-nombre", "")
+    page.fill("#inmobiliaria-nombre", "   ")
     soltar_el_mouse(page)
     page.click("#inmobiliaria-guardar")
 
-    # No se guardó: el aviso de OK nunca aparece.
+    # Y se comprueba que SÍ dijo por qué, no solo que no guardó: un
+    # formulario que no hace nada al apretar Guardar también deja el OK
+    # escondido.
+    expect(page.locator("#inmobiliaria-error")).to_be_visible(timeout=10000)
+    expect(page.locator("#inmobiliaria-error")).to_contain_text("nombre")
     expect(page.locator("#inmobiliaria-ok")).to_be_hidden()
 
 
@@ -280,6 +308,17 @@ def test_se_llega_desde_el_menu(page, base_url):
 
 
 def test_un_visitante_sin_sesion_no_ve_la_pantalla(page, base_url):
-    """De acá sale el número al que llegan TODAS las consultas."""
+    """De acá sale el número al que llegan TODAS las consultas.
+
+    SE MIRA EL PANEL, no el botón del menú. La primera versión de este
+    test comprobaba que #btn-abrir-inmobiliaria estuviera oculto — y ese
+    botón viene con la clase "oculto" puesta en el HTML, así que el
+    assert se cumplía sin que corriera una sola línea de lógica. No
+    podía fallar ni aunque la pantalla se abriera de par en par, que es
+    justo lo que decía estar probando.
+    """
     page.goto(f"{base_url}/inmobiliaria")
-    expect(page.locator("#btn-abrir-inmobiliaria")).to_be_hidden()
+    # Da tiempo a que el router resuelva y, si correspondiera, abra algo.
+    page.wait_for_timeout(3000)
+    expect(page.locator("#panel-inmobiliaria")).to_be_hidden()
+    expect(page.locator("#inmobiliaria-nombre")).to_be_hidden()

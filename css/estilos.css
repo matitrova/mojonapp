@@ -5763,3 +5763,11 @@ body:not(.en-el-mapa) #btn-flotante-interes-crm {
   margin: 10px 0 0;
   font-size: 0.8rem;
 }
+
+/* "Leyendo los datos guardados…" bajo el botón de la pantalla de la
+   inmobiliaria, mientras Guardar está trabado. */
+.inmo-esperando {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-texto-secundario);
+}

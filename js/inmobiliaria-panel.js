@@ -23,6 +23,7 @@ const elCampos = document.getElementById("inmobiliaria-campos");
 const elError = document.getElementById("inmobiliaria-error");
 const elOk = document.getElementById("inmobiliaria-ok");
 const elGuardar = document.getElementById("inmobiliaria-guardar");
+const elEsperando = document.getElementById("inmobiliaria-esperando");
 
 const elLogoUrl = document.getElementById("inmobiliaria-logo_url");
 const elLogoPreview = document.getElementById("inmobiliaria-logo-preview");
@@ -79,8 +80,20 @@ function mostrarLogo(url, tocado = false) {
   if (tocado) formularioTocado = true;
   elLogoUrl.value = url || "";
   const hay = !!url;
-  if (hay) elLogoPreview.src = url;
+  if (hay) {
+    // Mismo criterio que en la página pública: un logo que ya no carga
+    // se esconde en vez de mostrar el cuadrito roto. Acá además sirve
+    // de aviso: si root no ve su logo, sabe que tiene que subirlo de
+    // nuevo antes de que lo vea un comprador.
+    elLogoPreview.onerror = () => {
+      elLogoPreview.classList.add("oculto");
+      elLogoVacio.textContent = "El logo guardado ya no carga. Subí uno nuevo.";
+      elLogoVacio.classList.remove("oculto");
+    };
+    elLogoPreview.src = url;
+  }
   elLogoPreview.classList.toggle("oculto", !hay);
+  elLogoVacio.textContent = "Todavía no cargaste un logo.";
   elLogoVacio.classList.toggle("oculto", hay);
   elLogoQuitar.classList.toggle("oculto", !hay);
   elLogoSubir.textContent = hay ? "Cambiar logo" : "Subir logo";
@@ -126,6 +139,22 @@ function mostrarError(texto) {
   elOk.classList.add("oculto");
   elError.textContent = texto;
   elError.classList.remove("oculto");
+}
+
+// Guardar se traba mientras la pantalla NO sabe qué hay guardado.
+//
+// EL MOTIVO NO ES COSMÉTICO. El formulario manda los nueve campos de
+// una —setDoc reemplaza el documento entero— así que guardar desde un
+// formulario que nunca se llenó con lo que está en la base borra todo
+// lo que no esté en pantalla: el teléfono al que llegan las consultas,
+// la matrícula, el logo.
+//
+// "porque" se muestra abajo del botón. Un botón trabado sin explicación
+// es un botón roto para quien lo mira.
+function permitirGuardar(puede, porque = "") {
+  elGuardar.disabled = !puede;
+  elEsperando.textContent = porque;
+  elEsperando.classList.toggle("oculto", puede || !porque);
 }
 
 // ---------------------------------------------------------------------------
@@ -180,7 +209,7 @@ elFormulario.addEventListener("submit", async (evento) => {
     return;
   }
 
-  elGuardar.disabled = true;
+  permitirGuardar(false);
   try {
     await guardarInmobiliaria(revision.datos);
     registrarAuditoria({
@@ -201,7 +230,7 @@ elFormulario.addEventListener("submit", async (evento) => {
         : "No se pudieron guardar los datos. Probá de nuevo."
     );
   } finally {
-    elGuardar.disabled = false;
+    permitirGuardar(true);
   }
 });
 
@@ -260,7 +289,12 @@ onRutaAplicada(async (ruta) => {
   elOk.classList.add("oculto");
   elLogoEstado.classList.add("oculto");
   formularioTocado = false;
-  llenarCon(getInmobiliaria());
+  // Si ya hay datos cacheados de una lectura anterior, el formulario
+  // queda completo y se puede guardar de una. Si no hay nada, se espera
+  // a la lectura antes de habilitar: guardar a ciegas es lo que borra.
+  const yaSabemos = getInmobiliaria();
+  permitirGuardar(!!yaSabemos, "Leyendo los datos guardados…");
+  llenarCon(yaSabemos);
 
   // Cada entrada a la pantalla tiene su propio número. Si se entró, se
   // salió y se volvió a entrar mientras la lectura viajaba, la respuesta
@@ -270,7 +304,38 @@ onRutaAplicada(async (ruta) => {
   // Y formularioTocado cubre el otro lado: la lectura que vuelve cuando
   // la persona ya empezó a escribir. Son dos carreras distintas.
   const miEntrada = ++entradaActual;
-  const frescos = await recargarInmobiliaria();
-  if (miEntrada !== entradaActual || formularioTocado) return;
+  let frescos;
+  try {
+    frescos = await recargarInmobiliaria();
+  } catch {
+    // NO SE BLANQUEA EL FORMULARIO. Un fallo de lectura no es "no hay
+    // nada configurado": los datos pueden estar perfectos en Firestore.
+    // Mostrar nueve campos vacíos invita a retipear el nombre y
+    // guardar, y ese guardado pisaría el teléfono al que llegan todas
+    // las consultas de la agencia — en silencio y con el cartel de
+    // "Listo, guardado" arriba.
+    //
+    // Se deja lo que haya en pantalla, se avisa, y se traba Guardar:
+    // guardar sobre un formulario que nunca se llenó con el documento
+    // real es exactamente la forma de perder datos.
+    if (miEntrada !== entradaActual) return;
+    // Con datos cacheados el formulario está completo y guardar es
+    // seguro; sin nada cacheado, no. Son dos avisos distintos porque
+    // son dos situaciones distintas para quien está mirando.
+    if (getInmobiliaria()) {
+      permitirGuardar(true);
+      mostrarError("No pudimos releer los datos. Estás viendo los últimos que se leyeron bien.");
+    } else {
+      permitirGuardar(false, "No pudimos leer los datos guardados.");
+      mostrarError(
+        "No pudimos leer los datos guardados. Revisá la conexión y volvé a entrar: " +
+          "si guardaras ahora, podrías borrar lo que está cargado."
+      );
+    }
+    return;
+  }
+  if (miEntrada !== entradaActual) return;
+  permitirGuardar(true);
+  if (formularioTocado) return;
   llenarCon(frescos);
 });
