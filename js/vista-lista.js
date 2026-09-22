@@ -637,7 +637,21 @@ function renderGrilla(lotesPagina) {
   elGrillaLotes.innerHTML = "";
   lotesPagina.forEach((feature) => {
     const p = feature.properties;
-    const foto = (p.fotos || [])[0];
+    // Una foto guardada es { url, id } — eso devuelve la subida a
+    // Cloudinary y eso es lo que arrayUnion/arrayRemove necesitan que
+    // coincida exacto (ver subirFotoACloudinary en js/ficha.js). Acá se
+    // interpolaba el OBJETO dentro del src, así que TODA tarjeta de la
+    // grilla mostraba una imagen rota: src="[object Object]".
+    //
+    // No lo agarró nadie porque el test de la grilla sembraba
+    // "fotos": ["https://..."] — strings sueltos, un formato que la app
+    // no produce nunca. El test pasaba en verde sobre datos que no
+    // existen. Ya está corregido para usar el formato real.
+    //
+    // Se tolera el string igual por si quedó algún lote viejo cargado
+    // así: cuesta una línea y evita romperle la grilla a quien lo tenga.
+    const primeraFoto = (p.fotos || [])[0];
+    const foto = typeof primeraFoto === "string" ? primeraFoto : primeraFoto?.url;
     const tarjeta = document.createElement("article");
     tarjeta.className = "tarjeta-lote";
     tarjeta.dataset.loteId = feature.id;

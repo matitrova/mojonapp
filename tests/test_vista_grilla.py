@@ -18,7 +18,12 @@ LOTE_CON_FOTO = {
     "estado": "reservado",
     "precio_usd": 12000,
     "sector": "ZonaGrilla",
-    "fotos": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
+    # EL FORMATO REAL: la subida guarda { url, id } (ver
+    # subirFotoACloudinary en js/ficha.js). Antes acá había un string
+    # suelto, un formato que la app no produce nunca — y por eso el test
+    # pasaba en verde mientras la grilla mostraba src="[object Object]"
+    # en todas las tarjetas con foto.
+    "fotos": [{"url": "https://res.cloudinary.com/demo/image/upload/sample.jpg", "id": "demo/sample"}],
     "geometry": {
         "type": "Polygon",
         "coordinates": [
@@ -51,7 +56,21 @@ def test_grilla_muestra_tarjeta_con_foto_y_datos_y_abre_la_ficha(page, base_url)
 
         tarjeta = page.locator(f'.tarjeta-lote[data-lote-id="{doc_id}"]')
         expect(tarjeta).to_be_visible()
-        expect(tarjeta.locator(".tarjeta-lote-foto")).to_be_visible()
+        foto = tarjeta.locator(".tarjeta-lote-foto")
+        expect(foto).to_be_visible()
+        # QUE ESTÉ VISIBLE NO ALCANZA: un <img> con un src roto también
+        # ocupa lugar y Playwright lo da por visible. Lo que hay que
+        # comprobar es que el src sea una URL de verdad — cuando la
+        # grilla interpolaba el objeto entero, el src decía
+        # "[object Object]" y el test pasaba igual.
+        src = foto.get_attribute("src")
+        assert src and src.startswith("http"), f"la tarjeta tiene un src roto: {src!r}"
+        # NO se comprueba que la imagen termine de cargar, a propósito.
+        # Eso ataría el test a que Cloudinary responda rápido: con
+        # loading="lazy" la carga es asíncrona y depende de una red
+        # ajena, y un test que falla porque un CDN tardó es exactamente
+        # el ruido que hace que después nadie confíe en la suite. El src
+        # es lo que se rompió y es lo que se prueba.
         expect(tarjeta).to_contain_text("Manzana GRID-TEST — Lote 1")
         expect(tarjeta).to_contain_text("Reservado")
         expect(tarjeta).to_contain_text("ZonaGrilla")
