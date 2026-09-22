@@ -40,6 +40,10 @@
   --color-texto: #0f172a;
   --color-texto-secundario: #64748b;
   --color-borde: #e7eaf0;
+  /* Alto de la franja pegajosa .panel-header (16 arriba + contenido +
+     12 abajo). Lo usa quien quiera pegarse JUSTO DEBAJO de ella, como
+     la barra de acciones del CRM. */
+  --alto-panel-header: 58px;
   /* Verde de las variaciones positivas del mockup ("+12.5%"). */
   --color-positivo: #16a34a;
   --color-disponible: #5c7f3f;
@@ -239,6 +243,41 @@ button:active {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* EL MENÚ NO PUEDE ESCONDER PANTALLAS. A 1366x768 —una notebook muy
+   común— el contenido del menú mide 1072px y entran 708: quedaban abajo
+   del borde Usuarios, Perfiles, Actividades, Auditoría e Inteligencia
+   Artificial. Scrolleaba por dentro, pero en Mac la barra se esconde
+   sola y no había sombra ni flecha ni nada: desde la interfaz esas
+   cinco pantallas sencillamente no existían.
+
+   Barra siempre visible, y una sombra abajo que se apaga al llegar al
+   final (mismo truco de background-attachment que las tablas: el
+   degradado del fondo viaja con el contenido y la sombra se queda en el
+   borde, así se tapan entre sí en los extremos). */
+#drawer-menu {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  background:
+    linear-gradient(var(--color-fondo) 30%, rgba(255, 255, 255, 0)) top center,
+    linear-gradient(rgba(255, 255, 255, 0), var(--color-fondo) 70%) bottom center,
+    linear-gradient(rgba(15, 23, 42, 0.13), rgba(15, 23, 42, 0)) top center,
+    linear-gradient(rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.13)) bottom center;
+  background-repeat: no-repeat;
+  background-size: 100% 28px, 100% 28px, 100% 12px, 100% 12px;
+  background-attachment: local, local, scroll, scroll;
+  background-color: var(--color-fondo);
+}
+
+#drawer-menu::-webkit-scrollbar {
+  width: 10px;
+}
+
+#drawer-menu::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 3px solid var(--color-fondo);
 }
 
 #drawer-menu:not(.expandido) {
@@ -2359,9 +2398,74 @@ body.con-nav-secciones #btn-flotante-catastro {
    varias columnas (Lote, Sector, Superficie, Estado...) no entra
    cómoda en un celular, así que scrollea ella sola en vez de romper
    el layout de toda la página. */
+/* QUE SE VEA QUE HAY MÁS A LA DERECHA. La tabla mide 600px y en un
+   teléfono se ven 366: el resto estaba ahí, arrastrable, pero sin barra
+   ni sombra ni nada que lo dijera. Desde la interfaz esas pantallas
+   parecían de solo lectura.
+
+   Dos señales, las dos sin una línea de JavaScript:
+   la barra de scroll siempre visible (en Mac se esconde sola), y una
+   sombra en el borde que se apaga cuando llegaste al final — el truco
+   es background-attachment: local para los degradados blancos (viajan
+   con el contenido) y scroll para las sombras (se quedan en el borde),
+   así se tapan entre sí en los extremos. */
 .tabla-scroll {
   width: 100%;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  background:
+    linear-gradient(to right, var(--color-fondo) 30%, rgba(255, 255, 255, 0)) left center,
+    linear-gradient(to left, var(--color-fondo) 30%, rgba(255, 255, 255, 0)) right center,
+    linear-gradient(to right, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0)) left center,
+    linear-gradient(to left, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0)) right center;
+  background-repeat: no-repeat;
+  background-size: 32px 100%, 32px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+.tabla-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.tabla-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 3px solid var(--color-fondo);
+}
+
+/* Y ADEMÁS, LOS BOTONES NO SE VAN NUNCA. En las tablas de
+   administración la última columna son Editar/Borrar: son la razón de
+   entrar a esa pantalla, así que quedan pegados al borde derecho por
+   más que se arrastre la tabla. Solo en las tablas que las tienen (la
+   clase se pone a mano en index.html): en la de lotes la última columna
+   es un dato, no una acción. */
+.tabla-con-acciones th:last-child,
+.tabla-con-acciones td:last-child {
+  position: sticky;
+  right: 0;
+  /* Fondo propio y opaco: si fuera transparente se vería pasar el resto
+     de la fila por abajo. */
+  background: var(--color-fondo);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla-con-acciones tbody tr:nth-child(even) td:last-child {
+  background: var(--color-fondo-alterno);
+}
+
+/* Una línea que separa la columna pegada del resto, para que se lea
+   como una columna fija y no como texto encimado. */
+.tabla-con-acciones th:last-child::before,
+.tabla-con-acciones td:last-child::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-borde);
 }
 
 .tabla-panel {
@@ -3763,6 +3867,16 @@ body.con-nav-secciones #btn-flotante-catastro {
    "Todos" + altas/exportar. En una sola fila en desktop, se apila en
    pantallas chicas (mismo ancho que el resto de los controles de la
    app en mobile). */
+/* LAS ACCIONES DE LA PANTALLA NO SE VAN AL SCROLLEAR. El buscador, el
+   toggle Kanban/Tabla y "+ Nuevo contacto" son lo que se usa todo el
+   tiempo en el CRM, y se iban con el scroll. Peor: mientras pasaban por
+   debajo del encabezado pegajoso quedaban medio tapados y medio muertos
+   —un click en la mitad de arriba se lo comía el encabezado— así que
+   parecía que los botones fallaban a veces.
+
+   El "top" es el alto del .panel-header pegajoso que tiene arriba. Está
+   escrito como variable y no como número suelto porque lo usan los dos:
+   si cambia el padding del encabezado, se cambia en un solo lugar. */
 #crm-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -3770,6 +3884,17 @@ body.con-nav-secciones #btn-flotante-catastro {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 14px;
+  position: sticky;
+  top: var(--alto-panel-header);
+  /* Por encima del contenido que pasa por abajo, y por debajo del
+     encabezado, que sigue siendo el que manda arriba de todo. */
+  z-index: 4;
+  background: var(--color-fondo);
+  /* Cancela el padding lateral del panel para que la franja pegajosa
+     llegue de punta a punta, igual que hace .panel-header. */
+  margin-left: -12px;
+  margin-right: -12px;
+  padding: 8px 12px;
 }
 
 #crm-toolbar-filtros {
@@ -3786,6 +3911,26 @@ body.con-nav-secciones #btn-flotante-catastro {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* EN TELÉFONO ESTE GRUPO MEDÍA MÁS QUE LA PANTALLA. Con flex-shrink: 0
+   los tres botones sumaban 466px dentro de 366px, así que "+ Nuevo
+   contacto" —la acción principal de la pantalla— arrancaba en x=330 de
+   un viewport de 390 y se leía "+ Nue". Y no había forma de llegar:
+   nada scrollea horizontal ahí, ni el documento ni la barra.
+   Ahora el grupo ocupa su propio renglón y los botones se reparten el
+   ancho. */
+@media (max-width: 720px) {
+  #crm-toolbar-acciones {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  #crm-toolbar-acciones > * {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
 
 /* "Pegar mail de portal" (ver js/ia-lead.js): bloque que se abre bajo la
@@ -4101,11 +4246,44 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin-top: 14px;
 }
 
+/* LA COLUMNA DE ETIQUETAS NO SE VA. Es la que dice qué es cada valor
+   (Zona, Barrio, Superficie, Estado, Precio, Servicios) y al arrastrar
+   la tabla de costado en un teléfono desaparecía: quedaban números
+   sueltos sin saber de qué campo eran. Comparar sin saber qué se está
+   comparando no es comparar.
+
+   Queda pegada a la izquierda, con fondo propio y opaco —si no, se
+   vería pasar el resto de la fila por abajo— y una línea que la separa
+   para que se lea como una columna fija. */
 #tabla-comparar-lotes th:first-child,
 #tabla-comparar-lotes td:first-child {
   color: var(--color-texto-secundario);
   font-weight: 600;
   white-space: nowrap;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-fondo);
+  box-shadow: 1px 0 0 var(--color-borde);
+}
+
+#tabla-comparar-lotes tbody tr:nth-child(even) td:first-child {
+  background: var(--color-fondo-alterno);
+}
+
+/* Y las columnas de lotes dejan de cortar palabras al medio: en vez de
+   una tabla de 600px fijos que corta "Manzana 8 — Lote" en "nzana 8 —
+   Lote", cada lote tiene un ancho mínimo cómodo y el texto se acomoda.
+   El punto de la pantalla es ver dos lotes enteros lado a lado. */
+#tabla-comparar-lotes {
+  min-width: 0;
+}
+
+#tabla-comparar-lotes th:not(:first-child),
+#tabla-comparar-lotes td:not(:first-child) {
+  min-width: 150px;
+  white-space: normal;
+  word-break: break-word;
 }
 
 #tabla-comparar-lotes .comparar-lote-titulo {
@@ -4875,6 +5053,18 @@ body.con-nav-secciones #btn-flotante-catastro {
     padding: 4px 6px 16px;
     margin-bottom: 8px;
     border-bottom: 1px solid var(--color-borde);
+  }
+
+  /* "Quién sos" se queda pegado abajo, siempre a la vista. Antes vivía
+     al final de un menú de 1072px: en una notebook quedaba fuera de
+     pantalla junto con media administración, así que ni siquiera se
+     podía comprobar con qué cuenta estabas trabajando. */
+  body.con-nav-secciones #lateral-usuario {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    background: var(--color-fondo);
+    padding-top: 8px;
   }
 
   /* El cuadrado naranja con el mojón adentro: es la única mancha de
@@ -5804,4 +5994,38 @@ body:not(.en-el-mapa) #btn-flotante-interes-crm {
 
 .lp-ver-catalogo:hover {
   background: var(--color-primario-oscuro);
+}
+
+/* La faja de estado en la página del comprador. Solo aparece cuando el
+   lote NO está disponible: para uno en venta sería ruido. */
+.lp-estado {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--color-acento-suave);
+  color: var(--color-vendido);
+}
+
+.lp-estado.reservado {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* El precio de algo que ya no se vende no es una oferta: se apaga para
+   que no compita con la faja de "Vendido". */
+.lp-precio.no-disponible {
+  color: var(--color-texto-secundario);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.lp-no-disponible p {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  color: var(--color-texto-secundario);
 }

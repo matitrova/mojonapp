@@ -48,6 +48,7 @@ import {
   cargarLotesDesdeFirestore,
   anilloAGeometryFirestore,
   configurarMapa,
+  reencuadrarSiHizoFaltaTamano,
   iniciarMapa
 } from "./mapa.js";
 import {
@@ -247,7 +248,14 @@ const elSeccionMapa = document.getElementById("seccion-mapa");
 function sincronizarSeccionMapa() {
   const visible = elNavTabMapa.classList.contains("activo");
   elSeccionMapa.classList.toggle("oculto", !visible);
-  if (visible) mapa.invalidateSize();
+  if (!visible) return;
+  mapa.invalidateSize();
+  // Y si los lotes se encuadraron con el mapa todavía escondido —pasa
+  // cuando la app se abre directo en /lotes y después se vuelve al mapa
+  // con la flecha ←— se rehace ahora que el contenedor tiene tamaño. Sin
+  // esto el mapa aparecía sobre El Desaguadero, sin un solo lote, como
+  // si la cartera estuviera vacía.
+  reencuadrarSiHizoFaltaTamano();
 }
 new MutationObserver(sincronizarSeccionMapa).observe(elNavTabMapa, { attributes: true, attributeFilter: ["class"] });
 

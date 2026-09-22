@@ -27,8 +27,26 @@
 // ---------------------------------------------------------------------------
 
 // Por debajo de este zoom un lote de 1000 m² —unos 30 m de lado— mide
-// menos de dos píxeles: es indistinguible del suelo.
+// menos de dos píxeles: es indistinguible del suelo. Es el UMBRAL que
+// decide si conviene enfocar un grupo en vez de alejarse.
 export const ZOOM_MINIMO_ENCUADRE = 13;
+
+// Y este es el zoom al que se ENFOCA ese grupo. Son dos números
+// distintos, y confundirlos fue un bug: se enfocaba el grupo a zoom 13,
+// o sea exactamente al zoom donde un lote mide dos píxeles. El mapa
+// abría sobre la zona correcta y aun así no se veía ni un lote — motas
+// de 5 a 15 px en escritorio, de 4x6 px en teléfono, imposibles de
+// tocar con el dedo (el tamaño táctil recomendado es 44 px).
+//
+// LA CUENTA. La resolución de un mapa web es 156543 · cos(latitud) / 2^z
+// metros por píxel. En San Luis (latitud -32,3; cos ≈ 0,845):
+//   zoom 13 → 19,2 m/px → un lote de 30 m mide 1,6 px
+//   zoom 16 →  2,4 m/px → 12 px
+//   zoom 17 →  1,2 m/px → 25 px
+//   zoom 18 →  0,6 m/px → 50 px
+// Se elige 17: el lote se ve y se toca, y todavía entra alrededor el
+// resto del grupo (medio kilómetro son unos 400 px).
+export const ZOOM_AL_ENFOCAR_UN_GRUPO = 17;
 
 // Lado de la celda con la que se agrupan los lotes, en grados. 0,05° son
 // unos 5 km: la distancia a la que dos loteos ya se leen como dos

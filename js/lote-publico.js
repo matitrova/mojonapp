@@ -33,6 +33,10 @@ import { comoUbicarla } from "./inmobiliaria-datos.js";
 const PANE_FOTO_PUBLICO = "foto-satelital-publica";
 
 const elPanel = document.getElementById("panel-lote-publico");
+const elEstado = document.getElementById("lp-estado");
+const elContacto = document.getElementById("lp-contacto");
+const elNoDisponible = document.getElementById("lp-no-disponible");
+const elNoDisponibleTexto = document.getElementById("lp-no-disponible-texto");
 const elTitulo = document.getElementById("lp-titulo");
 const elNoEncontrado = document.getElementById("lp-no-encontrado");
 const elContenido = document.getElementById("lp-contenido");
@@ -225,7 +229,13 @@ function renderAgencia() {
   // Y sin lote no hay nada por lo que consultar, así que tampoco: esa
   // columna entera está escondida en la página de "ya no está
   // publicada".
-  elWhatsapp.classList.toggle("oculto", !loteActual || !whatsappDeLaInmobiliaria(""));
+  //
+  // Y tampoco si el lote ya no se vende: sería el mismo lead muerto que
+  // el formulario, por otra puerta.
+  elWhatsapp.classList.toggle(
+    "oculto",
+    !loteActual || !seVendeElLoteActual() || !whatsappDeLaInmobiliaria("")
+  );
 
   if (!inmo) return;
 
@@ -297,6 +307,57 @@ alCambiarLaInmobiliaria(() => {
   if (loteActual) ponerTituloDeLaSeccion(tituloDe(loteActual.properties));
 });
 
+// Qué se le ofrece al comprador según el estado del lote.
+//
+// UN LOTE VENDIDO SE VEÍA IGUAL QUE UNO EN VENTA: precio gigante,
+// formulario completo y botón de WhatsApp. Lo único que lo decía era
+// una fila chica en la lista de datos, entre Superficie y Zona. El
+// comprador mandaba la consulta igual, y del otro lado llegaba un lead
+// por algo que ya no se puede vender — tiempo perdido de los dos lados,
+// y la sensación de que la inmobiliaria publica cosas que no tiene.
+//
+// Reservado NO es lo mismo que vendido: una reserva se cae, así que ahí
+// se avisa pero se deja consultar.
+const ESTADOS = {
+  disponible: { etiqueta: null },
+  reservado: {
+    etiqueta: "Reservado",
+    clase: "reservado",
+    sigueEnVenta: true
+  },
+  vendido: {
+    etiqueta: "Vendido",
+    clase: "",
+    sigueEnVenta: false,
+    texto: "Se vendió, así que ya no recibimos consultas por esta propiedad. Tenemos otras parecidas."
+  }
+};
+
+// Lo consulta renderAgencia, que corre también cuando llegan los datos
+// de la inmobiliaria (más tarde que el lote) y tiene que volver a
+// decidir si muestra el botón de WhatsApp.
+function seVendeElLoteActual() {
+  if (!loteActual) return false;
+  const estado = ESTADOS[loteActual.properties.estado] || ESTADOS.disponible;
+  return estado.sigueEnVenta !== false;
+}
+
+function renderDisponibilidad(p) {
+  const estado = ESTADOS[p.estado] || ESTADOS.disponible;
+
+  elEstado.textContent = estado.etiqueta || "";
+  elEstado.className = `lp-estado ${estado.clase || ""}`.trim();
+  elEstado.classList.toggle("oculto", !estado.etiqueta);
+
+  const seVende = estado.sigueEnVenta !== false;
+  elPrecio.classList.toggle("no-disponible", !seVende);
+  elContacto.classList.toggle("oculto", !seVende);
+  elNoDisponible.classList.toggle("oculto", seVende);
+  if (!seVende) elNoDisponibleTexto.textContent = estado.texto || "";
+
+  return seVende;
+}
+
 function render(feature) {
   clearTimeout(relojDeEspera);
   loteActual = feature;
@@ -314,6 +375,9 @@ function render(feature) {
   renderGaleria(p);
   renderDatos(p);
   renderMapa(feature);
+  // Antes de renderAgencia: el botón de WhatsApp mira si el lote sigue
+  // en venta, así que la disponibilidad tiene que estar decidida.
+  renderDisponibilidad(p);
   renderAgencia();
 
   // Subir fotos: solo con sesión. Un visitante no puede, y mostrarle el

@@ -17,6 +17,7 @@
 import { db, auth } from "./firebase-config.js";
 import {
   ZOOM_MINIMO_ENCUADRE,
+  ZOOM_AL_ENFOCAR_UN_GRUPO,
   centroDelGrupoMasNumeroso,
   convieneEnfocarUnGrupo,
   desplazamientoPorHojaAbierta
@@ -397,21 +398,25 @@ export async function cargarLotesDesdeFirestore() {
     // mapa (24) — o sea que cae en la rama de fitBounds, que es la que
     // ya sabía convivir con ese caso. Bien así: la rama nueva solo entra
     // cuando el tamaño es real y los lotes están de verdad dispersos.
-    const limites = capaLotes.getBounds();
-    const centroDelGrupo = convieneEnfocarUnGrupo(mapa.getBoundsZoom(limites, false, L.point(20, 20)))
-      ? centroDelGrupoMasNumeroso(
-          capaLotes.getLayers().map((capaDeUnLote) => capaDeUnLote.getBounds().getCenter())
-        )
-      : null;
-    if (centroDelGrupo) mapa.setView(centroDelGrupo, ZOOM_MINIMO_ENCUADRE, { animate: false });
-    else mapa.fitBounds(limites, { padding: [20, 20], maxZoom: 18, animate: false });
+    encuadrarEnLosLotes();
     // Queda anotado cuál de las dos ramas encuadró. Sirve para dos
     // cosas: explicar en vivo por qué el mapa abrió donde abrió, y que
     // el test pueda afirmar que el encuadre efectivamente corrió. Sin
     // esto, un test que mire solo el zoom pasa igual si el encuadre
     // nunca se ejecutó (el mapa se queda en el zoom del setView inicial,
     // que ya es cerca) — un verde que no prueba nada.
-    mapa.getContainer().dataset.encuadre = centroDelGrupo ? "grupo-mas-numeroso" : "todos-los-lotes";
+    // ¿El contenedor tenía tamaño de verdad cuando se encuadró?
+    //
+    // POR QUÉ IMPORTA. Los lotes se cargan apenas responde Firestore, y
+    // eso puede pasar con el mapa ESCONDIDO — por ejemplo si la app se
+    // abrió directo en /lotes. Ahí el contenedor mide 0x0, Leaflet
+    // calcula cualquier cosa, y al volver al mapa con la flecha ← se
+    // veía la vista por defecto sobre El Desaguadero: foto satelital
+    // pelada, ni un lote, y la sensación de que la cartera está vacía.
+    // Queda anotado para que al entrar al mapa se pueda rehacer (ver
+    // reencuadrarSiHizoFaltaTamano).
+    const tam = mapa.getSize();
+    mapa.getContainer().dataset.encuadreSinTamano = tam.x < 50 || tam.y < 50 ? "1" : "0";
   }
 
   if (habiaCatastroCercano) capaCatastroCercano.addTo(mapa);
@@ -824,4 +829,61 @@ export function centrarDejandoVer(lat, lon, zoom) {
   // contenido (y el lote) sube: justo lo que hace falta para sacarlo de
   // atrás de la hoja.
   if (desplazamiento > 0) mapa.panBy([0, desplazamiento], { animate: false });
+}
+
+/**
+ * Encuadra el mapa sobre los lotes cargados.
+ *
+ * Separada de la carga para poder repetirla: la primera vez puede correr
+ * con el mapa escondido y el contenedor en 0x0 (ver
+ * reencuadrarSiHizoFaltaTamano al final del archivo).
+ *
+ * Si los lotes están tan desparramados que para que entren todos habría
+ * que alejarse más allá de ZOOM_MINIMO_ENCUADRE, enfoca el grupo más
+ * numeroso: alejarse tanto deja cada lote del tamaño de un punto y el
+ * mapa se ve vacío aunque esté todo dibujado (ver js/encuadre-mapa.js,
+ * que explica el caso real que lo motivó).
+ */
+function encuadrarEnLosLotes() {
+  const limites = capaLotes.getBounds();
+  const centroDelGrupo = convieneEnfocarUnGrupo(mapa.getBoundsZoom(limites, false, L.point(20, 20)))
+    ? centroDelGrupoMasNumeroso(
+        capaLotes.getLayers().map((capaDeUnLote) => capaDeUnLote.getBounds().getCenter())
+      )
+    : null;
+  if (centroDelGrupo) mapa.setView(centroDelGrupo, ZOOM_AL_ENFOCAR_UN_GRUPO, { animate: false });
+  else mapa.fitBounds(limites, { padding: [20, 20], maxZoom: 18, animate: false });
+
+  // Queda anotado cuál de las dos ramas encuadró. Sirve para dos cosas:
+  // explicar en vivo por qué el mapa abrió donde abrió, y que el test
+  // pueda afirmar que el encuadre efectivamente corrió. Sin esto, un
+  // test que mire solo el zoom pasa igual si el encuadre nunca se
+  // ejecutó — un verde que no prueba nada.
+  mapa.getContainer().dataset.encuadre = centroDelGrupo ? "grupo-mas-numeroso" : "todos-los-lotes";
+}
+
+/**
+ * Rehace el encuadre si la primera vez se hizo con el mapa escondido.
+ *
+ * EL BUG QUE ARREGLA: entrando directo a /lotes (o recargando ahí) y
+ * volviendo al mapa con la flecha ←, el mapa aparecía sobre El
+ * Desaguadero sin un solo lote dibujado en pantalla. La misma pantalla
+ * mostraba dos encuadres distintos según cómo se llegara, y uno de los
+ * dos no mostraba nada.
+ *
+ * La causa: los lotes llegan de Firestore apenas arranca la app, y si en
+ * ese momento el mapa está escondido su contenedor mide 0x0 — Leaflet
+ * encuadra sobre la nada. Al mostrarlo, nadie volvía a encuadrar.
+ *
+ * Se llama al entrar a la sección mapa, después de invalidateSize().
+ */
+export function reencuadrarSiHizoFaltaTamano() {
+  const contenedor = mapa.getContainer();
+  if (contenedor.dataset.encuadreSinTamano !== "1") return false;
+  if (!capaLotes || capaLotes.getLayers().length === 0) return false;
+  const tam = mapa.getSize();
+  // Sigue sin tamaño: no se gana nada y se perdería la anotación.
+  if (tam.x < 50 || tam.y < 50) return false;
+  encuadrarEnLosLotes();
+  return true;
 }
