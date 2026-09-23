@@ -1,10 +1,13 @@
 // ---------------------------------------------------------------------------
-// "Inteligencia Artificial" — vidriera de funciones ya diseñadas pero
-// TODAVÍA NO conectadas a ningún servicio pago (OpenAI, WhatsApp Business
-// API). Pedido explícito: dejar la estructura lista para el día que se
-// quieran prender de verdad, sin activar nada ahora ni asumir ningún
-// costo — ningún botón de este panel llama a una API paga, es 100%
-// informativo. Solo root la ve (mismo criterio que Auditoría:
+// "Inteligencia Artificial" — la vidriera de lo que la app hace y va a
+// hacer con IA. Nació cuando no había ninguna función prendida; hoy dos
+// ya andan (js/ia-descripcion.js y js/ia-lead.js, cada una con su
+// endpoint en functions/) y las otras tres siguen esperando la API de
+// WhatsApp Business. El panel en sí sigue siendo 100% informativo:
+// ningún botón de ACÁ llama a nada, las activas se usan desde la ficha
+// y desde el CRM. Si se prende o se apaga una función, hay que tocar su
+// insignia Y el párrafo de arriba del panel (index.html), que se
+// escribió en términos de las insignias justamente para eso. Solo root la ve (mismo criterio que Auditoría:
 // esRootActual() directo en app.js, ver actualizarUIPorPermisos).
 // ---------------------------------------------------------------------------
 

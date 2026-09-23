@@ -86,10 +86,24 @@ const elBtnComparar = document.getElementById("btn-comparar-favoritos");
 const elPanelComparar = document.getElementById("panel-comparar-lotes");
 const elTablaComparar = document.getElementById("tabla-comparar-lotes");
 
+const elTopeComparar = document.getElementById("favoritos-comparar-tope");
+
+function avisarTopeComparar() {
+  elTopeComparar.textContent =
+    `Solo se pueden comparar ${MAX_COMPARAR} a la vez. Destilda uno para elegir otro. ` +
+    "Apartar no tiene límite: el tope es solo del comparador.";
+  elTopeComparar.classList.remove("oculto");
+}
+
+// Redibuja el estado del comparador. El aviso del tope se apaga acá y no
+// en cada lugar que cambia la selección: TODA rama que efectivamente
+// agrega o saca algo pasa por esta función, y la única que no pasa es
+// justamente la que rechaza el quinto tilde (sale con return antes).
 function actualizarBotonComparar() {
   const n = seleccionComparar.size;
   elBtnComparar.textContent = `Comparar (${n})`;
   elBtnComparar.classList.toggle("oculto", n < 2);
+  elTopeComparar.classList.add("oculto");
 }
 
 function formatearServicios(servicios) {
@@ -104,7 +118,9 @@ function renderComparador() {
   const filas = [
     { etiqueta: "Zona", valor: (p) => p.sector || "—" },
     { etiqueta: "Barrio", valor: (p) => p.barrio || "—" },
-    { etiqueta: "Superficie", valor: (p) => (p.superficie_m2 != null ? `${p.superficie_m2} m²` : "—") },
+    // Mismo formato que la fila "Precio" de acá abajo — ver el porqué en
+    // renderTabla (js/vista-lista.js).
+    { etiqueta: "Superficie", valor: (p) => (p.superficie_m2 != null ? `${Number(p.superficie_m2).toLocaleString("es-AR")} m²` : "—") },
     { etiqueta: "Estado", valor: (p) => ETIQUETA_ESTADO[p.estado] || p.estado || "—" },
     { etiqueta: "Precio", valor: (p) => (p.precio_usd != null ? `USD ${Number(p.precio_usd).toLocaleString("es-AR")}` : "—") },
     { etiqueta: "Servicios", valor: (p) => formatearServicios(p.servicios) }
@@ -199,8 +215,15 @@ function renderFavoritos() {
         // una tabla comparativa — mismo criterio que cualquier
         // comparador real (Trulia, por ejemplo, también limita cuántos
         // podés comparar a la vez).
+        //
+        // EL TOPE ES SOLO DEL COMPARADOR: apartar lotes no tiene límite.
+        // Y HAY QUE DECIRLO. Antes esta rama destildaba el checkbox y
+        // salía con return sin tocar nada más, así que el quinto click no
+        // producía UN SOLO cambio en la pantalla: parecía que el click no
+        // había llegado o que la app se había colgado.
         if (seleccionComparar.size >= MAX_COMPARAR) {
           check.checked = false;
+          avisarTopeComparar();
           return;
         }
         seleccionComparar.add(feature.id);
@@ -216,6 +239,29 @@ function renderFavoritos() {
     titulo.textContent = tituloLote(feature.properties);
     grupo.appendChild(titulo);
     li.appendChild(grupo);
+
+    // QUÉ LOTE ES, no solo cómo se llama. Con lotes del catastro el
+    // título es una nomenclatura que se diferencia en un dígito, así que
+    // una columna de títulos sola no se puede leer: había que abrir uno
+    // por uno para saber cuál era cuál. Los mismos cuatro datos que ya
+    // muestra la tarjeta de la grilla del mismo lote (ver renderGrilla en
+    // js/vista-lista.js). Lo que el lote no tenga cargado se omite en
+    // silencio en vez de repetir "sin datos" cuatro veces — mismo
+    // criterio de "no se inventa nada" que el comparador de acá arriba.
+    const p = feature.properties;
+    const dato = document.createElement("span");
+    dato.className = "dashboard-lote-dato";
+    dato.textContent =
+      [
+        ETIQUETA_ESTADO[p.estado] || p.estado || null,
+        p.sector || p.barrio || null,
+        p.superficie_m2 != null ? `${Number(p.superficie_m2).toLocaleString("es-AR")} m²` : null,
+        p.precio_usd != null ? `USD ${Number(p.precio_usd).toLocaleString("es-AR")}` : null
+      ]
+        .filter(Boolean)
+        .join(" · ") || "Sin datos cargados";
+    li.appendChild(dato);
+
     li.addEventListener("click", () => irALoteDesdeFavoritos(feature));
 
     const botonQuitar = document.createElement("button");

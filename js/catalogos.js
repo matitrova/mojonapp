@@ -21,6 +21,8 @@ import {
   setEtiquetasCrmActuales
 } from "./estado.js";
 import { registrarAuditoria } from "./auditoria.js";
+// estado-vacio.js no importa a nadie, así que no hay riesgo de ciclo.
+import { pintarEstadoVacio } from "./estado-vacio.js";
 
 let db, getDocs, addDoc, setDoc, deleteDoc, collection, doc;
 
@@ -173,6 +175,11 @@ function crearPanelCatalogo({
   const elVistaLista = document.getElementById(`${plural}-vista-lista`);
   const elVistaForm = document.getElementById(`${plural}-vista-form`);
   const elTablaCuerpo = document.getElementById(`tabla-${plural}-cuerpo`);
+  const elVacio = document.getElementById(`${plural}-vacio`);
+  // La tabla ENTERA, no solo el cuerpo: el encabezado "Nombre" y su raya
+  // son HTML fijo, y son justamente lo que hacía parecer que la pantalla
+  // había fallado cuando no hay nada cargado.
+  const elTablaScroll = elTablaCuerpo.closest(".tabla-scroll");
   const elBtnAgregar = document.getElementById(`btn-agregar-${prefijo}`);
   const elVolver = document.getElementById(`${prefijo}-volver`);
   const elFormTitulo = document.getElementById(`${prefijo}-form-titulo`);
@@ -219,6 +226,14 @@ function crearPanelCatalogo({
       fila.append(celdaNombre, celdaAcciones);
       elTablaCuerpo.appendChild(fila);
     });
+
+    // Un catálogo vacío no es un error, pero sin esto se ve igual que
+    // uno. El botón de agregar queda visible: es el paso siguiente.
+    // `plural` es también la clave en TEXTOS de js/estado-vacio.js.
+    const vacio = getCatalogoActual().length === 0;
+    if (vacio) pintarEstadoVacio(elVacio, { pantalla: plural, conSesion: true });
+    elVacio.classList.toggle("oculto", !vacio);
+    elTablaScroll.classList.toggle("oculto", vacio);
   }
 
   function mostrarLista() {

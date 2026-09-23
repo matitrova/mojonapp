@@ -159,21 +159,41 @@ function renderGrafico(delPeriodo) {
 
   const filas = actividadPorDia(delPeriodo, dias);
   const maximo = Math.max(1, ...filas.map((f) => f.cantidad));
+  // Cada cuántas columnas va un rótulo. A 390px las 30 columnas del mes
+  // miden 8,7px y un número de dos dígitos mide ~11: rotularlas todas
+  // las pega en un bloque ilegible ("242526272829...") y entonces
+  // ninguna barra tiene día. Con el tope de 7 rótulos siempre queda
+  // aire entre uno y el siguiente; con 7 días el paso es 1 y no cambia
+  // nada de lo que ya se leía bien.
+  const paso = Math.ceil(dias / 7);
   elGrafico.innerHTML = "";
-  for (const fila of filas) {
+  for (const [i, fila] of filas.entries()) {
     const columna = document.createElement("div");
     columna.className = "actividad-dia";
     columna.title = `${fila.dia}: ${fila.cantidad}`;
 
     const barra = document.createElement("div");
     barra.className = "actividad-dia-barra";
+    // Un día SIN eventos no dibuja nada. La regla compartida tiene un
+    // min-height de 2px para que un día flojo se vea igual cuando el
+    // máximo es alto; aplicado a un cero, pinta un trazo naranja
+    // apoyado en la base y un día sin movimiento se lee como un día con
+    // poco, que es lo contrario de lo que pasó.
+    if (fila.cantidad === 0) barra.classList.add("actividad-dia-barra-vacia");
     barra.style.height = `${(fila.cantidad / maximo) * 100}%`;
     columna.appendChild(barra);
 
     const etiqueta = document.createElement("span");
     etiqueta.className = "actividad-dia-etiqueta";
     // Solo el día del mes: con 30 columnas, la fecha entera no entra.
-    etiqueta.textContent = fila.dia.slice(-2);
+    // Y solo cada "paso" columnas, contando DESDE LA ÚLTIMA, para que
+    // hoy siempre quede rotulado (es el día que se busca primero). Las
+    // demás dejan el span VACÍO en vez de no crearlo: el hueco tiene
+    // que seguir ocupando lo mismo o sus barras quedarían más altas que
+    // las rotuladas. La fecha completa de cada columna sigue estando en
+    // el title.
+    const ultima = filas.length - 1;
+    etiqueta.textContent = (ultima - i) % paso === 0 ? fila.dia.slice(-2) : "";
     columna.appendChild(etiqueta);
 
     elGrafico.appendChild(columna);

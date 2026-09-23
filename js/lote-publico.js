@@ -123,13 +123,18 @@ function renderGaleria(p) {
 }
 
 function renderDatos(p) {
+  // La fila que no tiene valor NO SE MUESTRA, en vez de mostrarse como
+  // "Sin datos". Ese texto es el vocabulario de la ficha interna
+  // (js/ficha.js lo usa en toda la hoja del corredor, y ahí está bien:
+  // le avisa al que puede completarlo). Acá lo lee el comprador y le
+  // dice que la inmobiliaria no tiene los datos de lo que publica.
   const filas = [
-    ["Superficie", p.superficie_m2 == null ? "Sin datos" : `${p.superficie_m2} m²`],
+    ["Superficie", p.superficie_m2 == null ? null : `${p.superficie_m2} m²`],
     ["Estado", { disponible: "Disponible", reservado: "Reservado", vendido: "Vendido" }[p.estado] || p.estado],
-    ["Zona", p.sector || "Sin datos"],
-    ["Barrio", p.barrio || "Sin datos"],
-    ["Nomenclatura", p.nomenclatura || "Sin datos"]
-  ];
+    ["Zona", p.sector || null],
+    ["Barrio", p.barrio || null],
+    ["Nomenclatura", p.nomenclatura || null]
+  ].filter(([, valor]) => valor);
   elDatos.innerHTML = "";
   for (const [clave, valor] of filas) {
     const dt = document.createElement("dt");
@@ -141,9 +146,15 @@ function renderDatos(p) {
   }
 
   elServicios.innerHTML = "";
-  if (p.servicios == null) {
-    elServicios.textContent = "Sin datos";
-  } else {
+  // Mismo criterio que las filas de arriba, y por eso se esconde el
+  // bloque ENTERO (el <h3> Servicios incluido): un título seguido de
+  // "Sin datos" no le dice nada al comprador, le dice que falta cargar.
+  // Ojo que esto NO es el caso de un lote sin luz o sin gas: eso llega
+  // como servicios: { luz: false } y se sigue mostrando, porque saber
+  // que no hay gas es un dato para quien compra (ver
+  // test_los_servicios_que_no_tiene_tambien_se_muestran).
+  elServicios.closest(".lp-bloque").classList.toggle("oculto", p.servicios == null);
+  if (p.servicios != null) {
     for (const { clave, etiqueta } of SERVICIOS) {
       const chip = document.createElement("span");
       chip.className = `lp-servicio${p.servicios[clave] ? "" : " sin"}`;
@@ -370,7 +381,14 @@ function render(feature) {
   // genérico "Lote".
   ponerTituloDeLaSeccion(tituloDe(p));
   elPrecio.textContent = precioEnTexto(p);
-  elUbicacion.textContent = [p.sector, p.barrio].filter(Boolean).join(" · ") || "Ubicación sin cargar";
+  // Sin zona ni barrio la línea NO SE MUESTRA. "Ubicación sin cargar"
+  // es un recordatorio para el corredor puesto en la pantalla del
+  // cliente: le avisa a quien compra que la inmobiliaria no sabe dónde
+  // está lo que vende. Un renglón menos no le saca nada — el mapa de
+  // abajo muestra dónde queda igual.
+  const ubicacion = [p.sector, p.barrio].filter(Boolean).join(" · ");
+  elUbicacion.textContent = ubicacion;
+  elUbicacion.classList.toggle("oculto", !ubicacion);
 
   renderGaleria(p);
   renderDatos(p);

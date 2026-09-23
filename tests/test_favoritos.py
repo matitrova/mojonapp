@@ -6,8 +6,15 @@ A propósito NINGUNO de estos tests loguea: es justo lo que se está
 probando, que funcione sin cuenta.
 """
 
+import pytest
 from playwright.sync_api import expect
 from conftest import abrir_menu, soltar_el_mouse
+
+# APARTADOS PIDE SESIÓN desde 2026-09-22. Antes esta pantalla era
+# pública —un comprador anónimo podía armarse su lista— y estos tests
+# corrían sin loguearse. Ahora el botón del menú está oculto sin sesión,
+# así que el click no llega nunca.
+pytestmark = pytest.mark.con_sesion
 
 
 def _abrir_ficha_desde_lista(page, doc_id):

@@ -43,7 +43,7 @@
 const RUTAS = [
   { path: "/", clave: "mapa", panel: null, boton: "btn-drawer-mapa", navTab: "nav-tab-mapa", titulo: "Mapa" },
   { path: "/lotes", clave: "lotes", panel: "vista-lista", boton: "btn-ver-lista", navTab: "nav-tab-lista", titulo: "Lotes" },
-  { path: "/favoritos", clave: "favoritos", panel: "panel-favoritos", boton: "btn-abrir-favoritos", navTab: null, titulo: "Favoritos" },
+  { path: "/apartados", clave: "favoritos", panel: "panel-favoritos", boton: "btn-abrir-favoritos", navTab: null, titulo: "Apartados" },
   { path: "/dashboard", clave: "dashboard", panel: "panel-dashboard", boton: "btn-abrir-dashboard", navTab: "nav-tab-dashboard", titulo: "Dashboard" },
   { path: "/contactos", clave: "contactos", panel: "panel-crm", boton: "btn-abrir-crm", navTab: "nav-tab-crm", titulo: "Pipeline de leads" },
   { path: "/tareas", clave: "tareas", panel: "panel-tareas", boton: "btn-abrir-tareas", navTab: null, titulo: "Tareas" },
@@ -81,7 +81,16 @@ export function idDeLotePublico(path) {
   return id || null;
 }
 
+// Direcciones viejas que siguen andando. "Favoritos" se llama
+// "Apartados" desde 2026-09-22, pero alguien puede tenerla guardada en
+// el navegador o habérsela mandado por mensaje: que un link guardado
+// deje de funcionar es una forma barata de perder a un usuario.
+const RUTAS_VIEJAS = { "/favoritos": "/apartados" };
+
 export function rutaPorPath(path) {
+  const renombrada = RUTAS_VIEJAS[path];
+  if (renombrada) path = renombrada;
+
   const exacta = RUTAS.find((r) => r.path === path);
   if (exacta) return exacta;
 
@@ -307,10 +316,14 @@ document.addEventListener(
   "click",
   (evento) => {
     if (!(evento.target instanceof Element)) return;
-    if (!evento.target.closest("[data-volver]")) return;
+    // El botón puede declarar a dónde ir cuando NO hay historial propio
+    // (data-volver="/lotes"). Sin valor sigue siendo el mapa, que es lo
+    // correcto para las pantallas del corredor.
+    const boton = evento.target.closest("[data-volver]");
+    if (!boton) return;
     evento.stopImmediatePropagation();
     evento.preventDefault();
-    volverAtras();
+    volverAtras(boton.dataset.volver || "/");
   },
   true
 );
@@ -326,15 +339,18 @@ export function aplicarRuta(path) {
   if (ruta) aplicarEstado(ruta);
 }
 
-export function volverAtras() {
+export function volverAtras(sinHistorial = "/") {
   if (indiceEnHistorial > 0) {
     history.back();
     return;
   }
   // Se entró directo por URL: no hay "atrás" dentro de la app, así que
   // "volver" es ir al mapa (y no salir del sistema, que es justamente lo
-  // que el usuario pidió que dejara de pasar).
-  navegarA("/");
+  // que el usuario pidió que dejara de pasar). Salvo que la pantalla
+  // declare otro destino: la página pública de un lote manda al catálogo
+  // público, porque quien llegó por un link de WhatsApp no tiene nada
+  // que hacer en el mapa interno de toda la zona.
+  navegarA(sinHistorial);
 }
 
 // Navegación desde código (no desde un click del usuario): dispara el

@@ -87,7 +87,9 @@ def test_cada_seccion_tiene_su_propia_url(page, base_url):
     expect(page.locator("#vista-lista")).to_be_visible()
 
     _ir_por_el_menu(page, "#btn-abrir-favoritos")
-    expect(page).to_have_url(f"{base_url}/favoritos")
+    # "/apartados" desde 2026-09-22: la pantalla se llama Apartados y
+    # dejó de ser pública. El id del botón no cambió.
+    expect(page).to_have_url(f"{base_url}/apartados")
     expect(page.locator("#panel-favoritos")).to_be_visible()
 
 
@@ -168,9 +170,13 @@ def test_la_flecha_volver_no_saca_de_la_app_si_se_entro_directo(page, base_url):
 # SIN marcador a propósito: este test verifica qué se ve sin
 # sesión, así que necesita el contexto limpio.
 def test_una_seccion_publica_se_abre_sin_sesion(page, base_url):
-    """El catálogo se puede mirar sin estar logueado, así que /lotes y
-    /favoritos tienen que andar para un visitante anónimo — es el caso de
-    un corredor mandándole el link a un cliente."""
+    """El catálogo se puede mirar sin estar logueado: /lotes tiene que
+    andar para un visitante anónimo — es el caso de un corredor
+    mandándole el link a un cliente.
+
+    Apartados ya NO está en esta lista: desde 2026-09-22 es la carpeta de
+    trabajo del corredor y pide sesión.
+    """
     page.set_viewport_size(ANCHO_ESCRITORIO)
     page.goto(f"{base_url}/lotes")
     expect(page.locator("#vista-lista")).to_be_visible()

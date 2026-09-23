@@ -22,6 +22,9 @@ import {
   arrayRemove
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { centroideDePoligono, textoMedidasLados, distanciaMetros } from "./geometria.js";
+// catastro-normalizacion.js no importa nada de la app (solo le pega a los
+// WFS provinciales), así que traerlo acá no puede armar un ciclo.
+import { manzanaYLoteDesdeNomenclatura } from "./catastro-normalizacion.js";
 import {
   getLoteSeleccionado,
   setLoteSeleccionado,
@@ -33,7 +36,7 @@ import {
 } from "./estado.js";
 import { puedeEditarLote, puedeBorrarLote } from "./permisos.js";
 import { poblarSelectSector, poblarSelectBarrio } from "./catalogos.js";
-import { mapa, cargarLotesDesdeFirestore, abrirTooltipDeLote } from "./mapa.js";
+import { mapa, cargarLotesDesdeFirestore, abrirTooltipDeLote, centrarDejandoVer } from "./mapa.js";
 import { mostrarEditarLoteDesdeGrilla } from "./vista-lista.js";
 import { registrarVistaDeLote } from "./dashboard.js";
 import { registrarAuditoria } from "./auditoria.js";
@@ -538,9 +541,25 @@ const elEditorBarrioError = document.getElementById("editor-barrio-error");
 // Varios lotes reales todavía no tienen nomenclatura catastral asignada ni
 // manzana/lote definidos (loteos nuevos, en trámite). Se arma el título con
 // el mejor identificador disponible, sin mostrar nunca "null".
+//
+// PRIMERO MANZANA/LOTE Y RECIÉN AL FINAL LA NOMENCLATURA. Estaba al revés,
+// y como todo lo que entra por "Traer del catastro" viene con
+// nomenclatura, media cartera se llamaba "00-06-44-05-000118-000008": 25
+// caracteres que no se leen de un vistazo y que en el desplegable de
+// "Lotes de interés" del CRM hay que comparar dígito por dígito. La
+// nomenclatura no se pierde de vista: sigue teniendo su propia fila en la
+// ficha ("Nomenclatura catastral") y el buscador la sigue matcheando.
+//
+// Si el lote no tiene manzana/lote cargados se intentan sacar del propio
+// código, que los lleva adentro — no es un dato nuevo ni inventado, es el
+// mismo código escrito en castellano (ver manzanaYLoteDesdeNomenclatura,
+// que devuelve null cuando el formato no es el de una parcela de San
+// Luis).
 export function tituloLote(p) {
-  if (p.nomenclatura) return p.nomenclatura;
   if (p.manzana != null && p.lote != null) return `Manzana ${p.manzana} — Lote ${p.lote}`;
+  const delCodigo = manzanaYLoteDesdeNomenclatura(p.nomenclatura);
+  if (delCodigo) return `Manzana ${delCodigo.manzana} — Lote ${delCodigo.lote}`;
+  if (p.nomenclatura) return p.nomenclatura;
   return "Lote sin nomenclatura catastral";
 }
 
@@ -895,7 +914,7 @@ const elBtnFavorito = document.getElementById("btn-favorito");
 function actualizarBotonFavorito(loteId) {
   const guardado = esFavorito(loteId);
   elBtnFavorito.textContent = guardado ? "❤️" : "🤍";
-  elBtnFavorito.setAttribute("aria-label", guardado ? "Quitar de favoritos" : "Guardar en favoritos");
+  elBtnFavorito.setAttribute("aria-label", guardado ? "Sacar de apartados" : "Apartar este lote");
   elBtnFavorito.classList.toggle("activo", guardado);
 }
 
@@ -903,7 +922,7 @@ elBtnFavorito.addEventListener("click", () => {
   if (!getLoteSeleccionado()) return;
   const guardado = alternarFavorito(getLoteSeleccionado().id);
   elBtnFavorito.textContent = guardado ? "❤️" : "🤍";
-  elBtnFavorito.setAttribute("aria-label", guardado ? "Quitar de favoritos" : "Guardar en favoritos");
+  elBtnFavorito.setAttribute("aria-label", guardado ? "Sacar de apartados" : "Apartar este lote");
   elBtnFavorito.classList.toggle("activo", guardado);
 });
 
@@ -1052,6 +1071,27 @@ document.getElementById("btn-como-llegar").addEventListener("click", () => {
   if (!getLoteSeleccionado()) return;
   const url = construirUrlComoLlegar(getLoteSeleccionado());
   window.open(url, "_blank", "noopener");
+});
+
+// "Ver en el mapa" es el mapa DE ESTA APP, no Google Maps (ese es "Cómo
+// llegar", acá arriba): deja el lote en el centro de la pantalla con su
+// cartel abierto, que es la respuesta a "mostrame dónde está". Mismo
+// criterio que el modo embed en abrirLoteDesdeUrlSiCorresponde, más
+// abajo: para ubicar un lote no hace falta el panel de datos.
+document.getElementById("btn-ver-en-el-mapa").addEventListener("click", () => {
+  const feature = getLoteSeleccionado();
+  if (!feature) return;
+  const { lat, lon } = centroideDePoligono(feature.geometry.coordinates[0]);
+  // Cerrar ANTES de centrar, y no después: centrarDejandoVer corre el
+  // mapa para sacar el lote de atrás de la hoja que esté abierta (ver
+  // js/mapa.js). Con la ficha ya cerrada no hay nada que esquivar y el
+  // lote queda en el centro real; al revés quedaría corrido para arriba.
+  elFicha.classList.add("oculto");
+  // Mismo motivo que el × de #cerrar-ficha: sin ficha en pantalla, un
+  // "?lote=" colgado en la URL la reabriría al recargar.
+  sacarElLoteDeLaUrl();
+  centrarDejandoVer(lat, lon, 19);
+  abrirTooltipDeLote(feature.id);
 });
 
 // "Compartir este lote": arma un link a esta misma app con "?lote=<id>"

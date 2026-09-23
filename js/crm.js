@@ -534,6 +534,22 @@ function renderKanban() {
 
     columna.appendChild(cabeceraColumna);
 
+    // UNA ETAPA VACÍA TIENE QUE DECIR QUE ESTÁ VACÍA. Sin esto la columna
+    // es un rectángulo de color y medio metro de nada, y no se distingue
+    // "no hay nadie en esta etapa" de "algo no cargó" — que es justo la
+    // duda que aparece la primera vez que se abre el CRM.
+    // Se reusa .dashboard-vacio, el mismo "acá no hay nada" de
+    // #crm-lotes-interes-vacio y hermanos, y NO js/estado-vacio.js: ese
+    // módulo es para la pantalla entera (elige texto según haya sesión y
+    // ofrece los botones de cargar lotes), y además pinta con innerHTML =
+    // "", o sea que se llevaría puesta la cabecera de la columna.
+    if (deEstaEtapa.length === 0) {
+      const vacio = document.createElement("p");
+      vacio.className = "dashboard-vacio";
+      vacio.textContent = "Sin contactos en esta etapa";
+      columna.appendChild(vacio);
+    }
+
     deEstaEtapa.forEach((contacto) => columna.appendChild(tarjetaContacto(contacto)));
     elKanban.appendChild(columna);
   });
@@ -665,6 +681,15 @@ function renderTablaContactos() {
       deEstaEtapa.forEach((contacto) => cuerpo.appendChild(filaContacto(contacto)));
       envoltorioTabla.appendChild(tabla);
       detalle.appendChild(envoltorioTabla);
+    } else {
+      // Mismo mensaje y misma clase que la columna vacía del kanban (ver
+      // renderKanban): son dos vistas del mismo pipeline y tienen que
+      // decir lo mismo. Un <details> que se abre y no muestra NADA se lee
+      // como un bug, aunque arranque cerrado.
+      const vacio = document.createElement("p");
+      vacio.className = "dashboard-vacio";
+      vacio.textContent = "Sin contactos en esta etapa";
+      detalle.appendChild(vacio);
     }
 
     elTabla.appendChild(detalle);

@@ -172,6 +172,13 @@ function render() {
 
     elGrupos.appendChild(seccion);
   }
+  // El texto del vacío depende de QUÉ lista quedó vacía. En "Todas" lo
+  // que no hay son tareas del equipo, y hablarle de "tus tareas" ahí
+  // dice lo contrario de lo que está mirando — encima puede tener
+  // tareas propias y leer igual que no tiene ninguna.
+  elVacio.textContent = verSoloMias
+    ? "No tienes tareas pendientes. Cuando crees una, aparece acá ordenada por vencimiento."
+    : "El equipo no tiene tareas pendientes. Cuando alguien cree una, aparece acá ordenada por vencimiento.";
   elVacio.classList.toggle("oculto", hayAlguna);
 
   // El resumen por corredor solo tiene sentido mirando a todo el equipo.

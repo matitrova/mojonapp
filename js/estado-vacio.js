@@ -32,6 +32,15 @@
 const ACCION_CATASTRO = { texto: "Traer del catastro", botonId: "btn-abrir-manzana" };
 const ACCION_A_MANO = { texto: "Cargar uno a mano", botonId: "btn-cargar-lote" };
 
+// Los cuatro catálogos se abren solo desde el menú, que ya exige sesión
+// y permiso: no existe el caso "visitante". Se repite el mismo texto en
+// las dos ramas en vez de enseñarle a contenidoVacio un caso especial
+// que ninguna otra pantalla necesita — la distinción con/sin sesión es
+// el corazón de este módulo y no conviene diluirla por esto.
+function siempreIgual(titulo, texto) {
+  return { conSesion: { titulo, texto }, sinSesion: { titulo, texto } };
+}
+
 const TEXTOS = {
   mapa: {
     conSesion: {
@@ -68,7 +77,31 @@ const TEXTOS = {
       titulo: "Todavía no hay métricas que mostrar",
       texto: "Esta pantalla es para la inmobiliaria."
     }
-  }
+  },
+  // Las claves de los catálogos son el `plural` de crearPanelCatalogo
+  // (js/catalogos.js), que es lo que ese módulo pasa como `pantalla`.
+  // El texto dice PARA QUÉ sirve el catálogo: con la lista vacía, quien
+  // entra por primera vez no tiene de dónde deducirlo.
+  sectores: siempreIgual(
+    "Todavía no cargaste ninguna zona",
+    "Las zonas son los nombres con los que agrupás los lotes por área (Zona Norte, Cerro de Oro). " +
+      "Al cargar o editar un lote se eligen de esta lista, para que no invente cada uno su propia variante del mismo nombre."
+  ),
+  barrios: siempreIgual(
+    "Todavía no cargaste ningún barrio",
+    "El barrio es la otra manera de ubicar un lote, independiente de la zona (Las Vertientes, El Trapiche): " +
+      "un lote tiene zona Y barrio a la vez, y los dos se eligen de su lista al cargarlo o editarlo."
+  ),
+  motivos: siempreIgual(
+    "Todavía no cargaste ningún motivo de pérdida",
+    "Es por qué se cayó una oportunidad (Precio, Financiación, Compró en otro lado). Se elige al marcar " +
+      "un contacto como perdido, y el Dashboard los cuenta agrupados para ver qué se repite."
+  ),
+  "etiquetas-crm": siempreIgual(
+    "Todavía no cargaste ninguna etiqueta",
+    "Las etiquetas marcan contactos para encontrarlos después (Urgente, Referido, Inversor). " +
+      "Se ponen en la ficha del contacto y filtran el pipeline del CRM."
+  )
 };
 
 /**

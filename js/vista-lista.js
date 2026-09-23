@@ -272,12 +272,28 @@ function cambiarPagina(delta) {
 elPaginaAnterior.addEventListener("click", () => cambiarPagina(-1));
 elPaginaSiguiente.addEventListener("click", () => cambiarPagina(1));
 
-// Tabla/Grilla (idea propia, ver comentario en index.html) — arranca en
-// "tabla" siempre (no se persiste entre sesiones): es el modo que ya
-// conocía cualquiera que usara la app antes de esta idea, y sigue
-// siendo el que necesita un corredor administrando (Editar/Borrar en
-// fila no tiene sentido en tarjetas).
-let modoVistaLista = "tabla";
+// Tabla/Grilla (idea propia, ver comentario en index.html). No se
+// persiste entre sesiones; lo que cambia es con cuál ARRANCA.
+//
+// EN ESCRITORIO, "tabla": es el modo que ya conocía cualquiera que usara
+// la app antes de esta idea, y sigue siendo el que necesita un corredor
+// administrando (Editar/Borrar en fila no tiene sentido en tarjetas).
+//
+// EN TELÉFONO, "grilla": la tabla tiene nueve columnas y mide 600px, y
+// en los 366 útiles de un celular se ven cinco y media — Estado queda
+// cortada al ras del borde, y Precio y Servicios directamente afuera.
+// Ninguna combinación de columnas entra, así que el modo correcto ahí no
+// es una tabla más angosta sino la tarjeta, que muestra los mismos datos
+// que se perdían (estado, título, zona/barrio, superficie, precio) sin
+// arrastrar nada. El toggle sigue estando y la tabla queda a un toque,
+// con su scroll horizontal ya señalizado (ver .tabla-scroll en
+// css/estilos.css).
+//
+// Se mide una sola vez, al cargar el módulo: el que gire el teléfono o
+// agrande la ventana tiene el toggle: no le cambiamos el modo abajo de
+// la mano.
+const ANCHO_TELEFONO = 640; // mismo corte que usa el CSS para "teléfono"
+let modoVistaLista = window.innerWidth <= ANCHO_TELEFONO ? "grilla" : "tabla";
 
 function irAFichaDesdeVistaLista(feature) {
   // Navegar al mapa deja la URL en "/", así el "atrás" del navegador
@@ -299,12 +315,19 @@ function renderTabla(lotesPagina) {
     const fila = document.createElement("tr");
     fila.className = "fila-lote";
     fila.dataset.loteId = feature.id; // permite ubicar una fila puntual (tests, debug)
+    // La superficie pasa por toLocaleString("es-AR") igual que el precio
+    // dos celdas más allá. Interpolada cruda salía en formato inglés
+    // ("7344.1 m²") al lado de "USD 18.500": en la misma fila el punto
+    // significaba miles en una celda y decimales en la otra, que es lo
+    // contrario de lo que lee un argentino. Mismo criterio que los días
+    // promedio del Dashboard (ver js/dashboard.js:452). La tarjeta de la
+    // grilla acá abajo y el comparador (js/favoritos.js) hacen lo mismo.
     fila.innerHTML = `
       <td class="col-tilde"></td>
-      <td>${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}</td>
+      <td class="col-lote">${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}</td>
       <td>${p.sector || "—"}</td>
       <td>${p.barrio || "—"}</td>
-      <td>${p.superficie_m2 == null ? "—" : `${p.superficie_m2} m²`}</td>
+      <td>${p.superficie_m2 == null ? "—" : `${Number(p.superficie_m2).toLocaleString("es-AR")} m²`}</td>
       <td>${textoEstadoConVencimiento(p)}</td>
       <td>${p.precio_usd == null ? "—" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`}</td>
       <td>${p.servicios == null ? "—" : renderServiciosHTML(p.servicios)}</td>
@@ -407,11 +430,26 @@ function lotesSeleccionadosActuales() {
   return getLotesActuales().filter((f) => loteSeleccionados.has(f.id));
 }
 
+// Las DOS vistas de la página actual, no solo la tabla. Desde que la
+// selección también se ve en grilla, redibujar una sola dejaba la otra
+// con los tildes viejos: "Quitar selección" limpiaba la tabla y las
+// tarjetas seguían marcadas hasta el siguiente filtro.
+function redibujarPaginaActual() {
+  renderTabla(lotesDeLaPagina);
+  renderGrilla(lotesDeLaPagina);
+}
+
 function actualizarBarraSeleccion() {
   const cantidad = loteSeleccionados.size;
-  // En modo grilla no hay tildes, así que la barra tampoco: la selección
-  // se conserva y vuelve a aparecer al volver a la tabla.
-  const visible = cantidad > 0 && modoVistaLista === "tabla";
+  // LA BARRA SE VE EN LOS DOS MODOS. Antes se escondía en grilla con el
+  // argumento de que ahí no había tildes — pero la selección seguía
+  // viva: nada decía cuántos lotes había elegidos ni había con qué
+  // limpiarlos, y al volver a Tabla reaparecían tildados unos lotes que
+  // el corredor ya daba por perdidos, con "Aplicar un cambio a todos" a
+  // un click. Una selección invisible que sigue pesando es peor que no
+  // poder seleccionar. Ahora la grilla también tiene tilde (ver
+  // renderGrilla).
+  const visible = cantidad > 0;
   elSeleccionBarra.classList.toggle("oculto", !visible);
   if (!visible) elMasivaForm.classList.add("oculto");
   elSeleccionCuenta.textContent =
@@ -438,7 +476,7 @@ elSeleccionarPagina.addEventListener("change", () => {
     if (elSeleccionarPagina.checked) loteSeleccionados.add(feature.id);
     else loteSeleccionados.delete(feature.id);
   }
-  renderTabla(lotesDeLaPagina);
+  redibujarPaginaActual();
   actualizarBarraSeleccion();
 });
 
@@ -446,14 +484,14 @@ elBtnSeleccionarFiltro.addEventListener("click", () => {
   for (const feature of lotesFiltrados().filter((f) => puedeEditarLote(f))) {
     loteSeleccionados.add(feature.id);
   }
-  renderTabla(lotesDeLaPagina);
+  redibujarPaginaActual();
   actualizarBarraSeleccion();
 });
 
 function limpiarSeleccion() {
   loteSeleccionados.clear();
   elMasivaForm.classList.add("oculto");
-  renderTabla(lotesDeLaPagina);
+  redibujarPaginaActual();
   actualizarBarraSeleccion();
 }
 elBtnLimpiarSeleccion.addEventListener("click", limpiarSeleccion);
@@ -661,10 +699,33 @@ function renderGrilla(lotesPagina) {
         <span class="tarjeta-lote-estado ${p.estado || ""}">${textoEstadoConVencimiento(p)}</span>
         <span class="tarjeta-lote-titulo">${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}</span>
         <span class="tarjeta-lote-dato">${[p.sector, p.barrio].filter(Boolean).join(" — ") || "Zona sin datos"}</span>
-        <span class="tarjeta-lote-dato">${p.superficie_m2 == null ? "Superficie sin datos" : `${p.superficie_m2} m²`}</span>
+        <span class="tarjeta-lote-dato">${p.superficie_m2 == null ? "Superficie sin datos" : `${Number(p.superficie_m2).toLocaleString("es-AR")} m²`}</span>
         ${p.precio_usd != null ? `<span class="tarjeta-lote-precio">USD ${Number(p.precio_usd).toLocaleString("es-AR")}</span>` : ""}
       </div>
     `;
+    // MISMO TILDE QUE LA TABLA. Sin esto, pasar a Grilla escondía la
+    // selección sin borrarla. El permiso se consulta igual que en
+    // renderTabla y por el mismo motivo: un tilde sobre un lote ajeno
+    // termina en "permission-denied" a mitad de la escritura en masa
+    // (ver puedeEditarLote en js/permisos.js).
+    tarjeta.classList.toggle("tarjeta-lote-elegida", loteSeleccionados.has(feature.id));
+    if (puedeEditarLote(feature)) {
+      const tilde = document.createElement("input");
+      tilde.type = "checkbox";
+      tilde.className = "tilde-lote tarjeta-lote-tilde";
+      tilde.checked = loteSeleccionados.has(feature.id);
+      tilde.setAttribute("aria-label", `Seleccionar ${tituloLote(p)}`);
+      // La tarjeta entera abre la ficha: sin esto, tildar te saca de la lista.
+      tilde.addEventListener("click", (evento) => evento.stopPropagation());
+      tilde.addEventListener("change", () => {
+        if (tilde.checked) loteSeleccionados.add(feature.id);
+        else loteSeleccionados.delete(feature.id);
+        tarjeta.classList.toggle("tarjeta-lote-elegida", tilde.checked);
+        actualizarBarraSeleccion();
+      });
+      tarjeta.appendChild(tilde);
+    }
+
     tarjeta.addEventListener("click", () => irAFichaDesdeVistaLista(feature));
     elGrillaLotes.appendChild(tarjeta);
   });

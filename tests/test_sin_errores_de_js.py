@@ -105,7 +105,7 @@ def test_recorrer_las_pantallas_principales_no_tira_errores(page, base_url, lote
     # "/inmobiliaria" entra sin sesión a propósito: la pantalla no se ve
     # (el ítem del menú es solo de root) pero su módulo corre igual, y
     # este archivo existe justamente para que ese camino no explote.
-    for ruta in ("/lotes", "/favoritos", "/dashboard", "/inmobiliaria", "/"):
+    for ruta in ("/lotes", "/apartados", "/dashboard", "/inmobiliaria", "/"):
         page.goto(f"{base_url}{ruta}")
         page.wait_for_timeout(1800)
         _sin_errores(errores, f"en {ruta}")

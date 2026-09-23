@@ -431,17 +431,45 @@ function htmlVariacion(clave, variaciones, leyenda) {
  * número que nunca existió, justo en las tarjetas que se miran para
  * decidir.
  */
+// El <strong> de una tarjeta: el valor ya formateado, o "Sin datos".
+//
+// UN GUION LARGO SOLO NO DICE NADA. Con la tipografía del número (1.9rem,
+// peso 800) un "—" se dibuja como una rayita horizontal de 20px, y en
+// "Comisión proyectada"/"Comisión ganada" además pintada del naranja o el
+// verde de la tarjeta: parecía un adorno roto, no "todavía no hay nada que
+// sumar". "Sin datos" es la misma palabra que usa la ficha cuando falta un
+// dato (ver js/ficha.js). Mismo criterio que htmlVariacion acá arriba, que
+// ya se niega a mostrar un guion cuando no sabe.
+//
+// NO dice "USD 0": un 0 acá puede ser "no hay contactos" o "hay contactos
+// pero sus lotes no tienen precio cargado" (comisionDeUnLote devuelve 0 sin
+// precio, a propósito). "USD 0" afirmaría que el pipeline no vale nada.
+//
+// Sigue siendo un <strong> y no un <span>: es el lugar del valor, y tanto
+// el CSS como los tests lo buscan así (#crm-stats .crm-stat-valor strong,
+// ver tests/test_crm_valor_pipeline.py).
+function htmlValor(texto) {
+  return texto == null
+    ? `<strong class="crm-stat-sin-dato">Sin datos</strong>`
+    : `<strong>${texto}</strong>`;
+}
+
 export function htmlResumenVentas(m, variaciones = null) {
   const vsMes = "vs. mes anterior";
   return `
     <div class="crm-stat"><strong>${m.total}</strong><span>Contactos</span>${htmlVariacion("total", variaciones, vsMes)}</div>
     <div class="crm-stat"><strong>${m.nuevosEstaSemana}</strong><span>Nuevos (7 días)</span>${htmlVariacion("nuevosEstaSemana", variaciones, "vs. semana anterior")}</div>
-    <div class="crm-stat"><strong>${m.tasaConversion == null ? "—" : `${m.tasaConversion}%`}</strong><span>Conversión a cerrado</span>${htmlVariacion("tasaConversion", variaciones, vsMes)}</div>
-    <div class="crm-stat crm-stat-urgente"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span>${htmlVariacion("sinAtender", variaciones, vsMes)}</div>
+    <div class="crm-stat">${htmlValor(m.tasaConversion == null ? null : `${m.tasaConversion}%`)}<span>Conversión a cerrado</span>${htmlVariacion("tasaConversion", variaciones, vsMes)}</div>
+    <!-- La única tarjeta que se pinta de urgente, y SOLO cuando hay algo
+         urgente: con sinAtender en 0 la clase iba igual y quedaba un 0
+         grande dentro de un marco rojo, o sea una alarma encendida para
+         el mejor estado posible. Una alarma que está siempre prendida no
+         avisa nada. -->
+    <div class="crm-stat${m.sinAtender > 0 ? " crm-stat-urgente" : ""}"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span>${htmlVariacion("sinAtender", variaciones, vsMes)}</div>
     <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span>${htmlVariacion("estancados", variaciones, vsMes)}</div>
-    <div class="crm-stat crm-stat-valor"><strong>${formatoUsdCompacto(m.valorPipelineActivo) || "—"}</strong><span>Valor en pipeline</span></div>
-    <div class="crm-stat crm-stat-comision"><strong>${formatoUsdCompacto(m.comisionEnPipeline) || "—"}</strong><span>Comisión proyectada</span></div>
-    <div class="crm-stat crm-stat-comision-ganada"><strong>${formatoUsdCompacto(m.comisionCerrada) || "—"}</strong><span>Comisión ganada</span></div>
+    <div class="crm-stat crm-stat-valor">${htmlValor(formatoUsdCompacto(m.valorPipelineActivo))}<span>Valor en pipeline</span></div>
+    <div class="crm-stat crm-stat-comision">${htmlValor(formatoUsdCompacto(m.comisionEnPipeline))}<span>Comisión proyectada</span></div>
+    <div class="crm-stat crm-stat-comision-ganada">${htmlValor(formatoUsdCompacto(m.comisionCerrada))}<span>Comisión ganada</span></div>
   `;
 }
 

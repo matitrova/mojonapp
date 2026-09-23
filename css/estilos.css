@@ -40,22 +40,35 @@
   --color-texto: #0f172a;
   --color-texto-secundario: #64748b;
   --color-borde: #e7eaf0;
-  /* Alto de la franja pegajosa .panel-header (16 arriba + contenido +
-     12 abajo). Lo usa quien quiera pegarse JUSTO DEBAJO de ella, como
-     la barra de acciones del CRM. */
-  --alto-panel-header: 58px;
+  /* Alto de la franja pegajosa .panel-header: 16 de padding arriba + 34
+     del botón redondo de volver/cerrar (.btn-volver y .btn-cerrar miden
+     34px y son lo más alto de la fila) + 12 de padding abajo. Lo usa
+     quien quiera pegarse JUSTO DEBAJO de ella, como la barra de acciones
+     del CRM (#crm-toolbar).
+     Antes decía 58px suponiendo un contenido de 30px: con la cuenta mal,
+     #crm-toolbar se pegaba 4px por debajo del header y esos 4px quedaban
+     tapados. */
+  --alto-panel-header: 62px;
   /* Verde de las variaciones positivas del mockup ("+12.5%"). */
   --color-positivo: #16a34a;
   --color-disponible: #5c7f3f;
   --color-reservado: #d1912f;
   --color-vendido: #b8452f;
-  /* Un color por etapa del CRM (ver js/crm.js, ETAPAS) — visita/oferta/
-     cerrado/perdido reusan tonos que ya existen arriba porque significan
-     casi lo mismo que ya significan ahí; nuevo/contactado son los dos
-     únicos tonos nuevos que suma el CRM. */
+  /* Un color por etapa del CRM (ver js/crm.js, ETAPAS) — oferta/cerrado/
+     perdido reusan tonos que ya existen arriba porque significan casi lo
+     mismo que ya significan ahí; nuevo/contactado/visita son los tres
+     tonos propios del CRM.
+
+     VISITA NO PUEDE SER --color-acento. Lo era, y quedaba una visita
+     agendada —la mejor noticia del pipeline después de cerrar— pintada
+     con el rojo de los errores, más saturado que el ladrillo de
+     "Perdido" que tiene al lado. El violeta apagado la deja distinta de
+     todas las demás sin gritar, y mantiene la rampa fría→cálida: gris,
+     azul, violeta, ámbar, verde... y el rojo ladrillo solo al final,
+     donde hay una pérdida de verdad. */
   --crm-nuevo: #6b7f8c;
   --crm-contactado: #4f7cac;
-  --crm-visita: var(--color-acento);
+  --crm-visita: #7b5ea7;
   --crm-oferta: var(--color-reservado);
   --crm-cerrado: var(--color-disponible);
   --crm-perdido: var(--color-vendido);
@@ -1136,11 +1149,18 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 .ficha-botones {
   display: flex;
+  /* Desde que son tres, en teléfono no entran en un renglón: a 390px la
+     ficha deja 354px útiles y tres botones de 130 no entran. Con wrap el
+     tercero baja a su propia fila entera en vez de partir la etiqueta en
+     dos líneas; en escritorio los tres siguen en una sola fila. */
+  flex-wrap: wrap;
   gap: 10px;
 }
 
 .ficha-botones button {
-  flex: 1;
+  /* El 130px es el ancho mínimo en el que entra la etiqueta más larga
+     ("Ver en el mapa") sin cortarse; de ahí para arriba crecen parejos. */
+  flex: 1 1 130px;
   padding: 12px;
   border: none;
   border-radius: var(--radio-mediano);
@@ -1158,12 +1178,17 @@ body.con-nav-secciones #btn-flotante-catastro {
   background: var(--color-primario-oscuro);
 }
 
-#btn-estoy-yendo {
+/* El naranja relleno queda para "Cómo llegar" (ver arriba): es la acción
+   que un corredor usa parado en la calle, y ahora la etiqueta coincide
+   con lo que hace. Los otros dos van en gris. */
+#btn-estoy-yendo,
+#btn-ver-en-el-mapa {
   background: var(--color-fondo-alterno);
   color: var(--color-texto);
 }
 
-#btn-estoy-yendo:hover {
+#btn-estoy-yendo:hover,
+#btn-ver-en-el-mapa:hover {
   background: var(--color-borde);
 }
 
@@ -1566,9 +1591,10 @@ body.con-nav-secciones #btn-flotante-catastro {
    es el único que cubre TODA la pantalla desde arriba (inset:0), así
    que sin este ajuste el "×" termina en el mismo punto que "Ingresar"/el
    estado de sesión del header, que se transparenta debajo (el fondo es
-   95% opaco, no 100%) — reportado en vivo, "se superpone". Mismo offset
-   (54px) que ya usa la leyenda de colores del mapa para despejar el
-   header. */
+   95% opaco, no 100%) — reportado en vivo, "se superpone". Los 54px son
+   de esta pantalla y de ninguna otra: la leyenda del mapa citaba el mismo
+   número, pero ya no lo usa (ahí ese offset la dibujaba fuera de la
+   ventana, ver .leyenda-estados). */
 #panel-navegacion .btn-cerrar {
   top: 54px;
 }
@@ -1586,10 +1612,23 @@ body.con-nav-secciones #btn-flotante-catastro {
 }
 
 /* Colores de los lotes según estado (usados desde app.js) */
+
+/* SIN position NI OFFSETS A PROPÓSITO: la ubica Leaflet. Es un control
+   declarado en la esquina "bottomleft" (ver leyenda en js/mapa.js), o sea
+   que vive dentro de .leaflet-bottom.leaflet-left, un contenedor pegado al
+   borde de abajo del mapa. Con position:absolute la leyenda salía del flujo
+   de esa esquina —que queda entonces de 0 de alto— y el top:54px la mandaba
+   54px POR DEBAJO del borde inferior del mapa: fuera de la ventana y, por
+   si fuera poco, recortada por el overflow:hidden de .leaflet-container. El
+   código de colores del mapa no se explicaba en ninguna parte.
+   Los 54px eran de cuando esto se posicionaba contra la ventana para
+   esquivar el encabezado; hoy ni eso hace falta: #mapa ya arranca en
+   --alto-encabezado.
+   La esquina de abajo a la izquierda está libre y no se pisa con nada: el
+   "+" de carga va abajo a la derecha (#fab-carga), los toggles de catastro
+   e interés abajo al centro, el zoom de Leaflet arriba a la izquierda y la
+   atribución abajo a la derecha. */
 .leyenda-estados {
-  position: absolute;
-  top: 54px;
-  left: 8px;
   z-index: 900;
   background: rgba(253, 250, 245, .94);
   border-radius: var(--radio-mediano);
@@ -1612,14 +1651,24 @@ body.con-nav-secciones #btn-flotante-catastro {
   display: inline-block;
 }
 
-/* Formularios: login, carga de lote, y los del panel de administración
-   (perfiles/usuarios) — todos comparten el mismo look. */
+/* Formularios: login, carga de lote, los del panel de administración
+   (perfiles/usuarios) y los cuatro catálogos — todos comparten el mismo
+   look.
+
+   Los cuatro catálogos (zonas, barrios, motivos, etiquetas) salen de la
+   misma fábrica crearPanelCatalogo (js/catalogos.js) y tienen el HTML
+   idéntico, pero acá se enumeran por id: si nace un catálogo nuevo hay
+   que sumarlo a las SEIS listas de abajo o queda con el formulario crudo
+   del navegador, que es lo que les pasó a barrios/motivos/etiquetas. */
 #formulario-login,
 #formulario-lote,
 #formulario-perfil,
 #formulario-usuario,
 #formulario-editar-lote,
 #formulario-sector,
+#formulario-barrio,
+#formulario-motivo,
+#formulario-etiqueta-crm,
 #formulario-inmobiliaria {
   display: flex;
   flex-direction: column;
@@ -1633,6 +1682,9 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-usuario label,
 #formulario-editar-lote label,
 #formulario-sector label,
+#formulario-barrio label,
+#formulario-motivo label,
+#formulario-etiqueta-crm label,
 #formulario-inmobiliaria label {
   display: flex;
   flex-direction: column;
@@ -1653,6 +1705,9 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-editar-lote select,
 #formulario-editar-lote textarea,
 #formulario-sector input,
+#formulario-barrio input,
+#formulario-motivo input,
+#formulario-etiqueta-crm input,
 #formulario-inmobiliaria input[type="text"],
 #formulario-inmobiliaria input[type="tel"],
 #formulario-inmobiliaria input[type="email"] {
@@ -1677,6 +1732,9 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-editar-lote select:focus,
 #formulario-editar-lote textarea:focus,
 #formulario-sector input:focus,
+#formulario-barrio input:focus,
+#formulario-motivo input:focus,
+#formulario-etiqueta-crm input:focus,
 #formulario-inmobiliaria input:focus {
   outline: none;
   border-color: var(--color-primario);
@@ -1843,6 +1901,9 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-usuario button[type="submit"],
 #formulario-editar-lote button[type="submit"],
 #formulario-sector button[type="submit"],
+#formulario-barrio button[type="submit"],
+#formulario-motivo button[type="submit"],
+#formulario-etiqueta-crm button[type="submit"],
 #formulario-inmobiliaria button[type="submit"] {
   background: var(--color-primario);
   color: #fff;
@@ -1860,6 +1921,9 @@ body.con-nav-secciones #btn-flotante-catastro {
 #formulario-usuario button[type="submit"]:hover,
 #formulario-editar-lote button[type="submit"]:hover,
 #formulario-sector button[type="submit"]:hover,
+#formulario-barrio button[type="submit"]:hover,
+#formulario-motivo button[type="submit"]:hover,
+#formulario-etiqueta-crm button[type="submit"]:hover,
 #formulario-inmobiliaria button[type="submit"]:hover {
   background: var(--color-primario-oscuro);
 }
@@ -2160,7 +2224,16 @@ body.con-nav-secciones #btn-flotante-catastro {
   justify-content: space-between;
   gap: 10px;
   position: sticky;
-  top: 0;
+  /* TOP NEGATIVO, NO 0. Sticky pega la caja del MARGEN, y acá el margen
+     de arriba es -16px (cancela el padding del panel para que la franja
+     llegue de punta a punta). Con top: 0 el que quedaba en el borde del
+     scroll era el margen, y el fondo opaco arrancaba 16px más abajo: por
+     esa franja transparente se veía pasar el contenido cortado al medio.
+     Restar los mismos 16px sube la caja del margen y deja el borde de
+     arriba del header justo sobre el borde del área que scrollea.
+     Los dos números son el mismo número: si cambia el margin-top de acá
+     abajo, cambia este top. */
+  top: -16px;
   z-index: 5;
   margin: -16px -12px 12px;
   padding: 16px 12px 12px;
@@ -2288,6 +2361,9 @@ body.con-nav-secciones #btn-flotante-catastro {
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-mediano);
   overflow: hidden;
+  /* Ancla del tilde de selección, que va absoluto sobre la esquina: en
+     grilla no hay columna donde ponerlo como en la tabla. */
+  position: relative;
   cursor: pointer;
   box-shadow: var(--sombra-calida-suave);
   display: flex;
@@ -2356,6 +2432,28 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 .tarjeta-lote-estado.vendido {
   background: var(--color-vendido);
+}
+
+/* El tilde de selección de la tarjeta. Hereda tamaño y accent-color de
+   .tilde-lote (el de la tabla) y solo agrega la posición y un halo
+   blanco, porque debajo puede haber una foto y un checkbox sobre una
+   foto oscura no se ve. */
+.tarjeta-lote-tilde {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  background: #fff;
+  box-shadow: 0 0 0 3px #fff;
+}
+
+/* Tarjeta elegida: el mismo naranja que el borde izquierdo de
+   #seleccion-barra, para que se lea como "esto es parte de esa cuenta"
+   y no como un estado más del lote (esos son los colores de
+   .tarjeta-lote-estado). */
+.tarjeta-lote-elegida {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 2px var(--color-primario-suave);
 }
 
 #vista-lista-paginacion {
@@ -2434,12 +2532,54 @@ body.con-nav-secciones #btn-flotante-catastro {
   border: 3px solid var(--color-fondo);
 }
 
+/* Y EN TELÉFONO, DICHO CON PALABRAS. Las dos señales de arriba no
+   alcanzan ahí, por tres motivos medidos:
+   - iOS Safari y Chrome de Android ignoran ::-webkit-scrollbar y usan
+     barras superpuestas que solo se ven mientras el dedo arrastra: en
+     reposo no hay barra (en Chromium de escritorio a 390px sí la hay,
+     así que esto no se ve emulando un teléfono, hay que probarlo en uno).
+   - La sombra se pinta en el fondo de este contenedor, o sea debajo de
+     la tabla, y las filas pares la tapan.
+   - El corte cae justo en el borde de una columna: "Resumen por zona"
+     parece terminar en "Vendido" y nadie se entera de que siguen
+     "Interesados" y "Precio promedio".
+   El umbral sale del código y no del ojo: .tabla-panel tiene
+   min-width: 600px, así que por debajo de ~620px la tabla SIEMPRE
+   desborda y el aviso no puede mentir. */
+@media (max-width: 620px) {
+  .tabla-scroll::before {
+    content: "Hay más columnas a la derecha →";
+    display: block;
+    /* fit-content + sticky: si ocupara el ancho del contenido (600px) no
+       tendría de dónde despegarse y se iría con el scroll junto con la
+       tabla, justo cuando deja de hacer falta que se vaya. */
+    width: fit-content;
+    position: sticky;
+    left: 0;
+    margin-bottom: 6px;
+    font-size: 0.72rem;
+    color: var(--color-texto-secundario);
+  }
+
+  /* El comparador queda afuera: es la única .tabla-panel con
+     min-width: 0 (ver #tabla-comparar-lotes), con dos lotes entra entera
+     en la pantalla y no hay nada que deslizar — ahí el aviso sería falso. */
+  #panel-comparar-lotes .tabla-scroll::before {
+    content: none;
+  }
+}
+
 /* Y ADEMÁS, LOS BOTONES NO SE VAN NUNCA. En las tablas de
    administración la última columna son Editar/Borrar: son la razón de
-   entrar a esa pantalla, así que quedan pegados al borde derecho por
-   más que se arrastre la tabla. Solo en las tablas que las tienen (la
-   clase se pone a mano en index.html): en la de lotes la última columna
-   es un dato, no una acción. */
+   entrar a esa pantalla y el único lugar donde están, así que quedan
+   pegados al borde derecho por más que se arrastre la tabla. La clase se
+   pone a mano en index.html, tabla por tabla.
+   LA DE LOTES NO LA LLEVA, y no es porque su última columna sea un dato
+   (sí tiene Editar/Borrar, ver renderTabla en js/vista-lista.js): es que
+   ahí esas dos acciones también están dentro de la ficha del lote, que se
+   abre tocando la fila (#btn-editar-lote-completo y #btn-borrar-lote), y
+   pegar una columna de ~90px al borde en una tabla de nueve columnas le
+   come un cuarto de la pantalla del teléfono a los datos. */
 .tabla-con-acciones th:last-child,
 .tabla-con-acciones td:last-child {
   position: sticky;
@@ -2489,8 +2629,14 @@ body.con-nav-secciones #btn-flotante-catastro {
   vertical-align: middle;
 }
 
+/* La franja gris de las filas pares va semitransparente y no con el token
+   opaco: la sombra de "hay más a la derecha" se pinta en el fondo de
+   .tabla-scroll, o sea DEBAJO de la tabla, y un fondo opaco la borraba en
+   una fila sí y una no — se leía como rayas y no como un borde que se
+   desvanece. Sobre --color-fondo este rgba da el mismo gris que daba
+   --color-fondo-alterno, y deja pasar la sombra. */
 .tabla-panel tbody tr:nth-child(even) {
-  background: var(--color-fondo-alterno);
+  background: rgba(15, 23, 42, 0.025);
 }
 
 .tabla-panel tr.fila-lote {
@@ -2561,9 +2707,17 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin-bottom: 28px;
 }
 
+/* El "+ Agregar" de todas las pantallas de administración: los tres de
+   js/admin.js y los cuatro que arma la fábrica crearPanelCatalogo
+   (js/catalogos.js). Van por id porque ninguno tiene clase; si nace un
+   catálogo nuevo hay que sumarlo acá y al :hover de abajo, o sale con el
+   botón gris nativo del navegador. */
 #btn-agregar-usuario,
 #btn-agregar-perfil,
-#btn-agregar-sector {
+#btn-agregar-sector,
+#btn-agregar-barrio,
+#btn-agregar-motivo,
+#btn-agregar-etiqueta-crm {
   width: 100%;
   background: none;
   border: 1px dashed var(--color-primario);
@@ -2578,7 +2732,10 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 #btn-agregar-usuario:hover,
 #btn-agregar-perfil:hover,
-#btn-agregar-sector:hover {
+#btn-agregar-sector:hover,
+#btn-agregar-barrio:hover,
+#btn-agregar-motivo:hover,
+#btn-agregar-etiqueta-crm:hover {
   background: var(--color-fondo-alterno);
 }
 
@@ -3149,6 +3306,15 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin: 0;
 }
 
+/* El padding va acá y no en .dashboard-vacio porque .crm-tabla-etapa
+   recorta con overflow:hidden para redondear la banda de color: sin él
+   el texto de la etapa vacía queda pegado al borde. Los 14px son los
+   mismos que el padding lateral de .crm-tabla-grupo, para que el mensaje
+   arranque alineado con el título de su propia banda. */
+.crm-tabla-etapa .dashboard-vacio {
+  padding: 8px 14px;
+}
+
 .crm-tabla-etapa tbody tr {
   cursor: pointer;
 }
@@ -3452,12 +3618,25 @@ body.con-nav-secciones #btn-flotante-catastro {
 }
 
 /* Formulario de alta/edición de contacto — mismo look que el resto de
-   los formularios de la app (ver #formulario-lote y hermanos). */
+   los formularios de la app (ver #formulario-lote y hermanos).
+
+   EL ANCHO MÁXIMO ES DEL FORMULARIO ENTERO, NO DE CADA CAMPO. Sin él,
+   en escritorio los campos medían los 1168px del panel: un input de una
+   línea de más de un metro para cargar un teléfono, con el rótulo a la
+   izquierda y el cursor perdido al otro lado. Limitar el contenedor y no
+   cada .crm-campo mantiene alineado TODO lo que va adentro del
+   formulario —las pestañas, el mini-mapa, los chips de lotes, el
+   historial de actividad y los botones— en vez de dejar campos angostos
+   al lado de bloques anchos.
+   No se centra (margin-inline: auto) a propósito: el resto de los
+   paneles de la app arranca pegado al borde izquierdo y el título del
+   formulario, que está afuera del <form>, se quedaría desalineado. */
 #formulario-contacto {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
+  max-width: 640px;
 }
 
 .crm-campo {
@@ -3665,6 +3844,24 @@ body.con-nav-secciones #btn-flotante-catastro {
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 4px;
+}
+
+/* "Borrar contacto" comparte .btn-peligro con "Borrar lote" de la ficha,
+   donde el width:100% de esa clase tiene sentido (última acción de una
+   hoja angosta). Acá el panel mide 1168px: el mismo 100% dejaba la
+   etiqueta roja centrada en el medio del vacío, desalineada de "Guardar"
+   (88px, a la izquierda) y de "Fusionar con otro contacto" (174px,
+   también a la izquierda).
+   El margin-left:auto no es cosmético: le da el ancho de su texto pero
+   lo manda al extremo opuesto del renglón, lejos de "Guardar", que es el
+   botón que más se toca en esta pantalla. Pegados a 10px, un borrado por
+   error es cuestión de tiempo.
+   Por id y no por .crm-form-botones .btn-peligro para no tocar de
+   rebote a #btn-fusionar-confirmar, que vive en otro .crm-form-botones. */
+#btn-borrar-contacto {
+  width: auto;
+  margin-top: 0;
+  margin-left: auto;
 }
 
 /* ---------------------------------------------------------------------
@@ -4027,7 +4224,13 @@ body.con-nav-secciones #btn-flotante-catastro {
 }
 
 #crm-buscar {
-  flex: 1 1 200px;
+  /* La base es el ancho del placeholder, no un número redondo: con
+     200px el buscador se achicaba abajo de su propio texto (comparte
+     renglón con tres <select> de 150px y min-width:0 lo deja encoger sin
+     piso) y se leía "Buscar por nombre o telef". Con esta base el renglón
+     ya no le entra a los tres filtros juntos, así que envuelven abajo y
+     el buscador crece en vez de encogerse. */
+  flex: 1 1 240px;
   min-width: 0;
   font: inherit;
   color: var(--color-texto);
@@ -4043,11 +4246,18 @@ body.con-nav-secciones #btn-flotante-catastro {
   box-shadow: 0 0 0 3px rgba(51, 82, 58, 0.15);
 }
 
-/* Filtros de calificación/etiqueta (ver contactosFiltrados en crm.js) —
-   mismo look que el buscador, con la flechita propia que ya usa el
-   resto de los <select> del CRM. */
+/* Filtros de calificación/etiqueta/origen (ver contactosFiltrados en
+   crm.js) — mismo look que el buscador, con la flechita propia que ya
+   usa el resto de los <select> del CRM.
+
+   LOS TRES EN LA MISMA REGLA, Y POR ESO EL COMENTARIO LOS NOMBRA: el
+   filtro de origen se sumó después y quedó fuera de esta lista, así que
+   el navegador lo dibujaba crudo (borde gris del sistema, sin radio,
+   19px de alto) al lado de sus dos hermanos. Un filtro nuevo en la
+   toolbar se agrega acá, no en una regla propia. */
 #crm-filtro-calificacion,
-#crm-filtro-etiqueta {
+#crm-filtro-etiqueta,
+#crm-filtro-origen {
   flex: 0 1 150px;
   min-width: 0;
   font: inherit;
@@ -4201,6 +4411,17 @@ body.con-nav-secciones #btn-flotante-catastro {
   resize: vertical;
 }
 
+/* El "+ Agregar" de actividad es hermano del <select> y el <textarea> en
+   una columna flex, así que el stretch por defecto lo estiraba a los
+   1168px del panel con el texto centrado — mientras el "+ Agregar" de
+   etiquetas, con las mismas clases pero en un contenedor en fila, es una
+   pastilla de 85px. Se corrige solo el botón y no con align-items en el
+   contenedor: el select y el textarea SÍ tienen que ocupar todo el
+   ancho. */
+#btn-agregar-actividad {
+  align-self: flex-start;
+}
+
 /* Quién es el dueño de un contacto, en la tarjeta del kanban — solo
    aparece en vista "Todos" (ver textoAsignado en js/crm.js). En el
    formulario ya no es un badge de solo lectura: es el <select>
@@ -4231,6 +4452,28 @@ body.con-nav-secciones #btn-flotante-catastro {
   color: var(--color-vendido);
 }
 
+/* LA FILA DE ACÁ TIENE TRES PARTES (título, datos, ×), una más que la
+   del Dashboard, que reusa estas mismas clases. Sin esto el
+   space-between de .dashboard-lista li repartía el hueco sobrante ENTRE
+   los datos y la ×, y la línea de datos quedaba flotando en el medio de
+   la fila. El grupo del título se come el sobrante y los otros dos
+   quedan juntos a la derecha. */
+#lista-favoritos .dashboard-lote-titulo-grupo {
+  flex: 1 1 auto;
+}
+
+/* Y la línea de datos se deja achicar, al revés que la del Dashboard
+   (flex-shrink: 0): allá el dato es corto ("3 interesados"), acá son
+   cuatro campos y en un teléfono empujarían la × fuera de la fila. */
+#lista-favoritos .dashboard-lote-dato {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
 /* Comparador (idea propia, ver feedback_buscar_inspiracion_real) —
    checkbox para elegir hasta 4 favoritos y verlos lado a lado. */
 .favorito-comparar-check {
@@ -4239,6 +4482,21 @@ body.con-nav-secciones #btn-flotante-catastro {
   height: 18px;
   accent-color: var(--color-primario);
   cursor: pointer;
+}
+
+/* "Ya elegiste 4" NO es un error: apartar no tiene tope, solo el
+   comparador. Por eso va en el naranja de aviso suave
+   (--color-primario-suave, el mismo que usan el ítem activo del menú y
+   el resto de los avisos blandos) y no en el rojo de .mensaje-error, que
+   en esta app significa "algo falló". */
+#favoritos-comparar-tope {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: var(--radio-chico);
+  background: var(--color-primario-suave);
+  color: var(--color-primario-oscuro);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 #btn-comparar-favoritos {
@@ -4421,6 +4679,17 @@ body.con-nav-secciones #btn-flotante-catastro {
   width: 28px;
   padding-right: 0;
   text-align: center;
+}
+
+/* EL NOMENCLADOR NO SE PARTE. "00-06-44-05-000118-000008" no tiene
+   espacios, pero el navegador corta después de cada guión: en la columna
+   angosta de un teléfono salían cuatro renglones y la fila entera medía
+   ~90px, o sea cuatro lotes por pantalla. Es la columna que dice QUÉ lote
+   es cada fila, así que se lee entera o no se lee. Que la tabla quede más
+   ancha está contemplado: ya arrastra de costado, con barra y sombra (ver
+   .tabla-scroll). */
+.tabla-panel td.col-lote {
+  white-space: nowrap;
 }
 
 .tilde-lote,
@@ -4632,9 +4901,13 @@ body.con-nav-secciones #btn-flotante-catastro {
   justify-content: center;
 }
 
-/* Lista y dashboard: en el flujo, sin ancho fijo. */
+/* Lista, dashboard y los cuatro catálogos: en el flujo, sin ancho fijo. */
 #vista-lista-vacio,
-#dashboard-vacio-total {
+#dashboard-vacio-total,
+#sectores-vacio,
+#barrios-vacio,
+#motivos-vacio,
+#etiquetas-crm-vacio {
   max-width: 520px;
   margin: 8px 0 16px;
 }
@@ -4772,6 +5045,17 @@ body.con-nav-secciones #btn-flotante-catastro {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
+}
+
+/* El título se lleva la fila entera: es el campo del que depende la
+   tarea y los otros cuatro son una fecha y tres desplegables, que con
+   165px sobran. A 390px la grilla arma dos columnas de exactamente
+   165px y ahí el ejemplo del placeholder se cortaba a la mitad
+   ("Llamar para confirmar la"). Va por el for= y no por una clase
+   nueva: si alguien renombra el id #tarea-titulo, hay que cambiar esta
+   regla también. */
+.tarea-campos label[for="tarea-titulo"] {
+  grid-column: 1 / -1;
 }
 
 .tarea-campos label {
@@ -4967,7 +5251,21 @@ body.con-nav-secciones #btn-flotante-catastro {
   background: var(--color-primario);
 }
 
+/* El piso de 2px de arriba es para que un día flojo se vea cuando el
+   máximo es alto, no para inventar actividad donde no hubo. La clase la
+   pone js/actividades-panel.js cuando el día no tuvo ningún evento. */
+.actividad-dia-barra-vacia {
+  min-height: 0;
+}
+
+/* Alto fijo y sin encogerse: con 30 días solo se rotula una columna de
+   cada cinco (ver renderGrafico en js/actividades-panel.js) y un span
+   vacío mediría 0 — las columnas sin rótulo le dejarían más lugar a su
+   barra que las rotuladas y la comparación entre días sería falsa. */
 .actividad-dia-etiqueta {
+  flex: none;
+  height: 12px;
+  line-height: 12px;
   font-size: 0.6rem;
   color: var(--color-texto-secundario);
 }
@@ -5022,8 +5320,16 @@ body.con-nav-secciones #btn-flotante-catastro {
   background: var(--color-reservado);
 }
 
+/* El gris de TEXTO, no el del borde: --color-borde (#e7eaf0) sobre la
+   pista --color-fondo-alterno (#f1f3f7) da 1,06:1, o sea que en una
+   barra de 6px el tramo de mantenimiento no se distinguía de la parte
+   vacía. Este gris da 4,3:1 contra la pista y sigue leyéndose como
+   "trabajo neutro" al lado del verde/naranja/amarillo de las otras tres
+   categorías, que es lo que la categoría significa. Importa que se
+   distinga: la barra no tiene leyenda y el title solo aparece con el
+   mouse. */
 .actividad-barra-mantenimiento {
-  background: var(--color-borde);
+  background: var(--color-texto-secundario);
 }
 
 /* ---------------------------------------------------------------------------
@@ -5193,17 +5499,25 @@ body.con-nav-secciones #btn-flotante-catastro {
   }
 }
 
-/* La barra superior queda SIEMPRE visible en escritorio.
+/* La barra superior queda SIEMPRE visible: en escritorio Y EN TELÉFONO.
    Antes cualquier panel se abría a pantalla completa (inset: 0) y la
    tapaba, así que el encabezado solo se veía en el mapa. En el mockup la
    barra de arriba está en todas las pantallas, y es lo que hace que la
    app se sienta una sola cosa y no una sucesión de pantallas sueltas.
-   En teléfono se sigue usando toda la altura: ahí el espacio es el
-   recurso escaso. */
-@media (min-width: 860px) {
-  body.con-nav-secciones .panel-pantalla-completa {
-    top: var(--alto-encabezado);
-  }
+
+   EN TELÉFONO NO ERA "ganar alto", ERA PERDER EL MENÚ. Ahí el ☰ es el
+   único acceso al cajón, y tapado por el panel (z-index 1700 contra
+   1000) no solo no se ve: no recibe el toque. La única salida era el ←
+   del panel, que lleva al mapa, así que para ir del Dashboard a
+   cualquier otra sección había que pasar por el mapa. Y el aterrizaje al
+   iniciar sesión es /dashboard (ver onAuthStateChanged en js/app.js), o
+   sea que era lo primero que le pasaba a alguien entrando del celular.
+   Los 60px que cuesta valen menos que eso.
+
+   No hace falta nada más para que el menú se abra encima del panel:
+   #drawer-menu ya está en z-index 1900 y arranca en --alto-encabezado. */
+body.con-nav-secciones .panel-pantalla-completa {
+  top: var(--alto-encabezado);
 }
 
 /* Las tarjetas de métricas, con el lenguaje del mockup: blancas, borde
@@ -5269,6 +5583,21 @@ body.con-nav-secciones #btn-flotante-catastro {
 .crm-stat-comision strong,
 .crm-stat-comision-ganada strong {
   font-size: 1.35rem;
+}
+
+/* "Sin datos" ocupa el lugar del número, pero no se dibuja como un
+   número: chico, gris y sin el peso 800. Si heredara la tipografía y el
+   color de la tarjeta volvería a leerse como una cifra rara (que es lo
+   que pasaba con el "—": una rayita naranja o verde donde tendría que
+   ir la plata).
+   Va con .crm-stat adelante para ganarle en especificidad a las reglas
+   de acá arriba (.crm-stat-valor strong y compañía) y a .crm-stat strong;
+   por eso también puede ir en cualquier orden respecto de ellas. */
+.crm-stat strong.crm-stat-sin-dato {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--color-texto-secundario);
 }
 
 /* Íconos de los ítems del menú (rediseño 2026-09-18). Antes el ícono

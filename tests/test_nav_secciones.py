@@ -53,9 +53,11 @@ def test_sin_sesion_no_hay_rail_y_el_menu_solo_muestra_lo_publico(page, base_url
 
     abrir_menu(page)
     expect(page.locator("#drawer-menu")).to_be_visible()
-    # Lo público del catálogo sí (mapa/lista/favoritos)...
+    # Lo público del catálogo sí (mapa y lista)...
     expect(page.locator("#btn-ver-lista")).to_be_visible()
-    expect(page.locator("#btn-abrir-favoritos")).to_be_visible()
+    # ...pero Apartados no: desde 2026-09-22 es la carpeta de trabajo del
+    # corredor, no una función para el público.
+    expect(page.locator("#btn-abrir-favoritos")).to_be_hidden()
     # ...y nada de gestión: ni cargar lotes, ni zonas, ni usuarios.
     # La carga vive ahora en el botón flotante "+" (ver js/fab-carga.js),
     # así que lo que tiene que estar escondido sin sesión es ese.

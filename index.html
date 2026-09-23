@@ -81,7 +81,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-22-06" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-22-07" />
 </head>
 <body>
 
@@ -173,12 +173,17 @@
         <button type="button" class="drawer-item" id="btn-drawer-mapa" data-testid="btn-drawer-mapa" data-ruta="/"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4-6 2.5v13L9 17l6 3 6-2.5v-13L15 7 9 4Z"/><path d="M9 4v13"/><path d="M15 7v13"/></svg></span><span>Mapa</span></button>
         <button type="button" class="drawer-item" id="btn-ver-lista" data-testid="btn-ver-lista" data-ruta="/lotes"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3.5 6h.01"/><path d="M3.5 12h.01"/><path d="M3.5 18h.01"/></svg></span><span>Ver como lista</span></button>
         <!-- Visible sin sesión (guarda en el propio navegador, no en
-             Firestore) — un comprador anónimo también puede armarse su
-             propia lista para volver a verla después. -->
-        <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos" data-ruta="/favoritos"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 6.5a4 4 0 0 0-7-2 4 4 0 0 0-7 2c0 4 7 9.5 7 9.5s7-5.5 7-9.5Z"/></svg></span><span>Favoritos</span></button>
+             Firestore).
+
+             AHORA PIDE SESIÓN. Antes estaba abierto: un comprador
+             anónimo podía armarse su propia lista. Se cerró por decisión
+             del dueño del producto — esto es la carpeta de trabajo del
+             corredor ("los lotes que tengo apartados para alguien"), no
+             una función para el público. El dato sigue viviendo en el
+             navegador de cada uno, así que no lo ve el equipo. -->
 
         <div class="solo-con-sesion oculto">
-
+          <button type="button" class="drawer-item" id="btn-abrir-favoritos" data-testid="btn-abrir-favoritos" data-ruta="/apartados"><span class="item-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 6.5a4 4 0 0 0-7-2 4 4 0 0 0-7 2c0 4 7 9.5 7 9.5s7-5.5 7-9.5Z"/></svg></span><span>Apartados</span></button>
         </div>
 
         <!-- Gateado por el permiso "administrar_sectores" (ver
@@ -545,9 +550,16 @@
         <p id="interesado-error" class="mensaje-error oculto" data-testid="interesado-error"></p>
       </form>
     </div>
+    <!-- DOS COSAS DISTINTAS, DOS NOMBRES. "Cómo llegar" abre Google Maps
+         con el pin del lote (te saca de la app, a propósito: es para ir
+         manejando). "Ver en el mapa" es el mapa DE ESTA APP: cierra la
+         ficha y deja el lote en el centro. Hasta acá el de Google Maps se
+         llamaba "Ver en el mapa" y era el botón más prominente de la
+         ficha; su propio id ya decía cuál era la etiqueta correcta. -->
     <div class="ficha-botones">
-      <button id="btn-como-llegar" data-testid="btn-como-llegar">Ver en el mapa</button>
+      <button id="btn-como-llegar" data-testid="btn-como-llegar">Cómo llegar</button>
       <button id="btn-estoy-yendo" data-testid="btn-estoy-yendo">Estoy yendo</button>
+      <button id="btn-ver-en-el-mapa" data-testid="btn-ver-en-el-mapa">Ver en el mapa</button>
     </div>
     <button id="btn-ver-publicacion" class="btn-editar-ficha" data-testid="btn-ver-publicacion">Ver publicación</button>
     <button id="btn-compartir-lote" class="btn-editar-ficha" data-testid="btn-compartir-lote">Compartir este lote</button>
@@ -988,10 +1000,17 @@
       <h2>Inteligencia Artificial</h2>
       <button id="cerrar-panel-ia" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
+    <!-- El texto se refiere a las INSIGNIAS ("Activa" / "Próximamente"), no a
+         cuántas ni a cuáles son las primeras: así no vuelve a contradecirlas
+         cuando una función pasa de una a la otra. Ya pasó una vez — decía "la
+         primera" y había dos con la insignia verde desde que se sumó la
+         lectura de mails de portales. -->
     <p class="dashboard-ayuda">
-      La primera de estas funciones ya está andando de verdad. Las otras están pensadas y con su lugar
-      armado en la app, pero necesitan la API de WhatsApp Business para funcionar — hoy no hacen ninguna
-      llamada ni tienen ningún costo. Cuando quieras activar alguna, se conecta sin rehacer nada de esto.
+      Las funciones marcadas como "Activa" ya están andando de verdad: la redacción de descripciones,
+      en la ficha de cada lote, y la lectura de mails de portales, en el CRM. Las marcadas como
+      "Próximamente" están pensadas y con su lugar armado en la app, pero necesitan la API de WhatsApp
+      Business para funcionar — hoy no hacen ninguna llamada ni tienen ningún costo. Cuando quieras
+      activar alguna, se conecta sin rehacer nada de esto.
     </p>
     <div class="ia-tarjetas">
       <div class="ia-tarjeta">
@@ -1091,6 +1110,11 @@
     </div>
 
     <div id="sectores-vista-lista">
+      <!-- Con el catálogo vacío la tabla queda en "Nombre" + una raya y
+           parece que la pantalla falló. Lo pinta js/estado-vacio.js y la
+           tabla se esconde (ver cargarPanel en js/catalogos.js). Igual en
+           los otros tres catálogos. -->
+      <div id="sectores-vacio" class="estado-vacio oculto" data-testid="sectores-vacio"></div>
       <div class="tabla-scroll">
         <table class="tabla-panel tabla-con-acciones" data-testid="tabla-sectores">
           <thead>
@@ -1126,6 +1150,7 @@
     </div>
 
     <div id="barrios-vista-lista">
+      <div id="barrios-vacio" class="estado-vacio oculto" data-testid="barrios-vacio"></div>
       <div class="tabla-scroll">
         <table class="tabla-panel tabla-con-acciones" data-testid="tabla-barrios">
           <thead>
@@ -1163,6 +1188,7 @@
     </div>
 
     <div id="motivos-vista-lista">
+      <div id="motivos-vacio" class="estado-vacio oculto" data-testid="motivos-vacio"></div>
       <div class="tabla-scroll">
         <table class="tabla-panel tabla-con-acciones" data-testid="tabla-motivos">
           <thead>
@@ -1198,6 +1224,7 @@
     </div>
 
     <div id="etiquetas-crm-vista-lista">
+      <div id="etiquetas-crm-vacio" class="estado-vacio oculto" data-testid="etiquetas-crm-vacio"></div>
       <div class="tabla-scroll">
         <table class="tabla-panel tabla-con-acciones" data-testid="tabla-etiquetas-crm">
           <thead>
@@ -1388,10 +1415,19 @@
     </div>
   </div>
 
-  <!-- Favoritos: lista personal del propio navegador (localStorage), sin
-       sesión — ver js/favoritos.js. Idea propia inspirada en el
+  <!-- Apartados: la carpeta de trabajo del corredor — "los lotes que
+       tengo apartados para alguien". Vive en el navegador de cada uno
+       (localStorage), así que no la ve el equipo y no toca el estado del
+       lote: un lote apartado sigue figurando como disponible en el
+       catálogo público. Ver js/favoritos.js.
+
+       EL NOMBRE DE ADENTRO SIGUE SIENDO "favoritos" a propósito: los ids
+       y la clave de localStorage no se renombraron. La clave porque
+       cambiarla le borraría la lista a cada corredor el día del deploy,
+       sin aviso y sin vuelta atrás; los ids porque los usan diez
+       archivos de tests y renombrarlos no le cambia nada a nadie. Idea propia inspirada en el
        comparador de Trulia (ver feedback_buscar_inspiracion_real): con 2
-       o más favoritos tildados aparece "Comparar" para verlos lado a
+       o más apartados tildados aparece "Comparar" para verlos lado a
        lado — mismo criterio real de "estoy dudando entre estos dos
        lotes". -->
   <!-- Tareas (ver js/tareas.js para las reglas y js/tareas-datos.js para
@@ -1412,7 +1448,13 @@
   <div id="panel-lote-publico" class="oculto panel-pantalla-completa" data-testid="panel-lote-publico">
     <div class="panel-header">
       <h2 id="lp-titulo">Lote</h2>
-      <button id="cerrar-panel-lote-publico" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
+      <!-- Con destino declarado: quien llegó por un link de WhatsApp no
+           tiene historial dentro de la app, y sin esto el ← lo dejaba en
+           el mapa interno. Va al mismo catálogo público al que ya manda
+           "Ver las propiedades disponibles" de más abajo. Si vino desde
+           la app (la ficha, la lista), hay historial y el ← lo devuelve
+           ahí, como siempre. -->
+      <button id="cerrar-panel-lote-publico" class="btn-volver" aria-label="Volver" data-volver="/lotes">&larr;</button>
     </div>
 
     <!-- Quién publica. FUERA de #lp-contenido a propósito: tiene que
@@ -1611,13 +1653,19 @@
 
   <div id="panel-favoritos" class="oculto panel-pantalla-completa" data-testid="panel-favoritos">
     <div class="panel-header">
-      <h2>Favoritos</h2>
+      <h2>Apartados</h2>
       <button id="cerrar-panel-favoritos" class="btn-volver" aria-label="Volver" data-volver>&larr;</button>
     </div>
-    <p id="favoritos-comparar-ayuda" class="dashboard-ayuda oculto">Marca 2 a 4 para compararlos lado a lado.</p>
+    <p id="favoritos-comparar-ayuda" class="dashboard-ayuda oculto">Marcá 2 a 4 para compararlos lado a lado.</p>
+    <!-- Aparece recién cuando el click no pudo hacer lo que pedía (el
+         quinto tilde), no como advertencia previa. role="status" para
+         que un lector de pantalla lo anuncie: el único otro cambio que
+         produce ese click es un tilde que se destilda solo, que no se
+         percibe. -->
+    <p id="favoritos-comparar-tope" class="oculto" role="status" data-testid="favoritos-comparar-tope"></p>
     <ul id="lista-favoritos" class="dashboard-lista" data-testid="lista-favoritos"></ul>
     <p id="favoritos-vacio" class="dashboard-vacio oculto" data-testid="favoritos-vacio">
-      Todavía no guardaste ningún lote. Toca el 🤍 en la ficha de un lote para guardarlo acá.
+      Todavía no apartaste ningún lote. Tocá el 🤍 en la ficha de un lote para apartarlo acá.
     </p>
     <button type="button" id="btn-comparar-favoritos" class="crm-btn-primario oculto" data-testid="btn-comparar-favoritos">Comparar (0)</button>
   </div>
@@ -1753,7 +1801,7 @@
           <button type="button" id="btn-crm-modo-tabla" data-testid="btn-crm-modo-tabla">Tabla</button>
         </div>
         <div id="crm-toolbar-filtros">
-          <input type="search" id="crm-buscar" placeholder="Buscar por nombre o teléfono…" data-testid="crm-buscar" />
+          <input type="search" id="crm-buscar" placeholder="Buscar nombre o teléfono…" data-testid="crm-buscar" />
           <!-- Filtros combinables con la búsqueda de texto y entre sí
                (ver contactosFiltrados en crm.js) — solo afectan el
                pipeline visible, igual que la búsqueda; las tarjetas de
@@ -2391,6 +2439,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-22-06"></script>
+  <script type="module" src="/js/app.js?v=2026-09-22-07"></script>
 </body>
 </html>

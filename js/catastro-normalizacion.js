@@ -157,3 +157,25 @@ export function manzanaDesdeNomenclaturaDeParcela(nomenclatura) {
   const numero = parseInt(partes[partes.length - 2], 10);
   return Number.isNaN(numero) ? null : String(numero);
 }
+
+// Los dos números que hacen falta para nombrar un lote en castellano, o
+// null. Es la versión estricta de manzanaDesdeNomenclaturaDeParcela: esa
+// precarga un campo del formulario, que el corredor ve y corrige; esto
+// arma el título que el lote va a llevar en el mapa, en la ficha y en el
+// CRM, así que ante la duda no inventa nada.
+//
+// POR QUÉ EXIGE LOS 6 GRUPOS DE SAN LUIS. Con menos, el anteúltimo grupo
+// ya no es la manzana: la nomenclatura de una MANZANA tiene 5 grupos
+// ("00-06-44-05-000104") y ahí el anteúltimo es la sección. Y el campo
+// nomenclatura se puede cargar a mano (#lote-nomenclatura), o venir de
+// Córdoba/Buenos Aires, que usan otros formatos. Cuando no encaja se
+// devuelve null y el que llama muestra el código crudo: feo, pero nunca
+// miente.
+export function manzanaYLoteDesdeNomenclatura(nomenclatura) {
+  const partes = (nomenclatura || "").trim().split("-");
+  if (partes.length !== 6 || !partes.every((parte) => /^\d+$/.test(parte))) return null;
+  const manzana = parseInt(partes[4], 10);
+  const lote = parseInt(partes[5], 10);
+  if (Number.isNaN(manzana) || Number.isNaN(lote)) return null;
+  return { manzana: String(manzana), lote: String(lote) };
+}

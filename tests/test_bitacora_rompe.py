@@ -257,6 +257,9 @@ def test_en_notebook_el_menu_no_esconde_pantallas_sin_avisar(page, base_url):
 # ---------------------------------------------------------------------------
 
 
+# Apartados pide sesión desde 2026-09-22: sin ella el botón del menú
+# está oculto y el click no llega.
+@pytest.mark.con_sesion
 def test_el_comparador_en_telefono_no_pierde_las_etiquetas(page, base_url):
     """Al arrastrar la tabla de costado desaparecía la columna que dice
     QUÉ es cada valor (Zona, Barrio, Superficie, Estado, Precio): quedaban
