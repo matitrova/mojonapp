@@ -43,6 +43,10 @@
 const RUTAS = [
   { path: "/", clave: "mapa", panel: null, boton: "btn-drawer-mapa", navTab: "nav-tab-mapa", titulo: "Mapa" },
   { path: "/lotes", clave: "lotes", panel: "vista-lista", boton: "btn-ver-lista", navTab: "nav-tab-lista", titulo: "Lotes" },
+  // La vidriera pública. NO tiene botón en el menú: es una dirección
+  // que se comparte, igual que /lote/<id>, y tiene que abrirse para
+  // cualquiera. Por eso rutaDisponible la deja pasar sin mirar el menú.
+  { path: "/propiedades", clave: "catalogo", panel: "panel-catalogo", boton: null, navTab: null, titulo: "Propiedades" },
   { path: "/apartados", clave: "favoritos", panel: "panel-favoritos", boton: "btn-abrir-favoritos", navTab: null, titulo: "Apartados" },
   { path: "/dashboard", clave: "dashboard", panel: "panel-dashboard", boton: "btn-abrir-dashboard", navTab: "nav-tab-dashboard", titulo: "Dashboard" },
   { path: "/contactos", clave: "contactos", panel: "panel-crm", boton: "btn-abrir-crm", navTab: "nav-tab-crm", titulo: "Pipeline de leads" },
@@ -394,6 +398,9 @@ function rutaDisponible(ruta) {
   // una dirección que se comparte, y tiene que abrirse para cualquiera,
   // igual que el mapa. Sin esto, entrar por el link caía al mapa.
   if (ruta.clave === "lote-publico") return true;
+  // El catálogo público, por lo mismo: es el link que la inmobiliaria
+  // pega en su Instagram.
+  if (ruta.clave === "catalogo") return true;
   const boton = document.getElementById(ruta.boton);
   if (!boton) return false;
   // Se sube hasta #drawer-menu SIN incluirlo: ese elemento también usa

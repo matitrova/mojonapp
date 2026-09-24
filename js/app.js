@@ -37,6 +37,7 @@ import "./actividades-panel.js";
 import "./fab-carga.js";
 import { actualizarBotonCalce } from "./calce-panel.js";
 import { refrescarLotePublicoSiCorresponde } from "./lote-publico.js";
+import { refrescarCatalogoSiCorresponde } from "./catalogo-publico.js";
 import { configurarBuscador, mostrarBuscador } from "./buscador-panel.js";
 import { configurarFavoritos } from "./favoritos.js";
 import { configurarVistaLista, aplicarFiltrosDesdeUrlSiCorresponde, actualizarVistaLista } from "./vista-lista.js";
@@ -286,6 +287,7 @@ iniciarMapa().then(() => {
   // La página pública (/lote/<id>) puede haberse abierto antes de que
   // llegaran los lotes: entrar por el link es más rápido que Firestore.
   refrescarLotePublicoSiCorresponde();
+  refrescarCatalogoSiCorresponde();
   aplicarFiltrosDesdeUrlSiCorresponde();
 });
 
@@ -646,6 +648,8 @@ onAuthStateChanged(auth, async (usuario) => {
     // La página pública (/lote/<id>) puede haberse abierto antes de que
     // llegaran los lotes: entrar por el link es más rápido que Firestore.
     refrescarLotePublicoSiCorresponde();
+    refrescarCatalogoSiCorresponde();
+  refrescarCatalogoSiCorresponde();
     aplicarFiltrosDesdeUrlSiCorresponde();
     // Si el dashboard se abrió recién (ver formularioLogin más arriba)
     // con datos todavía viejos/vacíos, esto lo refresca con los reales

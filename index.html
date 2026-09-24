@@ -81,7 +81,7 @@
      sección tiene su propia URL (ver js/router.js), la app se sirve
      también en /contactos, /dashboard, etc. Con "css/estilos.css" el
      navegador lo pediría a /contactos/css/estilos.css y no existiría. -->
-<link rel="stylesheet" href="/css/estilos.css?v=2026-09-24-01" />
+<link rel="stylesheet" href="/css/estilos.css?v=2026-09-24-02" />
 </head>
 <body>
 
@@ -1415,6 +1415,63 @@
     </div>
   </div>
 
+  <!-- Catálogo público (/propiedades): la vidriera de la inmobiliaria.
+       Es la pantalla que se comparte por WhatsApp o se pega en la bio de
+       Instagram, y la que reciben los compradores.
+
+       ES UNA PANTALLA APARTE DE /lotes A PROPÓSITO. /lotes es la
+       herramienta del corredor —insignia "Nuevo", tildes de edición en
+       masa, filtro por estado, título "Lotes cargados"— y hasta el
+       2026-09-24 era lo que veía un comprador que tocaba "Ver las
+       propiedades disponibles": ahí le aparecía un lote VENDIDO con su
+       precio, arriba de todo. Mientras una sola pantalla sirva a los
+       dos, cada cosa que se agregue hay que acordarse de esconderla.
+
+       El diseño de la tarjeta salió de mirar Argenprop (terrenos en
+       venta en San Luis): foto grande, ubicación, precio, superficie y
+       medidas, "Publica: <inmobiliaria>" y los botones de contacto EN
+       LA TARJETA, sin tener que abrir la propiedad. -->
+  <div id="panel-catalogo" class="oculto panel-pantalla-completa" data-testid="panel-catalogo">
+    <header id="cat-agencia" class="lp-agencia oculto" data-testid="cat-agencia">
+      <img id="cat-agencia-logo" class="lp-agencia-logo oculto" alt="" data-testid="cat-agencia-logo" />
+      <div class="lp-agencia-texto">
+        <p id="cat-agencia-nombre" class="lp-agencia-nombre" data-testid="cat-agencia-nombre"></p>
+        <p id="cat-agencia-donde" class="lp-agencia-donde oculto" data-testid="cat-agencia-donde"></p>
+      </div>
+    </header>
+
+    <div class="cat-encabezado">
+      <h2 id="cat-titulo" data-testid="cat-titulo">Propiedades</h2>
+      <button id="cerrar-panel-catalogo" class="btn-volver" aria-label="Volver" data-volver="/">&larr;</button>
+    </div>
+
+    <!-- Dos filtros y no seis: son las dos preguntas que hace todo el
+         mundo, dónde y cuánto. Esta pantalla se ve una sola vez desde un
+         link de WhatsApp y tiene que entenderse de un vistazo. -->
+    <div class="cat-filtros" data-testid="cat-filtros">
+      <label for="cat-zona">Zona
+        <select id="cat-zona" data-testid="cat-zona"></select>
+      </label>
+      <label for="cat-desde">Precio desde (USD)
+        <input type="number" id="cat-desde" min="0" step="1000" placeholder="Sin mínimo" data-testid="cat-desde" />
+      </label>
+      <label for="cat-hasta">Hasta (USD)
+        <input type="number" id="cat-hasta" min="0" step="1000" placeholder="Sin máximo" data-testid="cat-hasta" />
+      </label>
+      <button type="button" id="cat-limpiar" class="btn-link oculto" data-testid="cat-limpiar">Limpiar filtros</button>
+    </div>
+
+    <p id="cat-cuenta" class="cat-cuenta" data-testid="cat-cuenta"></p>
+    <div id="cat-grilla" class="cat-grilla" data-testid="cat-grilla"></div>
+    <p id="cat-vacio" class="dashboard-vacio oculto" data-testid="cat-vacio"></p>
+
+    <footer id="cat-pie" class="lp-pie oculto" data-testid="cat-pie">
+      <p id="cat-pie-nombre" class="lp-pie-nombre" data-testid="cat-pie-nombre"></p>
+      <ul id="cat-pie-datos" class="lp-pie-datos" data-testid="cat-pie-datos"></ul>
+      <p id="cat-pie-matricula" class="lp-pie-matricula oculto" data-testid="cat-pie-matricula"></p>
+    </footer>
+  </div>
+
   <!-- Apartados: la carpeta de trabajo del corredor — "los lotes que
        tengo apartados para alguien". Vive en el navegador de cada uno
        (localStorage), así que no la ve el equipo y no toca el estado del
@@ -1475,7 +1532,7 @@
            terreno. Mandarlo al catálogo en vez de dejarlo en una página
            muerta es la diferencia entre un lead y una pestaña que se
            cierra. -->
-      <a id="lp-ver-catalogo" class="lp-ver-catalogo" href="/lotes" data-ruta="/lotes" data-testid="lp-ver-catalogo">Ver las propiedades disponibles</a>
+      <a id="lp-ver-catalogo" class="lp-ver-catalogo" href="/propiedades" data-ruta="/propiedades" data-testid="lp-ver-catalogo">Ver las propiedades disponibles</a>
     </div>
 
     <!-- Mientras llegan los datos. Es un estado aparte de "no
@@ -1547,7 +1604,7 @@
           <section id="lp-no-disponible" class="lp-bloque lp-no-disponible oculto" data-testid="lp-no-disponible">
             <h3>Esta propiedad ya no está a la venta</h3>
             <p id="lp-no-disponible-texto" data-testid="lp-no-disponible-texto"></p>
-            <a id="lp-ver-otras" class="lp-ver-catalogo" href="/lotes" data-ruta="/lotes" data-testid="lp-ver-otras">Ver las propiedades disponibles</a>
+            <a id="lp-ver-otras" class="lp-ver-catalogo" href="/propiedades" data-ruta="/propiedades" data-testid="lp-ver-otras">Ver las propiedades disponibles</a>
           </section>
 
           <section id="lp-contacto" class="lp-bloque lp-contacto" data-testid="lp-contacto">
@@ -2439,6 +2496,6 @@
   <!-- Absoluta por el mismo motivo que la hoja de estilos (ver arriba).
        Los `import "./mapa.js"` internos se resuelven contra /js/app.js,
        así que siguen andando sin tocarlos. -->
-  <script type="module" src="/js/app.js?v=2026-09-24-01"></script>
+  <script type="module" src="/js/app.js?v=2026-09-24-02"></script>
 </body>
 </html>

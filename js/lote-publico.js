@@ -25,7 +25,7 @@ import { crearContactoDesdeInteresado } from "./crm-datos.js";
 import { validarConsulta } from "./consulta-lote.js";
 import { capaConMargen, seguirElCalce } from "./calce-aplicar.js";
 import { getInmobiliaria, alCambiarLaInmobiliaria, whatsappDeLaInmobiliaria } from "./inmobiliaria.js";
-import { comoUbicarla } from "./inmobiliaria-datos.js";
+import { pintarBanda, pintarPie } from "./agencia-ui.js";
 
 // Pane propio para la foto, como en el mapa principal (ver PANE_FOTO en
 // js/mapa.js). Nombre distinto porque son dos mapas de Leaflet
@@ -230,8 +230,19 @@ function mensajeDeWhatsapp(p) {
 function renderAgencia() {
   const inmo = getInmobiliaria();
 
-  elAgencia.classList.toggle("oculto", !inmo);
-  elPie.classList.toggle("oculto", !inmo);
+  // La banda y el pie los dibuja js/agencia-ui.js, que comparte esta
+  // pantalla con el catálogo público (/propiedades). Estaba escrito acá
+  // y se extrajo al escribir la segunda: dos copias del mismo bloque es
+  // cómo termina pasando que el teléfono se actualice en una pantalla y
+  // en la otra no.
+  pintarBanda(
+    { contenedor: elAgencia, logo: elAgenciaLogo, nombre: elAgenciaNombre, donde: elAgenciaDonde },
+    inmo
+  );
+  pintarPie(
+    { contenedor: elPie, nombre: elPieNombre, datos: elPieDatos, matricula: elPieMatricula },
+    inmo
+  );
 
   // El botón de WhatsApp vive o muere con el teléfono: sin número
   // destino abre el selector de contactos del comprador y la consulta no
@@ -247,63 +258,6 @@ function renderAgencia() {
     "oculto",
     !loteActual || !seVendeElLoteActual() || !whatsappDeLaInmobiliaria("")
   );
-
-  if (!inmo) return;
-
-  elAgenciaNombre.textContent = inmo.nombre;
-
-  const donde = comoUbicarla(inmo);
-  elAgenciaDonde.textContent = donde || "";
-  elAgenciaDonde.classList.toggle("oculto", !donde);
-
-  // Si la URL del logo ya no carga (se borró de Cloudinary, se pegó mal),
-  // el <img> queda con el ícono de imagen rota ARRIBA DE TODO en la
-  // página que ve un comprador. Es la primera impresión de la
-  // inmobiliaria, así que mejor sin logo que con un cuadrito roto.
-  const hayLogo = !!inmo.logo_url;
-  if (hayLogo) {
-    elAgenciaLogo.onerror = () => elAgenciaLogo.classList.add("oculto");
-    elAgenciaLogo.src = inmo.logo_url;
-    elAgenciaLogo.alt = inmo.nombre;
-  }
-  elAgenciaLogo.classList.toggle("oculto", !hayLogo);
-
-  elPieNombre.textContent = inmo.nombre;
-
-  // Cada línea aparece solo si hay qué poner. El teléfono y la web son
-  // links y no texto: en un teléfono, que el número se toque y llame es
-  // la diferencia entre una consulta y ninguna.
-  elPieDatos.innerHTML = "";
-  const lineas = [
-    { texto: comoUbicarla(inmo) },
-    { texto: inmo.horario },
-    { texto: inmo.telefono, href: `tel:${inmo.telefono}` },
-    { texto: inmo.email, href: `mailto:${inmo.email}` },
-    { texto: inmo.web, href: inmo.web }
-  ];
-  for (const linea of lineas) {
-    if (!linea.texto) continue;
-    const li = document.createElement("li");
-    if (linea.href) {
-      const a = document.createElement("a");
-      a.href = linea.href;
-      a.textContent = linea.texto;
-      // Solo la web sale de la página; tel: y mailto: abren una app y
-      // no tiene sentido mandarlos a otra pestaña.
-      if (linea.href === inmo.web) {
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-      }
-      li.appendChild(a);
-    } else {
-      li.textContent = linea.texto;
-    }
-    elPieDatos.appendChild(li);
-  }
-
-  const matricula = inmo.matricula ? `Matrícula ${inmo.matricula}` : "";
-  elPieMatricula.textContent = matricula;
-  elPieMatricula.classList.toggle("oculto", !matricula);
 }
 
 // Los datos de la agencia llegan tarde (una lectura de Firestore) y casi

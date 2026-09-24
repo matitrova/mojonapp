@@ -6553,3 +6553,241 @@ body:not(.en-el-mapa) #btn-flotante-interes-crm {
   font-size: 0.9rem;
   color: var(--color-texto-secundario);
 }
+
+/* ---------------------------------------------------------------------
+   El catálogo público (/propiedades): la vidriera de la inmobiliaria.
+
+   El diseño de la tarjeta salió de mirar Argenprop (terrenos en venta en
+   San Luis, 2026-09-24): foto grande arriba, precio en grande, título,
+   ubicación, superficie y medidas, y abajo quién publica con el botón de
+   contacto. Lo que acá faltaba por completo eran esas dos últimas: en
+   un portal no hay que abrir la propiedad para poder escribir.
+   --------------------------------------------------------------------- */
+
+.cat-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.cat-encabezado h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.cat-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 14px 0 6px;
+}
+
+.cat-filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.cat-filtros select,
+.cat-filtros input {
+  font: inherit;
+  font-weight: 400;
+  color: var(--color-texto);
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  padding: 9px 10px;
+  min-width: 160px;
+}
+
+.cat-cuenta {
+  margin: 6px 0 14px;
+  font-size: 0.85rem;
+  color: var(--color-texto-secundario);
+}
+
+/* auto-fill y no auto-fit: con una sola propiedad, auto-fit la estira a
+   todo el ancho de la pantalla y queda una tarjeta gigante sola. */
+.cat-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.cat-tarjeta {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-mediano);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.cat-tarjeta:hover {
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+  transform: translateY(-2px);
+}
+
+/* aspect-ratio y no una altura fija: las fotos de una inmobiliaria
+   vienen de cualquier teléfono y con cualquier proporción, y una altura
+   fija deja franjas blancas o recorta la mitad del terreno. */
+.cat-tarjeta-foto {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--color-fondo-alterno);
+  display: grid;
+  place-items: center;
+}
+
+.cat-tarjeta-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cat-tarjeta-sin-foto {
+  font-size: 0.85rem;
+  color: var(--color-texto-secundario);
+}
+
+.cat-faja {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--color-acento-suave);
+  color: var(--color-vendido);
+}
+
+.cat-faja-reservado {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.cat-tarjeta-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 14px 10px;
+  flex: 1;
+}
+
+.cat-tarjeta-precio {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.cat-tarjeta-titulo {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.cat-tarjeta-donde,
+.cat-tarjeta-datos {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-texto-secundario);
+}
+
+/* "Publica: X" y el WhatsApp, separados del cuerpo por una línea: es el
+   bloque de contacto, no un dato más de la propiedad. */
+.cat-tarjeta-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+}
+
+.cat-tarjeta-publica {
+  font-size: 0.75rem;
+  color: var(--color-texto-secundario);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-tarjeta-whatsapp {
+  flex: none;
+  background: var(--color-primario);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.cat-tarjeta-whatsapp:hover {
+  background: var(--color-primario-oscuro);
+}
+
+@media (max-width: 640px) {
+  .cat-grilla {
+    grid-template-columns: 1fr;
+  }
+
+  .cat-filtros select,
+  .cat-filtros input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .cat-filtros label {
+    flex: 1 1 140px;
+  }
+}
+
+/* La miniatura satelital con el límite del lote, para las propiedades
+   sin fotos. Es lo único que este producto tiene y la competencia no:
+   los portales muestran un pin sobre un mapa de calles. */
+.cat-mini {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #2f3a2c;
+}
+
+.cat-mini-tile {
+  position: absolute;
+  display: block;
+  /* Los tiles se colocan a mano con porcentajes calculados: sin esto,
+     object-fit los recorta y el polígono deja de caer donde debe. */
+  object-fit: fill;
+}
+
+.cat-mini-forma {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.cat-mini-forma polygon {
+  fill: rgba(226, 89, 31, 0.22);
+  stroke: #e2591f;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
