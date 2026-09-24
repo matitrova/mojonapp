@@ -6791,3 +6791,17 @@ body:not(.en-el-mapa) #btn-flotante-interes-crm {
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
+
+/* El número del contacto (#42) en su tarjeta del kanban. Discreto a
+   propósito: sirve para nombrarlo por teléfono, no es un dato que se
+   mire todo el tiempo. */
+.crm-tarjeta-numero {
+  flex: none;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-texto-secundario);
+  background: var(--color-fondo-alterno);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-variant-numeric: tabular-nums;
+}

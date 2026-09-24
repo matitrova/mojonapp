@@ -24,6 +24,7 @@ import {
 import { setContactosActuales, getModoVista } from "./estado.js";
 import { esRootActual, tienePermiso } from "./permisos.js";
 import { elegirMenosCargado } from "./crm-metricas.js";
+import { siguienteNumeroDeContacto } from "./numeracion.js";
 
 export const COLECCION_CONTACTOS = "contactos";
 
@@ -89,6 +90,11 @@ export async function crearContactoDesdeInteresado({ nombre, telefono, nota, fea
     }
 
     await addDoc(collection(db, COLECCION_CONTACTOS), {
+      // El número correlativo, para poder nombrarlo ("el contacto 42").
+      // Si el contador no responde queda en null y el contacto se crea
+      // igual: un contacto sin numerar es molesto, uno que no se pudo
+      // guardar es un lead perdido.
+      numero: await siguienteNumeroDeContacto(),
       nombre,
       telefono: telefono || null,
       email: null,

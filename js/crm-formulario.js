@@ -42,6 +42,7 @@ import {
 // guardado para la próxima. catalogos.js no importa nada de acá, así que
 // no hay riesgo de ciclo.
 import { asegurarMotivo, asegurarEtiqueta } from "./catalogos.js";
+import { siguienteNumeroDeContacto } from "./numeracion.js";
 
 let renderTodo, mostrarKanban, irALoteDesdeCrm, tituloLote;
 export function configurarFormulario(deps) {
@@ -750,7 +751,12 @@ formulario.addEventListener("submit", async (evento) => {
       // un mail de portal llega acá con origenPrefill ya puesto (ver
       // mostrarFormConLead).
       datos.origen = origenPrefill || "manual";
-      const nuevoRef = await addDoc(collection(db, COLECCION_CONTACTOS), datos);
+      // El número correlativo se pide recién acá, no al abrir el
+      // formulario: si se pidiera al abrir, cada vez que alguien abre y
+      // cancela se quemaría un número y la numeración quedaría llena de
+      // huecos sin que haya pasado nada.
+      const conNumero = { ...datos, numero: await siguienteNumeroDeContacto() };
+      const nuevoRef = await addDoc(collection(db, COLECCION_CONTACTOS), conNumero);
       registrarAuditoria({ accion: "crear_contacto", objetoId: nuevoRef.id, objetoTitulo: datos.nombre });
     }
     await cargarContactos();

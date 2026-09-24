@@ -39,6 +39,7 @@ import { navegarA, aplicarRuta } from "./router.js";
 // Catálogo de motivos de pérdida: el motivo que se tipea al mover una
 // tarjeta a "Perdido" también se unifica contra el catálogo.
 import { asegurarMotivo } from "./catalogos.js";
+import { numeroParaMostrar } from "./numeracion.js";
 import { registrarAuditoria } from "./auditoria.js";
 // Primera etapa de la modularización de este archivo (venía con 1643
 // líneas) — constantes y lógica pura sin Firestore/DOM, movidas a su
@@ -305,6 +306,20 @@ function tarjetaContacto(contacto) {
   nombre.className = "crm-tarjeta-nombre";
   nombre.textContent = contacto.nombre;
   cabecera.appendChild(nombre);
+
+  // EL NÚMERO Y EL TELÉFONO, para poder distinguir dos contactos que se
+  // llaman igual — que es para lo que se pidió la numeración. El número
+  // sirve para nombrarlo ("el contacto 42"); el teléfono sirve para
+  // reconocerlo sin tener que acordarse de nada, que en la práctica es
+  // lo que más ayuda. Por eso van los dos y no solo uno.
+  const numero = numeroParaMostrar(contacto);
+  if (numero) {
+    const chip = document.createElement("span");
+    chip.className = "crm-tarjeta-numero";
+    chip.textContent = numero;
+    chip.title = `Contacto ${numero}`;
+    cabecera.appendChild(chip);
+  }
 
   // "Origen del lead" (idea propia — versión gratis de "centralización
   // de leads" de Tokko): un ícono chico, no un chip grande, para no
@@ -973,10 +988,14 @@ function escaparCsv(valor) {
 
 function exportarCsv() {
   const filas = [
-    ["Nombre", "Teléfono", "Email", "Estado", "Origen", "Próximo seguimiento", "Lotes de interés", "Última actualización"]
+    // "N°" primero: es la columna con la que se vuelve a encontrar a
+    // este mismo contacto después de editar el archivo en Excel. Sin
+    // ella, dos "Juan Pérez" exportados son indistinguibles.
+    ["N°", "Nombre", "Teléfono", "Email", "Estado", "Origen", "Próximo seguimiento", "Lotes de interés", "Última actualización"]
   ];
   getContactosActuales().forEach((c) => {
     filas.push([
+      Number.isFinite(c.numero) ? String(c.numero) : "",
       c.nombre || "",
       c.telefono || "",
       c.email || "",

@@ -111,6 +111,36 @@ service cloud.firestore {
       allow write: if esRoot() || tienePermiso('administrar_sectores');
     }
 
+    // Contadores: el número correlativo de cada contacto (#1, #2, #3…).
+    //
+    // PARA QUÉ. Todo documento de Firestore ya tiene un id, pero es un
+    // código de 20 caracteres que no se puede decir por teléfono ni
+    // anotar en un papel. Dos contactos que se llaman igual tienen que
+    // poder diferenciarse.
+    //
+    // POR QUÉ NO ES SOLO "cualquier logueado escribe". Con eso, quien
+    // quiera podría poner el contador en 9.999.999 y dejar la
+    // numeración inservible para siempre. La regla deja hacer UNA sola
+    // cosa: llevarlo de N a N+1. Cualquier otro valor se rechaza.
+    //
+    // Es el mismo patrón que soloSumaUnaVista de más arriba, y por el
+    // mismo motivo: dejar pasar la escritura que la app necesita sin
+    // dejar pasar ninguna otra.
+    //
+    // Lo pueden mover todos los que pueden crear un contacto, que es
+    // cualquier logueado (ver el comentario de /contactos más abajo).
+    // Leerlo también: sin leerlo no se puede calcular el siguiente.
+    function soloSumaUno() {
+      return request.resource.data.keys().hasOnly(['valor'])
+        && request.resource.data.valor is int
+        && request.resource.data.valor == (resource == null ? 0 : (resource.data.valor is int ? resource.data.valor : 0)) + 1;
+    }
+
+    match /contadores/{nombre} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && soloSumaUno();
+    }
+
     // Los datos de la inmobiliaria: nombre, teléfono, logo, matrícula
     // (ver js/inmobiliaria.js). UN SOLO documento, "inmobiliaria" —
     // cada instalación de MojonApp es de una sola agencia.
