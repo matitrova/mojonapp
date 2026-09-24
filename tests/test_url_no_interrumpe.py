@@ -83,12 +83,29 @@ def test_con_el_editor_de_forma_abierto_la_ficha_no_vuelve(page, base_url, lote)
     page.locator("#btn-editar-forma-lote").click()
     expect(page.locator("#ficha-lote")).to_be_hidden()
 
-    # SE COMPRUEBAN LAS PRECONDICIONES DEL BUG antes de provocarlo.
-    # Sin esto el test daba un falso verde: si por timing todavía no
-    # había modo de captura, o el deep-link ya estaba marcado, la
-    # reapertura no ocurría por otro motivo y el test pasaba aunque el
-    # guard no existiera. Verificado quitando el guard: con estas dos
-    # aserciones falla, sin ellas pasaba a veces.
+    # SE FUERZA LA PRECONDICIÓN, no se espera que salga bien.
+    #
+    # abrirLoteDesdeUrlSiCorresponde tiene DOS guards, en este orden:
+    # primero el de modoCaptura (el que este test prueba) y después el de
+    # deepLinkAbierto. Si el segundo ya está marcado, la reapertura la
+    # frena ÉL y el test pasa aunque el primero no exista.
+    #
+    # Y se marca solo, por una carrera: abrir la ficha desde la lista
+    # pone el lote en la URL, y la carga de lotes reencadena
+    # abrirLoteDesdeUrlSiCorresponde. Si esa segunda carga llega antes de
+    # este punto, el flag queda en true. Corriendo el test solo casi
+    # nunca pasa; con el archivo entero, casi siempre (2026-09-24).
+    #
+    # Ponerlo en false a mano NO afloja el test: lo endurece. Le saca la
+    # ayuda del otro guard y deja al de modoCaptura como lo único que
+    # puede frenar la reapertura.
+    page.evaluate("""() => import('/js/estado.js').then((e) => e.setDeepLinkAbierto(false))""")
+
+    # Y recién ahora se comprueban las precondiciones. Sin esto el test
+    # daba un falso verde: si por timing todavía no había modo de
+    # captura, la reapertura no ocurría por otro motivo y el test pasaba
+    # aunque el guard no existiera. Verificado quitando el guard: con
+    # estas dos aserciones falla, sin ellas pasaba a veces.
     antes = page.evaluate(
         """() => import('/js/estado.js').then((e) => ({
              modoCaptura: e.getModoCaptura(),

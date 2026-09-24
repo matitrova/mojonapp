@@ -80,7 +80,12 @@ def test_resumen_por_zona_desglosa_inventario_y_precio_promedio(page, base_url):
         expect(celdas.nth(3)).to_have_text("1")  # reservado
         expect(celdas.nth(4)).to_contain_text("1")  # vendido (33%)
         expect(celdas.nth(4)).to_contain_text("33%")
-        expect(celdas.nth(5)).to_have_text("—")  # interesados: sin contactos, ver test aparte
+        # "0" y no "—" desde 2026-09-24: en la misma fila, al lado de un
+        # "Reservado 0", el guion decía lo mismo de otra manera y parecía
+        # significar algo distinto. El "—" de esta tabla queda solo para
+        # "no hay dato" (el precio promedio de una zona sin ningún precio
+        # cargado), que no es lo mismo que cero.
+        expect(celdas.nth(5)).to_have_text("0")  # interesados: sin contactos, ver test aparte
         # Precio promedio: solo los 2 con precio cargado (10000+20000)/2
         expect(celdas.nth(6)).to_contain_text("USD 15.000")
     finally:
