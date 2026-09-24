@@ -8,7 +8,7 @@ probando, que funcione sin cuenta.
 
 import pytest
 from playwright.sync_api import expect
-from conftest import abrir_menu, soltar_el_mouse
+from conftest import abrir_menu, esperar_sesion_en_el_menu, soltar_el_mouse
 
 # APARTADOS PIDE SESIÓN desde 2026-09-22. Antes esta pantalla era
 # pública —un comprador anónimo podía armarse su lista— y estos tests
@@ -21,6 +21,7 @@ def _abrir_ficha_desde_lista(page, doc_id):
     """Mismo criterio que abrir_ficha_desde_lista en test_lotes.py: entra
     por "Ver como lista" en vez de tocar el polígono en el mapa, para no
     depender de dónde haya quedado encuadrado el mapa."""
+    esperar_sesion_en_el_menu(page)
     abrir_menu(page)
     page.locator("#btn-ver-lista").click()
     soltar_el_mouse(page)
@@ -43,6 +44,7 @@ def test_marcar_favorito_sin_sesion_y_verlo_en_el_panel(page, base_url, lote_sem
     assert lote_sembrado["doc_id"] in favoritos
 
     page.locator("#cerrar-ficha").click()
+    esperar_sesion_en_el_menu(page)
     abrir_menu(page)
     page.locator("#btn-abrir-favoritos").click()
     soltar_el_mouse(page)
@@ -57,10 +59,19 @@ def test_quitar_favorito_desde_el_panel(page, base_url, lote_sembrado):
     page.locator("#btn-favorito").click()
     page.locator("#cerrar-ficha").click()
 
+    esperar_sesion_en_el_menu(page)
     abrir_menu(page)
     page.locator("#btn-abrir-favoritos").click()
     soltar_el_mouse(page)
-    fila = page.locator("li", has_text=f"Manzana {lote_sembrado['manzana']} — Lote {lote_sembrado['lote']}")
+    # Acotado a #lista-favoritos: un "li" suelto busca en TODO el
+    # documento, y el mismo lote aparece también en la lista de
+    # "incompletos" del Dashboard, que vive en el DOM aunque su panel
+    # esté escondido. El test fallaba con "esperaba 1, encontró 2" sin
+    # que hubiera nada roto.
+    fila = page.locator(
+        "#lista-favoritos li",
+        has_text=f"Manzana {lote_sembrado['manzana']} — Lote {lote_sembrado['lote']}",
+    )
     expect(fila).to_have_count(1)
 
     fila.locator(".favorito-quitar").click()

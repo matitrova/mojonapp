@@ -247,9 +247,17 @@ function recalcularCuotas() {
 }
 
 // Solo tiene sentido con precio cargado — sin eso no hay nada que
-// calcular (mismo criterio que "Sin datos" en el resto de la ficha).
+// calcular (mismo criterio que "Sin datos" en el resto de la ficha) — y
+// solo mientras el lote siga a la venta: ofrecer anticipo y cuotas de algo
+// ya vendido es una operación que no existe.
+//
+// OJO, ESTO NO ES LO MISMO QUE LA PÁGINA PÚBLICA. Ahí un lote vendido se
+// cierra entero (faja, sin formulario, salida al catálogo). Acá es la
+// ficha interna: el corredor necesita seguir consultando un lote vendido,
+// así que se esconde solo lo que presupone que está a la venta; precio,
+// comprador, medidas, fotos y notas se siguen viendo igual.
 function actualizarCalculadoraCuotas(feature) {
-  const visible = feature.properties.precio_usd != null;
+  const visible = feature.properties.precio_usd != null && feature.properties.estado !== "vendido";
   elCalculadoraCuotas.classList.toggle("oculto", !visible);
   if (visible) recalcularCuotas();
 }
@@ -448,6 +456,12 @@ function renderInteresados(feature) {
     fila.append(datos, botonBorrar);
     elListaInteresados.appendChild(fila);
   });
+
+  // Se esconde el FORMULARIO, no la lista. Anotar un interesado nuevo en un
+  // lote vendido no tiene sentido, pero quiénes preguntaron por él es
+  // historia que el corredor sí necesita: a quién llamar si la operación se
+  // cae, y a quién ofrecerle el lote de al lado.
+  formularioInteresado.classList.toggle("oculto", feature.properties.estado === "vendido");
 }
 
 async function borrarInteresado(feature, interesado) {
@@ -568,7 +582,8 @@ export function tituloLote(p) {
 // tener que tocarlo y abrir la ficha completa.
 export function contenidoTooltipLote(feature) {
   const p = feature.properties;
-  const superficie = p.superficie_m2 == null ? "Sin datos" : `${p.superficie_m2} m²`;
+  const superficie =
+    p.superficie_m2 == null ? "Sin datos" : `${Number(p.superficie_m2).toLocaleString("es-AR")} m²`;
   const precio = p.precio_usd == null ? "Sin datos" : `USD ${Number(p.precio_usd).toLocaleString("es-AR")}`;
   return `
     <div class="tooltip-lote-titulo">${tituloLote(p)}</div>
@@ -593,7 +608,12 @@ export function mostrarFicha(feature, contactoOrigen = null) {
   // para sub-parcelas (se vio con datos reales de "+ Manzana"), y a
   // diferencia del formulario manual, la importación en bloque no pasa
   // por el "required" del campo — puede llegar null a Firestore.
-  elSuperficie.textContent = p.superficie_m2 == null ? "Sin datos" : `${p.superficie_m2} m²`;
+  // Mismo criterio que la tabla y la grilla de /lotes (ver vista-lista.js) y
+  // que el comparador: en esta misma ficha la superficie convive con el
+  // precio, que ya está en es-AR, y "7344.1" al lado de "USD 18.500" se lee
+  // como otro idioma.
+  elSuperficie.textContent =
+    p.superficie_m2 == null ? "Sin datos" : `${Number(p.superficie_m2).toLocaleString("es-AR")} m²`;
   elMedidas.textContent = textoMedidasLados(feature.geometry.coordinates[0]);
   elEstado.innerHTML = textoEstadoConVencimiento(p);
   actualizarComprador(feature);
@@ -988,7 +1008,7 @@ function renderLotesSimilares(feature) {
     const dato = document.createElement("p");
     dato.className = "ficha-similar-dato";
     const partes = [];
-    if (p.superficie_m2 != null) partes.push(`${p.superficie_m2} m²`);
+    if (p.superficie_m2 != null) partes.push(`${Number(p.superficie_m2).toLocaleString("es-AR")} m²`);
     if (p.precio_usd != null) partes.push(`USD ${Number(p.precio_usd).toLocaleString("es-AR")}`);
     dato.textContent = partes.length ? partes.join(" · ") : "Sin datos";
     item.appendChild(dato);
@@ -1208,9 +1228,14 @@ export function refrescarPermisosDeLaFicha() {
 }
 
 function actualizarPortales(feature) {
-  const puedeEditar = puedeEditarLote(feature);
-  elFichaPortales.classList.toggle("oculto", !puedeEditar);
-  if (!puedeEditar) return;
+  // Además del permiso: un lote vendido no se publica en ningún portal, así
+  // que ni el checklist ni el "Redactar con IA" que vive adentro tienen a
+  // qué apuntar. Las tildes guardadas no se borran, solo se dejan de
+  // mostrar — si el lote vuelve a "disponible", la sección reaparece como
+  // estaba.
+  const mostrar = puedeEditarLote(feature) && feature.properties.estado !== "vendido";
+  elFichaPortales.classList.toggle("oculto", !mostrar);
+  if (!mostrar) return;
   const publicado = feature.properties.portales_publicado || {};
   PORTALES.forEach((p) => {
     elsPortalCheckbox[p].checked = !!publicado[p];

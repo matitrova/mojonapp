@@ -21,7 +21,13 @@ import uuid
 import pytest
 from playwright.sync_api import expect
 
-from conftest import abrir_menu, borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import (
+    abrir_menu,
+    borrar_lote_de_prueba,
+    crear_lote_de_prueba,
+    esperar_sesion_en_el_menu,
+    soltar_el_mouse,
+)
 
 TELEFONO = {"width": 390, "height": 800}
 NOTEBOOK = {"width": 1366, "height": 768}
@@ -288,6 +294,7 @@ def test_el_comparador_en_telefono_no_pierde_las_etiquetas(page, base_url):
         page.reload()
         page.wait_for_selector(f".lote-{ids[0]}", state="attached", timeout=30000)
 
+        esperar_sesion_en_el_menu(page)
         abrir_menu(page)
         page.locator("#btn-abrir-favoritos").click()
         soltar_el_mouse(page)

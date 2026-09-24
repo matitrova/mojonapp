@@ -801,6 +801,29 @@ def abrir_menu(page):
         boton.click()
 
 
+def esperar_sesion_en_el_menu(page, timeout=30000):
+    """Espera a que el menú muestre lo que solo se ve con sesión.
+
+    POR QUÉ HACE FALTA. Los lotes son públicos y llegan de Firestore
+    antes de que Firebase resuelva quién sos, así que esperar a que
+    aparezca un lote NO garantiza que haya sesión. Los bloques
+    .solo-con-sesion del menú pierden la clase "oculto" recién en
+    onAuthStateChanged (ver js/app.js).
+
+    Se notó al mover "Apartados" adentro de ese gate: los tests que
+    recargaban y clickeaban el ítem enseguida empezaron a fallar con
+    "element is not visible", que no dice nada de lo que realmente
+    estaba pasando.
+    """
+    page.wait_for_function(
+        """() => {
+             const bloques = document.querySelectorAll('.solo-con-sesion');
+             return bloques.length > 0 && [...bloques].every((b) => !b.classList.contains('oculto'));
+           }""",
+        timeout=timeout,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Soltar el hover del menú lateral
 # ---------------------------------------------------------------------------

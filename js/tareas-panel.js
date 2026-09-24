@@ -181,9 +181,15 @@ function render() {
     : "El equipo no tiene tareas pendientes. Cuando alguien cree una, aparece acá ordenada por vencimiento.";
   elVacio.classList.toggle("oculto", hayAlguna);
 
-  // El resumen por corredor solo tiene sentido mirando a todo el equipo.
-  elResumen.classList.toggle("oculto", verSoloMias);
-  if (!verSoloMias) renderResumen();
+  // El resumen por corredor solo tiene sentido mirando a todo el equipo, y
+  // solo si hay alguna fila: el contenedor tiene borde y padding propios, así
+  // que vacío dejaba una caja gris de 22px arriba del "no hay tareas".
+  // resumenPorResponsable arma una fila por responsable presente, de modo que
+  // sin tareas no hay filas; por eso alcanza con mirar tareas.length (y es el
+  // mismo arreglo de tareas que usa renderResumen, no el filtrado).
+  const hayResumen = !verSoloMias && tareas.length > 0;
+  elResumen.classList.toggle("oculto", !hayResumen);
+  if (hayResumen) renderResumen();
 }
 
 function renderResumen() {
@@ -201,7 +207,10 @@ function renderResumen() {
 
     const numeros = document.createElement("span");
     numeros.className = "tareas-resumen-numeros";
-    numeros.textContent = `${fila.vencidas} vencidas · ${fila.hoy} para hoy · ${fila.proximas} más adelante`;
+    // "1 vencidas" en la línea que más se mira de esta pantalla delata
+    // descuido. Los otros dos tramos son locuciones fijas: "1 para hoy" y
+    // "1 más adelante" ya están bien y no llevan plural.
+    numeros.textContent = `${fila.vencidas} ${fila.vencidas === 1 ? "vencida" : "vencidas"} · ${fila.hoy} para hoy · ${fila.proximas} más adelante`;
     tarjeta.appendChild(numeros);
 
     elResumen.appendChild(tarjeta);

@@ -456,9 +456,20 @@ function actualizarBarraSeleccion() {
     cantidad === 1 ? "1 lote seleccionado" : `${cantidad} lotes seleccionados`;
 
   const seleccionablesDeLaPagina = lotesDeLaPagina.filter((f) => puedeEditarLote(f));
+  const elegidosDeLaPagina = seleccionablesDeLaPagina.filter((f) => loteSeleccionados.has(f.id));
   elSeleccionarPagina.checked =
     seleccionablesDeLaPagina.length > 0 &&
-    seleccionablesDeLaPagina.every((f) => loteSeleccionados.has(f.id));
+    elegidosDeLaPagina.length === seleccionablesDeLaPagina.length;
+  // Con algunas filas tildadas y otras no, el tilde de la cabecera se veía
+  // idéntico a "no hay nada seleccionado", y desde la cabecera no había
+  // ninguna señal de que la selección seguía viva — con "Aplicar un cambio a
+  // todos" a un click de distancia. El estado intermedio existe solo como
+  // propiedad, no como atributo, así que hay que escribirlo desde acá; y hay
+  // que APAGARLO cuando están todos o ninguno, porque si queda prendido el
+  // navegador dibuja la rayita por encima del tilde lleno y el estado
+  // "todos" no se ve nunca.
+  elSeleccionarPagina.indeterminate =
+    elegidosDeLaPagina.length > 0 && !elSeleccionarPagina.checked;
 
   // "Seleccionar los N del filtro" solo tiene sentido si el filtro
   // alcanza más lotes que los que se están viendo en esta página.
@@ -700,7 +711,7 @@ function renderGrilla(lotesPagina) {
         <span class="tarjeta-lote-titulo">${tituloLote(p)}${esLoteNuevo(p) ? ' <span class="chip-nuevo">Nuevo</span>' : ""}</span>
         <span class="tarjeta-lote-dato">${[p.sector, p.barrio].filter(Boolean).join(" — ") || "Zona sin datos"}</span>
         <span class="tarjeta-lote-dato">${p.superficie_m2 == null ? "Superficie sin datos" : `${Number(p.superficie_m2).toLocaleString("es-AR")} m²`}</span>
-        ${p.precio_usd != null ? `<span class="tarjeta-lote-precio">USD ${Number(p.precio_usd).toLocaleString("es-AR")}</span>` : ""}
+        ${p.precio_usd != null ? `<span class="tarjeta-lote-precio">USD ${Number(p.precio_usd).toLocaleString("es-AR")}</span>` : `<span class="tarjeta-lote-precio tarjeta-lote-precio-vacio">Precio sin datos</span>`}
       </div>
     `;
     // MISMO TILDE QUE LA TABLA. Sin esto, pasar a Grilla escondía la

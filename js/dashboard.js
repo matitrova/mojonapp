@@ -605,7 +605,11 @@ export function renderDashboard() {
   m.consultados.forEach((feature, i) => {
     const dato = document.createElement("span");
     dato.className = "dashboard-lote-dato";
-    dato.textContent = `${feature.properties.vistas} vistas`;
+    // Singular cuando hay una sola: el ranking llega hasta lotes con
+    // 1 vista y "1 vistas" se lee como un error de carga. Mismo
+    // criterio que "1 interesado" en el ranking de acá abajo.
+    const vistas = feature.properties.vistas;
+    dato.textContent = `${vistas} vista${vistas === 1 ? "" : "s"}`;
     elConsultados.appendChild(filaLote(feature, dato, { rango: i + 1 }));
   });
   document.getElementById("dashboard-consultados-vacio").classList.toggle("oculto", m.consultados.length > 0);
@@ -640,9 +644,14 @@ export function renderDashboard() {
     // "Interesados" en rojo cuando hay demanda pero nada disponible ya
     // (0 disponible) — mismo criterio de urgencia que .dashboard-badge
     // vencida: es justo la señal de "traer más inventario acá".
+    //
+    // Cero se escribe 0 y no "—": en la misma fila, al lado de un
+    // "Reservado 0", el guion decía lo mismo de otra manera. El "—" de
+    // esta tabla queda solo para "no hay dato" (el precio promedio de
+    // una zona sin ningún precio cargado), que no es lo mismo que cero.
     const celdaInteresados =
-      interesados === 0 ? "—" : `<span class="${disponible === 0 ? "texto-vencido" : ""}">${interesados}</span>`;
-    fila.innerHTML = `<td>${zona}</td><td>${total}</td><td>${disponible}</td><td>${reservado}</td><td>${vendido} (${pctVendido}%)</td><td>${celdaInteresados}</td><td>${celdaPrecio}</td>`;
+      interesados === 0 ? "0" : `<span class="${disponible === 0 ? "texto-vencido" : ""}">${interesados}</span>`;
+    fila.innerHTML = `<td>${zona}</td><td>${total}</td><td>${disponible}</td><td>${reservado}</td><td>${vendido} <span class="dashboard-pct-zona">(${pctVendido}%)</span></td><td>${celdaInteresados}</td><td>${celdaPrecio}</td>`;
     elPreciosCuerpo.appendChild(fila);
   });
   document.getElementById("dashboard-precios-zona-vacio").classList.toggle("oculto", m.resumenPorZona.length > 0);

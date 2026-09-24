@@ -56,9 +56,11 @@ def test_ficha_muestra_frente_y_largo_correctos(page, base_url, lote_sembrado):
     con lo calculado a mano para el rectángulo conocido del fixture."""
     page.goto(base_url)
     abrir_ficha_desde_lista(page, lote_sembrado["doc_id"])
-    expect(page.locator("#ficha-medidas")).to_have_text(
-        f"Frente {FRENTE_ESPERADO} × Largo {LARGO_ESPERADO}"
-    )
+    # La ficha formatea los decimales en es-AR ("20,7 m"); la barra del
+    # editor de forma todavía los escribe con punto, así que acá ya no se
+    # pueden reusar FRENTE_ESPERADO/LARGO_ESPERADO (ver textoMedidasLados
+    # en js/geometria.js).
+    expect(page.locator("#ficha-medidas")).to_have_text("Frente 20,7 m × Largo 22,3 m")
 
 
 def test_editor_de_forma_muestra_medidas_en_vivo(page, base_url, lote_sembrado):

@@ -942,6 +942,53 @@ body.con-nav-secciones #btn-flotante-catastro {
   border-top: 1px solid var(--color-borde);
 }
 
+/* EL 34px DE #mapa SUPONE UNA FRANJA DE UN RENGLÓN. En teléfono el texto
+   entra en dos y la franja pasa de 45px: los ~11 de diferencia se le
+   montan al mapa, y ahí es justo donde Leaflet cuelga sus controles de
+   abajo. Se comía la última línea de la atribución ("Reference © Esri",
+   que Esri exige que se vea) y el borde inferior de la leyenda de
+   colores.
+   Se agranda la reserva en vez de subir cada control por separado: los
+   dos cuelgan del borde de abajo del mapa y suben juntos, y así el
+   invariante sigue siendo uno solo ("la franja nunca pisa el mapa").
+   Si cambia el texto de #leyenda-legal, revisar este número. */
+@media (max-width: 640px) {
+  #mapa {
+    bottom: 52px;
+  }
+
+  /* LA LEYENDA, EN UNA SOLA FILA. Apilada en tres renglones no entraba
+     en el hueco que queda sobre la franja legal y se cortaba justo en
+     "Vendido" — o sea que el estado que más importa distinguir era el
+     único que no se leía. En fila mide un tercio de alto y entra.
+
+     Se ve en la captura de 390px del 2026-09-24: hasta acá convivían
+     dos arreglos que se pisaban, el que sacó la leyenda de abajo de la
+     ventana y el que subió la atribución. */
+  .leyenda-estados {
+    display: flex;
+    gap: 10px;
+    padding: 6px 8px;
+  }
+
+  .leyenda-estados div {
+    margin: 0;
+  }
+
+  /* Y la atribución se levanta POR ENCIMA de la leyenda. No es una
+     preferencia: Esri exige que su atribución se vea, y en un teléfono
+     el texto ocupa dos renglones de ancho completo, así que aunque
+     estén en esquinas distintas le pasa por debajo.
+
+     44px = el alto de la leyenda en fila (6+12+6 de padding y caja, da
+     37) más un respiro. Los dos números están atados: si cambia el
+     padding o el tamaño de letra de .leyenda-estados de acá arriba,
+     cambia este. Medido a 390px el 2026-09-24. */
+  .leaflet-bottom.leaflet-right .leaflet-control-attribution {
+    margin-bottom: 44px;
+  }
+}
+
 /* Hoja inferior (bottom sheet): patrón compartido por la ficha del lote y
    los formularios de login / carga de lote, para uso con una mano en celular */
 .hoja-inferior {
@@ -970,6 +1017,23 @@ body.con-nav-secciones #btn-flotante-catastro {
   height: 4px;
   border-radius: 2px;
   background: var(--color-borde);
+}
+
+/* En escritorio la hoja llega de punta a punta del área de contenido
+   (1192px con la barra lateral puesta) y todo lo de adentro se estira con
+   ella: los inputs de "Interesados" medían 1130px y los dos números de
+   "Simular cuotas" 555px cada uno, para valores de dos dígitos.
+   MISMO CRITERIO Y MISMO ANCHO QUE #formulario-contacto EN EL CRM, que ya
+   tuvo este problema: se limita el contenedor y no cada campo, así todo lo
+   de adentro (los datos, las fotos, los botones, las tarjetas de
+   similares) sigue alineado entre sí en vez de quedar campos angostos al
+   lado de bloques anchos. Tampoco se centra, por el mismo motivo que allá:
+   el resto de los paneles arranca pegado al borde izquierdo.
+   En teléfono no cambia nada: la hoja sigue de punta a punta. */
+@media (min-width: 860px) {
+  #ficha-lote {
+    max-width: 640px;
+  }
 }
 
 .oculto {
@@ -2412,6 +2476,18 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin-top: 2px;
 }
 
+/* El renglón del precio se ocupa siempre: si falta, la tarjeta cierra una
+   línea antes que sus vecinas y no se distingue "todavía no le cargamos el
+   precio" de un dato que se perdió. Va en el gris de los otros datos y sin
+   negrita, NO en el naranja de .tarjeta-lote-precio: en esta app el naranja
+   es acción, y una frase naranja en el lugar del precio se lee como si
+   hubiera un precio o algo para apretar. */
+.tarjeta-lote-precio-vacio {
+  font-weight: 400;
+  font-size: 0.82rem;
+  color: var(--color-texto-secundario);
+}
+
 .tarjeta-lote-estado {
   display: inline-block;
   align-self: flex-start;
@@ -2833,13 +2909,26 @@ body.con-nav-secciones #btn-flotante-catastro {
 }
 
 .dashboard-tarjetas {
-  display: flex;
-  flex-wrap: wrap;
+  /* Grilla y no flex, por la misma razón que #crm-stats más abajo: son
+     4 tarjetas fijas (Total/Disponible/Reservado/Vendido, ver
+     renderDashboard en js/dashboard.js) y con flex-wrap, en teléfono,
+     entraban 3 y la cuarta ("Vendido") se estiraba sola a todo el
+     ancho por el `flex: 1 1 100px` — tres cuadraditos arriba y un
+     rectángulo ancho abajo para el mismo tipo de dato. 2 y 4 dividen 4
+     exacto, así que quedan 2 x 2 en teléfono y 4 en línea en
+     escritorio, todas del mismo tamaño. */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
+@media (min-width: 640px) {
+  .dashboard-tarjetas {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .dashboard-tarjeta {
-  flex: 1 1 100px;
   background: var(--color-fondo-alterno);
   border: 1px solid var(--color-borde);
   border-top: 3px solid var(--color-borde);
@@ -3063,6 +3152,17 @@ body.con-nav-secciones #btn-flotante-catastro {
   gap: 8px;
 }
 
+/* El "(33%)" de la columna "Vendido" es una anotación, no un segundo
+   número: el resto de la tabla muestra cantidades peladas ("3", "2",
+   "0") y ahí el porcentaje se leía como parte de la cifra. Chico y
+   gris, el ojo lee primero el "1". Sobre qué se calcula lo dice el
+   encabezado de la columna (index.html). */
+.dashboard-pct-zona {
+  font-size: 0.82em;
+  color: var(--color-texto-secundario);
+  font-variant-numeric: tabular-nums;
+}
+
 .dashboard-precio-bar-track {
   flex: 1 1 50px;
   min-width: 36px;
@@ -3172,9 +3272,13 @@ body.con-nav-secciones #btn-flotante-catastro {
 }
 
 .auditoria-lista li {
+  /* relative + hueco a la derecha: es el ancla y el lugar donde se
+     acomoda "Borrar" fuera del flujo, para que deje de gastar un
+     renglón propio por tarjeta (ver .auditoria-borrar más abajo). */
+  position: relative;
   background: var(--color-fondo-alterno);
   border-radius: var(--radio-chico);
-  padding: 8px 10px;
+  padding: 8px 64px 8px 10px;
   font-size: 0.82rem;
   box-shadow: var(--sombra-calida-suave);
 }
@@ -3208,10 +3312,21 @@ body.con-nav-secciones #btn-flotante-catastro {
   margin-top: 2px;
 }
 
+/* Es la misma acción que el "Borrar" de las tablas de catálogo
+   (.btn-borrar-fila): mismo color y sin subrayado, porque subrayado se
+   lee como un link que lleva a otro lado y esto borra un registro.
+   Hereda .btn-link del JS (js/auditoria.js), así que pisa acá lo que
+   aquella clase trae de navegación. Y va absoluto contra la tarjeta en
+   vez de en el flujo: como bloque se llevaba un renglón entero en
+   blanco — el hueco lo reserva el padding-right de .auditoria-lista li. */
 .auditoria-borrar {
-  display: block;
-  width: max-content;
-  margin: 4px 0 0 auto;
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  margin: 0;
+  padding: 4px 6px;
+  color: var(--color-vendido);
+  text-decoration: none;
 }
 
 /* ---------------------------------------------------------------------
@@ -3330,6 +3445,22 @@ body.con-nav-secciones #btn-flotante-catastro {
   font-weight: 600;
 }
 
+/* La barra y su número en un renglón: el número es lo que explica de qué
+   está llena la barra (ver filaContacto en crm.js). La barra se queda con
+   el sobrante de la celda y no baja de sus 70px. */
+.crm-vigencia-celda {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crm-vigencia-texto {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--color-texto-secundario);
+  white-space: nowrap;
+}
+
 .crm-vigencia-barra {
   width: 100%;
   min-width: 70px;
@@ -3357,7 +3488,16 @@ body.con-nav-secciones #btn-flotante-catastro {
 }
 
 .crm-columna {
+  /* min-width:0 NO es redundante con el flex-basis: una columna es un
+     ítem flex en fila, así que su mínimo automático es su contenido, y
+     una sola línea de tarjeta sin cortes (.crm-tarjeta-lotes y
+     .crm-tarjeta-ultima-actividad son white-space: nowrap) estiraba a
+     301px justo la columna que tiene tarjetas, mientras las cinco
+     vacías quedaban en 226 y el tablero se veía a medio cargar. Con el
+     piso en 0 manda el 226px y el texto usa el ellipsis que esas clases
+     ya declaran. */
   flex: 0 0 226px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3674,13 +3814,20 @@ body.con-nav-secciones #btn-flotante-catastro {
   resize: vertical;
 }
 
-/* "Nota fijada" — look de nota pegada (fondo cálido propio), para que
-   se distinga a simple vista del resto de los campos del formulario. */
+/* "Nota fijada" — se distingue del resto de los campos por el fondo y el
+   borde, NO por un color de alerta. Con el rosa y el título en rojo, un
+   alta de contacto nueva arrancaba con una caja vacía que parecía un
+   error de validación, arriba del campo obligatorio "Nombre"; en esta app
+   --color-acento es de errores y urgencias. El ámbar tampoco sirve: acá
+   ya significa "prestá atención a esto" (.crm-automatizacion,
+   #crm-aviso-duplicado). Sin la regla de color, el rótulo hereda el gris
+   de .crm-campo como cualquier otro campo y el 📌 alcanza para que se lea
+   como nota. */
 .crm-nota-fijada {
-  background: var(--color-acento-suave);
+  background: var(--color-fondo-alterno);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-mediano);
   padding: 8px 10px;
-  color: var(--color-acento);
 }
 
 .crm-nota-fijada textarea {
@@ -3876,12 +4023,27 @@ body.con-nav-secciones #btn-flotante-catastro {
 #dashboard-ventas-stats {
   /* Grilla y no flex: con flex, la última tarjeta de una fila
      incompleta se estiraba a lo ancho de toda la pantalla ("Comisión
-     ganada" ocupando una fila entera ella sola). Con auto-fit todas
-     miden lo mismo y la fila incompleta queda alineada a la izquierda. */
+     ganada" ocupando una fila entera ella sola).
+
+     Y columnas contadas, no auto-fit: son SIEMPRE 8 tarjetas
+     (htmlResumenVentas en crm-metricas.js), y auto-fit resolvía 7
+     columnas a 1440px, así que "Comisión ganada" volvía a quedar sola
+     en una segunda fila. 2 y 4 dividen 8 exacto: no queda ninguna
+     huérfana a ningún ancho. Si algún día las tarjetas dejan de ser 8,
+     este número hay que volver a mirarlo. */
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-bottom: 14px;
+}
+
+/* Desde acá entran 4 columnas sin bajar de los 140px de antes
+   (4 x 140 + 3 x 10 de gap = 590, y el panel ya mide 616 a 640px). */
+@media (min-width: 640px) {
+  #crm-stats,
+  #dashboard-ventas-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .crm-stat {
@@ -4278,6 +4440,22 @@ body.con-nav-secciones #btn-flotante-catastro {
 
 #crm-filtro-vista {
   flex-shrink: 0;
+  /* El -4px viene de .botones-alternativos, pensada para los paneles del
+     editor donde el grupo va pegado debajo de su rótulo. Acá comparte un
+     renglón centrado con el buscador y los filtros, y ese margen lo subía
+     2px respecto de ellos. */
+  margin-top: 0;
+}
+
+/* SIN ESTO "MIS CONTACTOS" ENTRA EN DOS RENGLONES. Los botones de
+   .botones-alternativos arrancan de flex-basis 0, así que el grupo se
+   dimensiona por la palabra más larga de cada botón ("contactos", 83px)
+   y no por la frase entera: "Mis contactos" se partía en dos líneas y
+   estiraba a 50px de alto a los dos botones, "Todos" incluido.
+   Va por id y no en .botones-alternativos button porque en los paneles
+   del editor los rótulos son de una palabra y ahí partir no molesta. */
+#crm-filtro-vista button {
+  white-space: nowrap;
 }
 
 .crm-campo-con-boton {
@@ -5093,6 +5271,17 @@ body.con-nav-secciones #btn-flotante-catastro {
   cursor: pointer;
 }
 
+/* Con el formulario abierto sobre una lista vacía, debajo de "Guardar" seguía
+   el cartel de que no hay tareas, mientras la persona está creando justo esa
+   primera tarea. Va en CSS y no en JS porque el formulario se abre y se cierra
+   con .oculto desde cuatro lugares distintos (abrir, cancelar, guardar OK,
+   render) y así no hay un quinto estado que mantener sincronizado: al volver a
+   ocultarse el formulario, el cartel reaparece solo. Depende de que #tareas-vacio
+   siga siendo hermano POSTERIOR de #tarea-form dentro de #panel-tareas. */
+#tarea-form:not(.oculto) ~ #tareas-vacio {
+  display: none;
+}
+
 .tareas-grupo {
   margin-bottom: 18px;
 }
@@ -5420,12 +5609,18 @@ body.con-nav-secciones #btn-flotante-catastro {
     display: none;
   }
 
+  /* El nombre del módulo iba en el MISMO gris, mayúsculas y tamaño que
+     .menu-categoria (las categorías de adentro): "SISTEMA" se leía como
+     un rótulo vacío pegado a "SEGURIDAD" y no como el módulo que la
+     contiene. Acá el ícono está escondido, así que el color es la única
+     jerarquía que queda: el módulo pasa a texto pleno y las categorías
+     se quedan con el gris, que ahora es el escalón de abajo. */
   body.con-nav-secciones #drawer-menu:not(.expandido) .menu-modulo-nombre {
-    font-size: 0.64rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--color-texto-secundario);
+    color: var(--color-texto);
   }
 
   body.con-nav-secciones #drawer-menu:not(.expandido) .drawer-item {

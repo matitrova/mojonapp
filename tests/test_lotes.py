@@ -68,7 +68,7 @@ def test_ficha_muestra_datos_correctos_del_lote_tocado(page, base_url, lote_semb
     ficha = page.locator("#ficha-lote")
     expect(ficha).to_be_visible()
     expect(page.locator("#ficha-titulo")).to_have_text("Manzana T — Lote 99")
-    expect(page.locator("#ficha-superficie")).to_have_text("460.63 m²")
+    expect(page.locator("#ficha-superficie")).to_have_text("460,63 m²")
     expect(page.locator("#ficha-estado")).to_have_text("Disponible")
     expect(page.locator("#ficha-precio")).to_have_text("USD 5.000")
     expect(page.locator("#ficha-descripcion")).to_have_text(lote_sembrado["descripcion"])

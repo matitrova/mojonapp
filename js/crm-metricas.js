@@ -274,7 +274,10 @@ export function vigenciaContacto(contacto) {
   const dias = Math.floor((Date.now() - new Date(fecha).getTime()) / 86400000);
   const porcentaje = Math.min(100, Math.round((dias / DIAS_ESTANCADO) * 100));
   const nivel = porcentaje < 50 ? "fresco" : porcentaje < 100 ? "atencion" : "vencido";
-  return { porcentaje, nivel };
+  // `dias` se devuelve y no se reconstruye después del porcentaje: la
+  // tabla del CRM lo muestra al lado de la barra ("hace 3 días"), porque
+  // una barra sin número no dice de qué está llena.
+  return { porcentaje, nivel, dias };
 }
 
 export function estaSinAtender(contacto) {
@@ -454,6 +457,14 @@ function htmlValor(texto) {
     : `<strong>${texto}</strong>`;
 }
 
+// UNA SOLA FORMA DE ESCRIBIR UNA VENTANA DE TIEMPO EN ESTA FILA. Las
+// tarjetas decían "(7 días)", "(+24h)" y "(+7d)": tres formatos de tiempo
+// a pocos centímetros uno del otro, en la misma fila. Manda el castellano
+// entero, que es lo que ya decía la más vieja de las tres y lo que usa el
+// resto de la app. Los chips de la tarjeta del kanban (crm.js) siguen
+// abreviando a "+24h"/"+7d": ahí el ancho es de verdad poco y hay un test
+// que los lee tal cual (tests/test_crm_atencion.py).
+// Si se cambia HORAS_SIN_ATENDER o DIAS_ESTANCADO a 1, revisar el plural.
 export function htmlResumenVentas(m, variaciones = null) {
   const vsMes = "vs. mes anterior";
   return `
@@ -465,8 +476,8 @@ export function htmlResumenVentas(m, variaciones = null) {
          grande dentro de un marco rojo, o sea una alarma encendida para
          el mejor estado posible. Una alarma que está siempre prendida no
          avisa nada. -->
-    <div class="crm-stat${m.sinAtender > 0 ? " crm-stat-urgente" : ""}"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER}h)</span>${htmlVariacion("sinAtender", variaciones, vsMes)}</div>
-    <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO}d)</span>${htmlVariacion("estancados", variaciones, vsMes)}</div>
+    <div class="crm-stat${m.sinAtender > 0 ? " crm-stat-urgente" : ""}"><strong>${m.sinAtender}</strong><span>Sin atender (+${HORAS_SIN_ATENDER} horas)</span>${htmlVariacion("sinAtender", variaciones, vsMes)}</div>
+    <div class="crm-stat"><strong>${m.estancados}</strong><span>Estancados (+${DIAS_ESTANCADO} días)</span>${htmlVariacion("estancados", variaciones, vsMes)}</div>
     <div class="crm-stat crm-stat-valor">${htmlValor(formatoUsdCompacto(m.valorPipelineActivo))}<span>Valor en pipeline</span></div>
     <div class="crm-stat crm-stat-comision">${htmlValor(formatoUsdCompacto(m.comisionEnPipeline))}<span>Comisión proyectada</span></div>
     <div class="crm-stat crm-stat-comision-ganada">${htmlValor(formatoUsdCompacto(m.comisionCerrada))}<span>Comisión ganada</span></div>

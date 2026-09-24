@@ -593,13 +593,28 @@ function filaContacto(contacto) {
   const celdaVigencia = document.createElement("td");
   const vigencia = vigenciaContacto(contacto);
   if (vigencia) {
+    // UNA BARRA SOLA NO DICE DE QUÉ ESTÁ LLENA. El relleno es el avance
+    // hacia los DIAS_ESTANCADO días sin novedades, pero en pantalla era
+    // una rayita de color al 43% de algo que la columna nunca explicaba
+    // —sin texto y sin title, así que un lector de pantalla leía una
+    // celda vacía—. El número va AL LADO de la barra y no adentro: la
+    // barra mide 8px de alto, no entra nada escrito ahí.
+    const texto = vigencia.dias === 1 ? "hace 1 día" : `hace ${vigencia.dias} días`;
+    const celda = document.createElement("div");
+    celda.className = "crm-vigencia-celda";
+    celda.title = `Última novedad ${texto}. A los ${DIAS_ESTANCADO} días el contacto queda estancado.`;
     const barra = document.createElement("div");
     barra.className = "crm-vigencia-barra";
     const relleno = document.createElement("div");
     relleno.className = `crm-vigencia-relleno crm-vigencia-${vigencia.nivel}`;
     relleno.style.width = `${vigencia.porcentaje}%`;
     barra.appendChild(relleno);
-    celdaVigencia.appendChild(barra);
+    celda.appendChild(barra);
+    const etiqueta = document.createElement("span");
+    etiqueta.className = "crm-vigencia-texto";
+    etiqueta.textContent = texto;
+    celda.appendChild(etiqueta);
+    celdaVigencia.appendChild(celda);
   } else {
     celdaVigencia.textContent = "—";
   }
@@ -670,7 +685,7 @@ function renderTablaContactos() {
           <tr>
             <th>Contacto</th>
             <th>Lotes de interés</th>
-            <th>Vigencia</th>
+            <th title="Días desde la última novedad, sobre los ${DIAS_ESTANCADO} que marcan al contacto como estancado">Vigencia</th>
             <th>Última actividad</th>
             ${enTodas ? "<th>Asignado</th>" : ""}
           </tr>

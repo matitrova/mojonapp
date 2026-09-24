@@ -11,7 +11,13 @@ import uuid
 import pytest
 from playwright.sync_api import expect
 
-from conftest import abrir_menu, borrar_lote_de_prueba, crear_lote_de_prueba, soltar_el_mouse
+from conftest import (
+    abrir_menu,
+    borrar_lote_de_prueba,
+    crear_lote_de_prueba,
+    esperar_sesion_en_el_menu,
+    soltar_el_mouse,
+)
 
 # APARTADOS PIDE SESIÓN desde 2026-09-22. Antes esta pantalla era
 # pública —un comprador anónimo podía armarse su lista— y estos tests
@@ -57,6 +63,7 @@ def test_comparar_dos_favoritos_muestra_tabla_con_datos_reales(page, base_url):
         # termine, el panel se abre con la lista todavía vacía.
         page.wait_for_selector(f".lote-{lote_a}", state="attached")
 
+        esperar_sesion_en_el_menu(page)
         abrir_menu(page)
         page.locator("#btn-abrir-favoritos").click()
         soltar_el_mouse(page)
@@ -102,6 +109,7 @@ def test_tocar_el_titulo_en_el_comparador_abre_la_ficha(page, base_url):
         # termine, el panel se abre con la lista todavía vacía.
         page.wait_for_selector(f".lote-{lote_a}", state="attached")
 
+        esperar_sesion_en_el_menu(page)
         abrir_menu(page)
         page.locator("#btn-abrir-favoritos").click()
         soltar_el_mouse(page)

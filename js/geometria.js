@@ -176,7 +176,14 @@ export function textoMedidasLados(anillo) {
   const dims = medidasFrenteYLargo(anillo);
   if (!dims) return "Sin datos";
   const [frente, largo] = dims;
-  return `Frente ${frente.toFixed(1)} m × Largo ${largo.toFixed(1)} m`;
+  // toLocaleString y no toFixed: toFixed escribe el decimal con punto
+  // siempre, así que "53.3 m" quedaba al lado de "USD 18.500" en la misma
+  // ficha. minimum = maximum = 1 conserva el decimal único que daba
+  // toFixed(1) ("20,0 m", no "20 m") y de paso pone el punto de miles si
+  // alguna vez toca un lote rural de más de 1000 m de largo.
+  const unDecimal = (n) =>
+    n.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `Frente ${unDecimal(frente)} m × Largo ${unDecimal(largo)} m`;
 }
 
 // Ray casting: ¿el punto (lat, lon) está dentro del anillo exterior?
