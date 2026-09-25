@@ -17,7 +17,11 @@
 // ---------------------------------------------------------------------------
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { configPara, esDominioDeProduccion } from "./firebase-proyecto.js";
 
@@ -33,8 +37,28 @@ console.info(
       : " (base de pruebas: se puede romper)")
 );
 
+// LA CACHÉ NO ES UNA OPTIMIZACIÓN, ES LO QUE EVITA EL 429. Firestore
+// cobra POR DOCUMENTO leído del servidor, 50.000 por día en el plan
+// gratuito, y la app trae la cartera entera en cada carga de página.
+// Medido el 2026-09-25: 9 lecturas con 8 lotes, pero con 180 son 181 por
+// carga — o sea 276 cargas al día para TODA la agencia antes de que la
+// app empiece a responder 429 a los clientes. Y desde que el catálogo y
+// las páginas de lote son públicas, cada comprador que abre un link
+// también las paga: un link que circula por un grupo de WhatsApp puede
+// dejar la app caída.
+//
+// Con caché persistente y escucha viva (ver cargarLotesDesdeFirestore en
+// js/mapa.js), la primera carga paga los N lotes y las siguientes solo
+// pagan lo que CAMBIÓ: el SDK guarda un token y le pide al servidor
+// nada más que las novedades.
+//
+// persistentMultipleTabManager porque un corredor tiene la app abierta
+// en varias pestañas: sin esto, la segunda pestaña no puede usar la
+// caché y vuelve a pagar todo.
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 export const auth = getAuth(app);
 // Se reexporta el config para el panel de administración: dar de alta un
 // corredor nuevo levanta una segunda instancia de Firebase App/Auth en

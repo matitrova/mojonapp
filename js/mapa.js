@@ -24,7 +24,7 @@ import {
 } from "./encuadre-mapa.js";
 import {
   collection,
-  getDocs,
+  onSnapshot,
   query,
   where
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
@@ -281,7 +281,7 @@ export function abrirTooltipDeLote(loteId) {
   });
 }
 
-function docALoteFeature(doc) {
+export function docALoteFeature(doc) {
   const { geometry, ...properties } = doc.data();
   const anillo = geometry.coordinates.map((punto) => [punto.lon, punto.lat]);
   return {
@@ -299,17 +299,101 @@ function docALoteFeature(doc) {
 // lotes que ya están a la vista.
 let primeraCargaDeLotesHecha = false;
 
-export async function cargarLotesDesdeFirestore() {
-  if (!primeraCargaDeLotesHecha) elMensajeCargaInicial.classList.remove("oculto");
+// La escucha abierta sobre los lotes, y qué consulta está escuchando.
+//
+// POR QUÉ UNA ESCUCHA Y NO UN getDocs POR CARGA. Firestore cobra POR
+// DOCUMENTO leído del servidor, 50.000 por día en el plan gratuito, y
+// esta función trae la cartera entera. Medido el 2026-09-25: con 180
+// lotes son 181 lecturas por carga de página, o sea 276 cargas al día
+// para TODA la agencia antes de que la app empiece a responder 429 a
+// los clientes. Y desde que el catálogo y las páginas de lote son
+// públicas, cada comprador que abre un link también las paga.
+//
+// Con onSnapshot y la caché persistente (ver js/firebase-config.js) el
+// SDK guarda un token y en las cargas siguientes le pide al servidor
+// nada más que lo que CAMBIÓ. Un corredor que abre la app veinte veces
+// al día pasa de 20×N a N.
+//
+// Y de regalo: lo que carga un corredor aparece solo en la pantalla del
+// otro, sin recargar.
+let desuscribirDeLosLotes = null;
+let queEstaEscuchando = null;
 
+/**
+ * Deja la app escuchando los lotes y devuelve una promesa que se resuelve
+ * con la primera tanda dibujada.
+ *
+ * SE CONSERVA LA PROMESA porque siete lugares la esperan con await
+ * después de crear, editar o borrar un lote.
+ *
+ * SI YA ESTÁ ESCUCHANDO LO MISMO, resuelve enseguida y NO vuelve a
+ * suscribirse — suscribirse de nuevo relee los N documentos del servidor
+ * y sería pagar todo otra vez, justo lo que esto vino a evitar.
+ *
+ * Y resolver enseguida es correcto, no un atajo: Firestore dispara el
+ * snapshot local APENAS se escribe, antes del viaje al servidor (eso es
+ * la "compensación de latencia"). O sea que para cuando un
+ * `await updateDoc(...)` terminó, el redibujo ya pasó.
+ */
+export function cargarLotesDesdeFirestore() {
   // Un corredor sin "ver_todos_los_lotes" solo trae lo suyo — root, y
   // cualquiera sin sesión (el catálogo público), siguen viendo todo.
   const restringirAPropios = !!getMiPerfil() && !esRootActual() && !tienePermiso("ver_todos_los_lotes");
+  const clave = restringirAPropios ? `propios:${auth.currentUser.uid}` : "todos";
+
+  if (desuscribirDeLosLotes && queEstaEscuchando === clave) return Promise.resolve();
+
+  // Cambió a qué tiene derecho esta persona (resolvió la sesión, entró o
+  // salió): se corta la escucha vieja antes de abrir la nueva.
+  if (desuscribirDeLosLotes) {
+    desuscribirDeLosLotes();
+    desuscribirDeLosLotes = null;
+  }
+  queEstaEscuchando = clave;
+
+  if (!primeraCargaDeLotesHecha) elMensajeCargaInicial.classList.remove("oculto");
+
   const consulta = restringirAPropios
     ? query(collection(db, COLECCION_LOTES), where("creado_por", "==", auth.currentUser.uid))
     : collection(db, COLECCION_LOTES);
-  const snapshot = await getDocs(consulta);
-  const features = snapshot.docs.map(docALoteFeature);
+
+  return new Promise((resolver, rechazar) => {
+    let esLaPrimera = true;
+    desuscribirDeLosLotes = onSnapshot(
+      consulta,
+      (snapshot) => {
+        // QUEDA ANOTADO DE DÓNDE VINO ESTA TANDA. Firestore cobra los
+        // documentos que vienen del SERVIDOR; los que salen de la caché
+        // son gratis. Sin esto no hay forma de comprobar desde afuera si
+        // la caché está funcionando: la app se ve igual en los dos
+        // casos, y el día que alguien saque persistentLocalCache la
+        // cuenta se duplica en silencio. Mismo criterio que el
+        // dataset.encuadre de más abajo.
+        const contenedor = mapa.getContainer();
+        contenedor.dataset.lotesDeLaCache = snapshot.metadata.fromCache ? "1" : "0";
+        contenedor.dataset.lotesCambiados = String(snapshot.docChanges().length);
+        dibujarLotes(snapshot.docs.map(docALoteFeature));
+        if (esLaPrimera) {
+          esLaPrimera = false;
+          resolver();
+        }
+      },
+      (error) => {
+        // Se limpia para que un reintento posterior pueda volver a
+        // suscribirse en vez de creer que ya está escuchando.
+        desuscribirDeLosLotes = null;
+        queEstaEscuchando = null;
+        elMensajeCargaInicial.classList.add("oculto");
+        if (esLaPrimera) {
+          esLaPrimera = false;
+          rechazar(error);
+        }
+      }
+    );
+  });
+}
+
+function dibujarLotes(features) {
   setLotesActuales(features); // la vista en grilla reusa esto, no vuelve a pedirle nada a Firestore
   actualizarVistaLista();
 
@@ -365,7 +449,16 @@ export async function cargarLotesDesdeFirestore() {
     }
   ).addTo(mapa);
 
-  if (features.length > 0) {
+  // EL ENCUADRE, SOLO LA PRIMERA VEZ.
+  //
+  // Antes esto corría en cada carga, y cada carga era un getDocs
+  // disparado a mano. Desde que hay una escucha viva, "cada carga" pasó
+  // a ser "cada cambio de cualquiera": si otro corredor edita un lote
+  // desde su compu, a vos se te movía el mapa de abajo del mouse
+  // mientras lo estabas mirando. Encuadrar es una decisión de ARRANQUE
+  // ("mostrame la cartera"), no algo que haya que rehacer porque cambió
+  // un precio.
+  if (features.length > 0 && !primeraCargaDeLotesHecha) {
     // maxZoom explícito: si el contenedor del mapa todavía no tiene un
     // tamaño real en este instante (puede pasar, esta llamada es lo
     // primero que corre la app apenas responde Firestore), Leaflet

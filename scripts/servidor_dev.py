@@ -106,7 +106,11 @@ def config_firebase_generado():
 // que los tests no escriban en los datos reales ni se coman la cuota.
 // El archivo de verdad es js/firebase-config.js.
 import {{ initializeApp }} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import {{ getFirestore }} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import {{
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+}} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import {{ getAuth }} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 const firebaseConfig = {{
@@ -116,8 +120,13 @@ const firebaseConfig = {{
   storageBucket: "{PROJECT_ID}.firebasestorage.app"
 }};
 
+// MISMA CACHÉ QUE EL ARCHIVO REAL, a propósito: si acá se usara
+// getFirestore pelado, los tests correrían contra un camino de datos
+// distinto del de producción y no probarían lo que se despliega.
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {{
+  localCache: persistentLocalCache({{ tabManager: persistentMultipleTabManager() }})
+}});
 export const auth = getAuth(app);
 export {{ firebaseConfig }};
 """.encode("utf-8")

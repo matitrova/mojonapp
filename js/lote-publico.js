@@ -16,10 +16,11 @@
 // ---------------------------------------------------------------------------
 
 import { getLotesActuales } from "./estado.js";
+import { docALoteFeature } from "./mapa.js";
 import { onRutaAplicada, ponerTituloDeLaSeccion } from "./router.js";
 import { subirFotoACloudinary } from "./ficha.js";
 import { db, auth } from "./firebase-config.js";
-import { doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { doc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { crearContactoDesdeInteresado } from "./crm-datos.js";
 // Las mismas reglas que aplica functions/consulta-lote.js del otro lado.
 import { validarConsulta } from "./consulta-lote.js";
@@ -423,6 +424,32 @@ export function refrescarLotePublicoSiCorresponde() {
   else if (getLotesActuales().length > 0) noEncontrado();
 }
 
+/**
+ * Trae UN lote por su id, sin cargar la cartera entera.
+ *
+ * ES EL ARREGLO QUE PROTEGE DEL LINK QUE SE VIRALIZA. Firestore cobra
+ * por documento, y hasta acá el comprador que abría /lote/<id> pagaba
+ * TODA la cartera: con 180 lotes, 181 lecturas por visita. Cien
+ * personas abriendo el mismo link en un grupo de WhatsApp son 18.100
+ * lecturas y la app de la inmobiliaria respondiendo 429 — a ella y a
+ * sus clientes, por haber compartido bien una propiedad.
+ *
+ * Con esto son 2: el lote y los datos de la agencia.
+ *
+ * Devuelve null si no existe o si no se pudo leer. Quien llama
+ * distingue los dos casos por su cuenta: decirle "no existe" a alguien
+ * que tiene un link bueno es perder una venta por un error nuestro.
+ */
+async function traerUnLote(id) {
+  try {
+    const snap = await getDoc(doc(db, "lotes", id));
+    if (!snap.exists()) return null;
+    return docALoteFeature(snap);
+  } catch {
+    return null;
+  }
+}
+
 function idDeLaUrl() {
   const partes = location.pathname.split("/lote/");
   return partes.length > 1 ? partes[1].split("/")[0] : null;
@@ -437,6 +464,12 @@ onRutaAplicada((ruta) => {
   } else if (getLotesActuales().length > 0) {
     noEncontrado();
   } else {
+    // No está en memoria: se pide ESE lote y nada más, en vez de esperar
+    // a que llegue la cartera entera (ver traerUnLote).
+    traerUnLote(ruta.loteId).then((soloEste) => {
+      if (soloEste && idDeLaUrl() === ruta.loteId) render(soloEste);
+    });
+
     // Todavía sin datos. NO se dice "no existe" mientras se carga: sería
     // mentirle a alguien que tiene un link bueno.
     //
