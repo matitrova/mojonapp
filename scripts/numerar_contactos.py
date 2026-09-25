@@ -120,21 +120,38 @@ def main():
         }
         for d, n in asignaciones
     ]
-    # Y el contador, para que el próximo alta no repita números. Va en el
-    # MISMO commit que las asignaciones: si se escribieran por separado y
-    # fallara el segundo, la numeración quedaría lista para repetirse.
-    escrituras.append(
-        {
-            "update": {
-                "name": f"{conftest.FIRESTORE_RAIZ_RELATIVA}/contadores/contactos",
-                "fields": {"valor": {"integerValue": str(tope)}},
-            }
-        }
-    )
-
     # Firestore acepta hasta 500 escrituras por commit.
     for i in range(0, len(escrituras), 400):
         conftest._commit(escrituras[i : i + 400])
+    print(f"  {len(asignaciones)} contactos numerados.")
+
+    # EL CONTADOR SE SUBE DE A UNO, y no de un saque.
+    #
+    # La regla de firestore.rules (soloSumaUno) deja hacer UNA sola cosa
+    # con este documento: llevarlo de N a N+1. Está así a propósito —
+    # cualquier logueado lo tiene que poder mover, y sin ese límite
+    # alguien podría dejarlo en 9.999.999 y arruinar la numeración para
+    # siempre.
+    #
+    # O sea que la regla prohíbe esta migración, y hace bien. La primera
+    # versión de este script intentaba escribir el tope directo y se
+    # comía un 403. Subirlo de a uno respeta la regla sin aflojarla: son
+    # tantos pedidos como contactos, y esto se corre una sola vez.
+    #
+    # Si se cortara en la mitad, el contador queda más bajo de lo que
+    # debería y los próximos altas repetirían números. Por eso se
+    # verifica al final y se avisa para volver a correrlo.
+    desde = max((n for n in usados if n < tope), default=0)
+    print(f"  subiendo el contador hasta {tope}...")
+    for valor in range(1, tope + 1):
+        conftest._commit([
+            {
+                "update": {
+                    "name": f"{conftest.FIRESTORE_RAIZ_RELATIVA}/contadores/contactos",
+                    "fields": {"valor": {"integerValue": str(valor)}},
+                }
+            }
+        ])
     print(f"\nListo: {len(asignaciones)} contactos numerados, contador en {tope}.")
 
     # Se relee: informar "escribí N" solo dice que ninguna escritura tiró
@@ -142,7 +159,23 @@ def main():
     quedaron = [d for d in contactos_ordenados_por_antiguedad() if numero_de(d) is None]
     if quedaron:
         sys.exit(f"ATENCIÓN: quedaron {len(quedaron)} contactos sin número.")
-    print("Verificado: no quedó ningún contacto sin número.")
+
+    # Y EL CONTADOR, que es la mitad que se olvida. Si quedó más bajo que
+    # el número más alto asignado, el próximo contacto que alguien dé de
+    # alta va a repetir un número — y repetir es justo lo que rompe para
+    # lo que se pidió la numeración.
+    r = requests.get(
+        f"{conftest.FIRESTORE_RAIZ}/contadores/contactos",
+        headers={"Authorization": f"Bearer {conftest._id_token_de_prueba()}"},
+        timeout=20,
+    )
+    valor = int(r.json().get("fields", {}).get("valor", {}).get("integerValue", 0)) if r.ok else 0
+    if valor < tope:
+        sys.exit(
+            f"ATENCIÓN: el contador quedó en {valor} y tendría que estar en {tope}. "
+            "Volvé a correr el script: los próximos altas repetirían números."
+        )
+    print(f"Verificado: ningún contacto sin número, y el contador en {valor}.")
 
 
 if __name__ == "__main__":
