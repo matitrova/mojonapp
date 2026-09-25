@@ -68,6 +68,75 @@ def numero_de(doc):
     return None
 
 
+def numerar_los_que_falten(silencioso=False):
+    """Numera los contactos sin número y deja el contador donde va.
+
+    Devuelve cuántos numeró. La usan este script y
+    scripts/sembrar_demo.py: un sembrado nuevo tiene que dejar la demo
+    numerada, o el que la mira ve una mitad con número y otra sin.
+    """
+    docs = contactos_ordenados_por_antiguedad()
+    sin_numero = [d for d in docs if numero_de(d) is None]
+    if not sin_numero:
+        return 0
+
+    # NUNCA SE REUSA UN NÚMERO, tampoco los que quedaron libres al borrar
+    # un contacto. Es la misma regla que sigue el contador de la app, y
+    # por el mismo motivo: si se reciclaran, "el contacto 42" de una
+    # conversación de hace un mes sería otro hoy. Un hueco en la
+    # numeración es más barato que un número que cambió de dueño.
+    #
+    # Por eso se arranca del más alto entre lo ya asignado y el contador
+    # —que puede estar más arriba si se borraron contactos—, y no del 1.
+    usados = {numero_de(d) for d in docs if numero_de(d) is not None}
+    siguiente = max([valor_del_contador(), *usados, 0]) + 1
+    asignaciones = []
+    for d in sin_numero:
+        asignaciones.append((d, siguiente))
+        usados.add(siguiente)
+        siguiente += 1
+
+    escrituras = [
+        {
+            "update": {"name": d["name"], "fields": {"numero": {"integerValue": str(n)}}},
+            "updateMask": {"fieldPaths": ["numero"]},
+        }
+        for d, n in asignaciones
+    ]
+    for i in range(0, len(escrituras), 400):
+        conftest._commit(escrituras[i : i + 400])
+
+    # El contador, de a uno (ver el comentario largo en main).
+    tope = max(usados)
+    actual = valor_del_contador()
+    for valor in range(actual + 1, tope + 1):
+        conftest._commit([
+            {
+                "update": {
+                    "name": f"{conftest.FIRESTORE_RAIZ_RELATIVA}/contadores/contactos",
+                    "fields": {"valor": {"integerValue": str(valor)}},
+                }
+            }
+        ])
+    if not silencioso:
+        for d, n in asignaciones:
+            nombre = d.get("fields", {}).get("nombre", {}).get("stringValue", "(sin nombre)")
+            print(f"  #{n:<5} {nombre}")
+    return len(asignaciones)
+
+
+def valor_del_contador():
+    """Lo que dice hoy el contador. 0 si todavía no existe."""
+    r = requests.get(
+        f"{conftest.FIRESTORE_RAIZ}/contadores/contactos",
+        headers={"Authorization": f"Bearer {conftest._id_token_de_prueba()}"},
+        timeout=20,
+    )
+    if not r.ok:
+        return 0
+    return int(r.json().get("fields", {}).get("valor", {}).get("integerValue", 0))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--aplicar", action="store_true", help="escribir de verdad (sin esto, solo informa)")
@@ -90,12 +159,11 @@ def main():
         print("\nNo hay nada que numerar.")
         return
 
+    # Mismo criterio que numerar_los_que_falten: no se reusan números.
     usados = {numero_de(d) for d in con_numero}
-    siguiente = 1
+    siguiente = max([valor_del_contador(), *usados, 0]) + 1
     asignaciones = []
     for d in sin_numero:
-        while siguiente in usados:
-            siguiente += 1
         asignaciones.append((d, siguiente))
         usados.add(siguiente)
         siguiente += 1

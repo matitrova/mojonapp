@@ -47,6 +47,8 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "tests"))
+# Para importar numerar_contactos, que vive al lado de este archivo.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import requests  # noqa: E402
 
@@ -404,6 +406,17 @@ def main():
             "fecha_actualizacion": ahora,
         })
         print(f"  contacto creado: {nombre} ({doc_id})")
+
+    # NUMERAR LO QUE QUEDÓ SIN NÚMERO. Sin esto, un sembrado nuevo deja
+    # los contactos de la demo sin número mientras los que se cargan
+    # desde la app sí lo tienen — y una mitad numerada y otra sin es
+    # justo lo confuso. Se importa acá y no arriba para no pagar el
+    # arranque del otro script cuando este corre en seco.
+    from numerar_contactos import numerar_los_que_falten
+
+    numerados = numerar_los_que_falten()
+    if numerados:
+        print(f"\n  {numerados} contactos numerados")
 
     print(f"\nEscritos: {len(lotes_nuevos)} lotes y {len(contactos_nuevos)} contactos.")
     verificar_el_estado_final()
