@@ -140,13 +140,35 @@ def test_al_abrir_un_lote_queda_a_la_vista_y_no_detras_de_la_ficha(page, base_ur
              const punto = m.mapa.latLngToContainerPoint([lat, lon]);
              const hoja = document.getElementById('ficha-lote').getBoundingClientRect();
              const caja = document.getElementById('mapa').getBoundingClientRect();
-             return { yDelLote: caja.top + punto.y, arribaDeLaHoja: hoja.top };
+             const x = caja.left + punto.x;
+             const y = caja.top + punto.y;
+             return {
+               x, y,
+               dentroDelMapa: x >= caja.left && x <= caja.right && y >= caja.top && y <= caja.bottom,
+               detrasDeLaFicha: x >= hoja.left && x <= hoja.right && y >= hoja.top && y <= hoja.bottom,
+               ficha: [hoja.left, hoja.top, hoja.right, hoja.bottom]
+             };
            })""",
         lote_de_prueba["id"],
     )
-    assert medidas["yDelLote"] < medidas["arribaDeLaHoja"], (
-        f"el lote quedó en y={medidas['yDelLote']:.0f}, detrás de la ficha "
-        f"que empieza en y={medidas['arribaDeLaHoja']:.0f}"
+    # SE COMPRUEBA QUE NO ESTÉ TAPADO, no que esté "arriba de la ficha".
+    #
+    # La primera versión afirmaba yDelLote < arribaDeLaHoja, que era
+    # correcto mientras la ficha fuera una hoja que sube desde abajo.
+    # Desde el 2026-09-25 en escritorio es una columna a la izquierda que
+    # va de arriba abajo, y el mapa arranca donde ella termina: "arriba
+    # de la ficha" pasó a ser imposible y el test fallaba sin que hubiera
+    # nada roto.
+    #
+    # Lo que importa es lo mismo de siempre y no depende del eje: que el
+    # punto del lote caiga en el mapa y no debajo de la ficha. Escrito
+    # así vale para los dos formatos.
+    assert medidas["dentroDelMapa"], (
+        f"el lote cayó en ({medidas['x']:.0f}, {medidas['y']:.0f}), fuera del mapa"
+    )
+    assert not medidas["detrasDeLaFicha"], (
+        f"el lote cayó en ({medidas['x']:.0f}, {medidas['y']:.0f}), detrás de la ficha "
+        f"que ocupa {[round(v) for v in medidas['ficha']]}"
     )
 
 

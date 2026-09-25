@@ -49,6 +49,12 @@
      #crm-toolbar se pegaba 4px por debajo del header y esos 4px quedaban
      tapados. */
   --alto-panel-header: 62px;
+  /* Ancho de la ficha del lote en escritorio. Lo usan dos reglas: el
+     ancho de la propia ficha y el borde izquierdo del mapa, que arranca
+     donde ella termina. Son el mismo número por definición — si se
+     escribieran por separado, el día que cambie uno el mapa queda
+     tapado o con una franja muerta. */
+  --ancho-ficha: 640px;
   /* Verde de las variaciones positivas del mockup ("+12.5%"). */
   --color-positivo: #16a34a;
   --color-disponible: #5c7f3f;
@@ -1032,7 +1038,68 @@ body.con-nav-secciones #btn-flotante-catastro {
    En teléfono no cambia nada: la hoja sigue de punta a punta. */
 @media (min-width: 860px) {
   #ficha-lote {
-    max-width: 640px;
+    max-width: var(--ancho-ficha);
+  }
+
+  /* Y EL MAPA ARRANCA DONDE TERMINA LA FICHA, en vez de que la ficha lo
+     tape.
+     
+     EL PROBLEMA QUE ESTO RESUELVE. Con la ficha encima, el lote se
+     centraba en el mapa ENTERO, o sea detrás de la ficha o pegado a su
+     borde. Medido el 2026-09-25: a 1440 el lote caía en x=720 y el
+     centro de lo que se ve estaba en x=1040 — 320px corrido. A 1100 el
+     lote quedaba directamente TAPADO.
+     
+     Se empuja el mapa en vez de compensar el centrado con una cuenta.
+     Es la diferencia entre no tener el problema y tener que corregirlo:
+     si el mapa visible ES el mapa, el centro del mapa es el centro de
+     lo que se ve, y no hay nada que ajustar cuando mañana cambie el
+     ancho de la ficha.
+     
+     La clase la pone un observador sobre el propio panel (ver
+     sincronizarAnchoDelMapaConLaFicha en js/app.js), así vale para
+     todos los caminos por los que la ficha se abre y se cierra —
+     incluido el router escondiéndola al cambiar de sección.
+     
+     En teléfono no cambia nada: ahí la ficha es una hoja de abajo y lo
+     que la compensa es el desplazamiento vertical que ya existía. */
+  body.ficha-abierta #seccion-mapa #mapa {
+    left: var(--ancho-ficha);
+  }
+
+  body.con-nav-secciones.ficha-abierta #seccion-mapa #mapa {
+    left: calc(var(--ancho-lateral) + var(--ancho-ficha));
+  }
+
+  /* Y LA FICHA OCUPA SU COLUMNA ENTERA, de arriba abajo.
+     
+     En teléfono es una hoja que sube desde abajo y tapa el 70% de la
+     pantalla: tiene sentido, ahí el mapa es el fondo y la ficha se
+     asoma. En escritorio, apenas el mapa dejó de estar detrás, ese 70%
+     dejó un rectángulo gris vacío arriba de la ficha — 210px de nada a
+     1366, donde antes se veía el mapa.
+     
+     Ocupando la columna entera se gana además lo que más falta hacía:
+     menos scroll. La ficha tiene datos, simulador de cuotas, fotos,
+     interesados, siete botones y las tarjetas de similares; con 70vh
+     casi todo quedaba abajo del pliegue.
+     
+     Se le saca el redondeo de arriba y la barrita de agarre: son señales
+     de "esto se desliza desde abajo" y acá ya no se desliza desde
+     ningún lado. */
+  body.ficha-abierta #ficha-lote {
+    top: var(--alto-encabezado);
+    max-height: none;
+    border-radius: 0;
+    padding-top: 16px;
+  }
+
+  body.con-nav-secciones.ficha-abierta #ficha-lote {
+    top: 0;
+  }
+
+  body.ficha-abierta #ficha-lote::before {
+    display: none;
   }
 }
 

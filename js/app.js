@@ -260,6 +260,33 @@ function sincronizarSeccionMapa() {
 }
 new MutationObserver(sincronizarSeccionMapa).observe(elNavTabMapa, { attributes: true, attributeFilter: ["class"] });
 
+// En escritorio la ficha EMPUJA el mapa en vez de taparlo: el mapa
+// arranca donde ella termina (ver body.ficha-abierta en css/estilos.css).
+//
+// POR QUÉ UN OBSERVADOR Y NO UNA LLAMADA EN mostrarFicha. La ficha se
+// abre y se cierra por muchos caminos: el click en un lote del mapa, la
+// lista, el CRM, el Dashboard, un deep link "?lote=", la × de cerrar, y
+// el router escondiéndola al cambiar de sección. Con una llamada en cada
+// lugar, el día que aparezca un camino nuevo el mapa queda con una
+// franja muerta o tapado, y nadie se acuerda de por qué. Observando la
+// clase del propio panel hay un solo lugar que decide.
+//
+// invalidateSize DESPUÉS de mover el borde: Leaflet cachea el tamaño del
+// contenedor, y sin esto sigue dibujando para el ancho viejo — los tiles
+// quedan corridos y el lote no cae donde dice el cálculo. Leaflet
+// conserva el CENTRO al invalidar, así que el lote que estaba centrado
+// queda centrado en el mapa nuevo, que es justo lo que se busca.
+const elFichaLote = document.getElementById("ficha-lote");
+
+function sincronizarAnchoDelMapaConLaFicha() {
+  document.body.classList.toggle("ficha-abierta", !elFichaLote.classList.contains("oculto"));
+  mapa.invalidateSize();
+}
+new MutationObserver(sincronizarAnchoDelMapaConLaFicha).observe(elFichaLote, {
+  attributes: true,
+  attributeFilter: ["class"]
+});
+
 // Wiring de los módulos que necesitan mapa/mostrarFicha/etc. — todos
 // estos valores ya están disponibles como imports acá arriba (mapa.js,
 // ficha.js, permisos.js, catalogos.js no tienen ninguna dependencia
